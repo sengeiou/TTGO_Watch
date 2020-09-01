@@ -21,6 +21,9 @@ LV_FONT_DECLARE(digital_play_st_24);
 LV_FONT_DECLARE(gracetians_32);
 LV_FONT_DECLARE(exninja_22);
 
+LV_FONT_DECLARE(myFont);
+LV_FONT_DECLARE(myLED_Font);
+
 TTGOClass *watch = nullptr;
 
 
@@ -46,14 +49,15 @@ lv_obj_t *setupGUI()
     //Upper left corner logo
     lv_obj_t *casio = lv_label_create(view, nullptr);
     lv_obj_add_style(casio, LV_OBJ_PART_MAIN, &onestyle);
-    lv_label_set_text(casio, "LilyGo");
+    lv_label_set_text(casio, "DxRun");
     lv_obj_align(casio, view, LV_ALIGN_IN_TOP_LEFT, 10, 10);
 
     //Upper right corner model
     static lv_style_t model_style;
     lv_style_init(&model_style);
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-    lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &robot_ightItalic_16);
+//    lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &robot_ightItalic_16);
+    lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont);
 
     lv_obj_t *model = lv_label_create(view, nullptr);
     lv_obj_add_style(model, LV_OBJ_PART_MAIN, &model_style);
@@ -79,7 +83,7 @@ lv_obj_t *setupGUI()
     //Slogan below the top horizontal line
     lv_obj_t *row_down_line = lv_label_create(view, nullptr);
     lv_obj_add_style(row_down_line, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(row_down_line, "Designed by lewis");
+    lv_label_set_text(row_down_line, "Designed by dx");
     lv_obj_align(row_down_line, line1, LV_ALIGN_OUT_BOTTOM_LEFT, 10, 2);
 
 
