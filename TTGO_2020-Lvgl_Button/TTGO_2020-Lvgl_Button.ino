@@ -7,11 +7,19 @@
 LV_FONT_DECLARE(myFont);
 LV_FONT_DECLARE(myLED_Font);
 
+/* Find the image here: https://github.com/lvgl/lv_examples/tree/master/assets */
+LV_IMG_DECLARE(me);
+
 TTGOClass *ttgo;
 
 lv_obj_t * btn;
-lv_obj_t *btn1;
 lv_obj_t *btn2;
+
+lv_obj_t *btn10;
+lv_obj_t *btn20;
+lv_obj_t *btn30;
+lv_obj_t *btn40;
+
 lv_obj_t *label;
 lv_obj_t *label1;
 
@@ -59,8 +67,25 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 static void event_handler(lv_obj_t *obj, lv_event_t event)
 {
-    if (obj == btn1) {
-        Serial.printf("Clicked\n");
+    if (obj == btn10) {
+        send_Data.b = 0;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+    } 
+    else if (obj == btn20) {
+        send_Data.b = 180;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+    } 
+    else if (obj == btn30) {
+        send_Data.b = send_Data.b + 10;
+        if(send_Data.b > 180)
+        send_Data.b = 180;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+    } 
+    else if (obj == btn40) {
+        send_Data.b = send_Data.b - 10;
+        if(send_Data.b < 0)
+        send_Data.b = 0;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     } 
     else if (obj == btn2) {
 
@@ -95,8 +120,13 @@ static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) {
         static char buf[20]; /* max 3 bytes for number plus 1 null terminating byte */
-        snprintf(buf, 20, "角度:%u", lv_slider_get_value(slider));
+
+        send_Data.b = lv_slider_get_value(slider);
+
+        snprintf(buf, 20, "角度:%u", send_Data.b);
         lv_label_set_text(slider_label, buf);
+
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     }
 }
 
@@ -107,6 +137,11 @@ void lv_ex_tileview_1(void)
     lv_style_init(&model_style);
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont);
+
+    static lv_style_t led_style;
+    lv_style_init(&led_style);
+    lv_style_set_text_color(&led_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
+    lv_style_set_text_font(&led_style, LV_STATE_DEFAULT, &myLED_Font);
 
     // static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {1,0}, {1,1}};
     static lv_point_t valid_pos[] = {{0,0}, {1, 0}, {0,1}, {1,1}};
@@ -140,7 +175,7 @@ void lv_ex_tileview_1(void)
     lv_obj_align(btn, NULL, LV_ALIGN_CENTER, 0, 10);
 
     lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
-    lv_obj_t *label_0_1 = lv_label_create( tile_0_1, NULL);
+    // lv_obj_t *label_0_1 = lv_label_create( tile_0_1, NULL);
     lv_obj_t *label_1_0 = lv_label_create( tile_1_0, NULL);
     lv_obj_t *label_1_1 = lv_label_create( tile_1_1, NULL);
 
@@ -154,15 +189,67 @@ void lv_ex_tileview_1(void)
     lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
     lv_obj_align( label_data, NULL, LV_ALIGN_CENTER,0,45);
     
+    //------------------------------tile_0_1-----------------------------------------------------
+    btn10 = lv_btn_create(tile_0_1, NULL);
+    lv_obj_set_width(btn10, 60);
+    lv_obj_set_event_cb(btn10, event_handler);
+    lv_obj_align(btn10, NULL, LV_ALIGN_IN_TOP_MID, -30, 10);
 
-    lv_obj_add_style(label_0_1, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text( label_0_1, "1-杭州"); 
-    lv_obj_align( label_0_1, NULL, LV_ALIGN_CENTER,0,0);
+    btn20 = lv_btn_create(tile_0_1, NULL);
+    lv_obj_set_width(btn20, 60);
+    lv_obj_set_event_cb(btn20, event_handler);
+    lv_obj_align(btn20, btn10, LV_ALIGN_IN_TOP_MID, 65, 0);
 
+    btn30 = lv_btn_create(tile_0_1, NULL);
+    lv_obj_set_width(btn30, 60);
+    lv_obj_set_event_cb(btn30, event_handler);
+    lv_obj_align(btn30, NULL, LV_ALIGN_IN_TOP_MID, -30, 70);
+
+    btn40 = lv_btn_create(tile_0_1, NULL);
+    lv_obj_set_width(btn40, 60);
+    lv_obj_set_event_cb(btn40, event_handler);
+    lv_obj_align(btn40, btn30, LV_ALIGN_IN_TOP_MID, 65, 0);
+
+    label = lv_label_create(btn10, NULL);
+    lv_obj_add_style(label, LV_OBJ_PART_MAIN, &led_style);
+    lv_label_set_text(label, "0");
+
+    label = lv_label_create(btn20, NULL);
+    lv_obj_add_style(label, LV_OBJ_PART_MAIN, &led_style);
+    lv_label_set_text(label, "180");
+
+    label = lv_label_create(btn30, NULL);
+    lv_obj_add_style(label, LV_OBJ_PART_MAIN, &led_style);
+    lv_label_set_text(label, "+");
+
+    label = lv_label_create(btn40, NULL);
+    lv_obj_add_style(label, LV_OBJ_PART_MAIN, &led_style);
+    lv_label_set_text(label, "-");
+
+    /* Create a slider in the center of the display */
+    lv_obj_t * slider = lv_slider_create(tile_0_1, NULL);
+    lv_obj_set_width(slider, LV_DPI * 1);
+    lv_obj_align(slider, NULL, LV_ALIGN_CENTER, 0, 30);
+    lv_obj_set_event_cb(slider, slider_event_cb);
+    lv_slider_set_range(slider, 0, 180);
+    
+    /* Create a label below the slider */
+    slider_label = lv_label_create(tile_0_1, NULL);
+    lv_obj_add_style(slider_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(slider_label, "角度:0");
+    lv_obj_set_auto_realign(slider_label, true);
+    lv_obj_align(slider_label, slider, LV_ALIGN_CENTER, 0, 15);
+
+    // lv_obj_add_style(label_0_1, LV_OBJ_PART_MAIN, &model_style);
+    // lv_label_set_text( label_0_1, "1-杭州"); 
+    // lv_obj_align( label_0_1, NULL, LV_ALIGN_CENTER,0,0);
+
+    //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_add_style(label_1_0, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text( label_1_0, "3-启动"); 
     lv_obj_align( label_1_0, NULL, LV_ALIGN_CENTER,0,0);
 
+    //------------------------------tile_1_1-----------------------------------------------------
     lv_obj_add_style(label_1_1, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text( label_1_1, "4-关闭"); 
     lv_obj_align( label_1_1, NULL, LV_ALIGN_CENTER,0,0);
@@ -184,6 +271,20 @@ void lv_ex_keyboard_1(void)
 
     /*Assign the text area to the keyboard*/
     lv_keyboard_set_textarea(kb, ta);
+}
+
+
+void lv_ex_img_1(void)
+{
+
+
+    lv_obj_t * img1 = lv_img_create(lv_scr_act(), NULL);
+    lv_img_set_src(img1, &me);
+    lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, -20);
+
+    lv_obj_t * img2 = lv_img_create(lv_scr_act(), NULL);
+    lv_img_set_src(img2, LV_SYMBOL_OK "Accept");
+    lv_obj_align(img2, img1, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
 }
 
 void setup()
@@ -229,11 +330,11 @@ void setup()
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont);
 
-    btn1 = lv_btn_create(lv_scr_act(), NULL);
-    lv_obj_set_event_cb(btn1, event_handler);
-    lv_obj_align(btn1, NULL, LV_ALIGN_IN_TOP_MID, 0, 10);
+    btn10 = lv_btn_create(lv_scr_act(), NULL);
+    lv_obj_set_event_cb(btn10, event_handler);
+    lv_obj_align(btn10, NULL, LV_ALIGN_IN_TOP_MID, 0, 10);
 
-    label = lv_label_create(btn1, NULL);
+    label = lv_label_create(btn10, NULL);
     lv_obj_add_style(label, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text(label, "中国");
 
@@ -266,6 +367,7 @@ void setup()
 
     lv_ex_tileview_1();
     // lv_ex_keyboard_1();
+    // lv_ex_img_1();
 
 }
 
