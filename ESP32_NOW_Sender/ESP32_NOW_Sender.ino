@@ -9,8 +9,17 @@
   copies or substantial portions of the Software.
 */
 
+#include <SPI.h>
+#include <Ethernet.h>
+#include <EthernetUdp.h>
+
 #include <esp_now.h>
 #include <WiFi.h>
+#include <ESP32Servo.h>
+
+Servo myservo;
+// Recommended PWM GPIO pins on the ESP32 include 2,4,12-19,21-23,25-27,32-33 
+int servoPin = 13;
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 // uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  
@@ -29,6 +38,32 @@ typedef struct struct_message {
 // Create a struct_message called myData
 struct_message send_Data;
 struct_message recv_Data;
+
+
+// Enter a MAC address and IP address for your controller below.
+// The IP address will be dependent on your local network:
+byte mac[] = {
+  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+};
+// IPAddress ip(192, 168, 0, 20);
+IPAddress ip(172, 25, 9, 30);  //XH
+// IPAddress ip1(230, 1, 2, 3); 
+IPAddress ip1(172,25,9,61);
+
+unsigned int localPort = 2300;      // local port to listen on
+int count = 0;
+int count_temp = 0;
+
+// buffers for receiving and sending data
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  // buffer to hold incoming packet,
+byte  ReplyBuffer[128];        // a string to send back
+
+// An EthernetUDP instance to let us send and receive packets over UDP
+EthernetUDP Udp;
+
+long Recv_Packet_Count = 0;
+
+int data = 0;
 
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -58,7 +93,36 @@ void setup() {
   // Init Serial Monitor
   Serial.begin(115200);
 
+  for(int i=0; i<128; i++)
+  {
+    ReplyBuffer[i] = 0x00;
+  }
+  ReplyBuffer[96] = 0x54;
+
   pinMode(2, OUTPUT);
+
+  myservo.setPeriodHertz(50);    // standard 50 hz servo
+  myservo.attach(servoPin, 500, 2500); // attaches the servo on pin 18 to the servo object
+
+  Ethernet.init(5);
+
+  // start the Ethernet
+  Ethernet.begin(mac, ip);
+
+  // Check for Ethernet hardware present
+  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+    Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+    while (true) {
+      delay(1); // do nothing, no point running without Ethernet hardware
+    }
+  }
+  if (Ethernet.linkStatus() == LinkOFF) {  
+    Serial.println("Ethernet cable is not connected.");
+  }
+
+  // start UDP
+  Udp.begin(23302);
+  // Udp.beginMulticast(ip1, 23302);
  
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
@@ -90,28 +154,20 @@ void setup() {
     Serial.println("Failed to add peer");
     return;
   }
+
+  myservo.write(180);
+
 }
  
 
-int data = 0;
 
 void loop() {
-  // Set values to send
-  strcpy(send_Data.a, "THIS IS A CHAR");
-  // send_Data.b = random(1,20);
-  data = data + 1;
-  if(data > 500)
-  data = 0;
-  send_Data.b = data;
 
-  send_Data.c = 1.2;
-  send_Data.d = "Hello";
-  send_Data.e = false;
+  count =  count + 1;
+  count_temp =  count_temp + 1;
 
-  // Send message via ESP-NOW
-  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+  myservo.write(recv_Data.b);
 
-   
   // if (result == ESP_OK) {
   //   Serial.println("Sent with success");
   // }
@@ -130,5 +186,73 @@ void loop() {
     digitalWrite(2, LOW);
   }
 
-  delay(100);
+  // if there's data available, read a packet
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+
+    Recv_Packet_Count = Recv_Packet_Count + 1;
+
+    //@-网络数据包信息
+    // Serial.print("Received packet of size ");
+    // Serial.println(packetSize);
+    // Serial.print("From ");
+    // IPAddress remote = Udp.remoteIP();
+    // for (int i=0; i < 4; i++) {
+    //   Serial.print(remote[i], DEC);
+    //   if (i < 3) {
+    //     Serial.print(".");
+    //   }
+    // }
+    // Serial.print(", port ");
+    // Serial.println(Udp.remotePort());
+
+    // read the packet into packetBufffer
+    // Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+    // Serial.println("Contents:");
+    // Serial.println(packetBuffer);
+
+    // myservo.write(packetBuffer[0]);
+
+    // send a reply to the IP address and port that sent us the packet we received
+//    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+//    Udp.write(ReplyBuffer);
+//    Udp.endPacket();
+  }
+
+
+  if(count > 10)
+  {
+    count = 0;
+    // send a reply to the IP address and port that sent us the packet we received
+    Udp.beginPacket(ip1, 23602);
+    // Udp.write(ReplyBuffer);  //write str
+    Udp.write(ReplyBuffer,128);  //write byte
+    Udp.endPacket();  
+
+
+    // Set values to send
+    strcpy(send_Data.a, "THIS IS A CHAR");
+  // send_Data.b = random(1,20);
+    data = data + 1;
+    if(data > 500)
+    data = 0;
+    send_Data.b = data;
+
+    send_Data.c = 1.2;
+    send_Data.d = "Hello";
+    send_Data.e = false;
+
+    // Send message via ESP-NOW
+    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+  }
+
+  if(count_temp > 200)
+  {
+    count_temp = 0;
+
+    Serial.print("Recv:");
+    Serial.println(Recv_Packet_Count);
+  }
+  
+  delay(5);
 }
