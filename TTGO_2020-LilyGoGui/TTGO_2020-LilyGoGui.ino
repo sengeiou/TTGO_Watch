@@ -31,7 +31,6 @@ lv_obj_t *setupGUI()
 {
     static lv_style_t cont_style;
     lv_style_init(&cont_style);
-    lv_style_init(&cont_style);
     lv_style_set_radius(&cont_style, LV_OBJ_PART_MAIN, 12);
     lv_style_set_bg_color(&cont_style, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
     lv_style_set_bg_opa(&cont_style, LV_OBJ_PART_MAIN, LV_OPA_COVER);
