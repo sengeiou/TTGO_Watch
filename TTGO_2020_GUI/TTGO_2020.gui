@@ -1,0 +1,93 @@
+<Screen
+	CID = "1527974217"
+	AppID = "2"
+	AppVer = "4.1.109.0"
+	DocID = ""
+	HasCanvas = "1"
+	Width = "240"
+	Height = "240"
+	NextCID = "6"
+	RepresentativeRefID = "0"
+	UseDefRepresentative = "1">
+	<Elements
+		CID = "1">
+		<Element
+			CID = "1323446171"
+			Type = "Bitmap"
+			X = "0"
+			Y = "0"
+			Width = "240"
+			Height = "240"
+			Flags = "0"
+			RootPath = "$Container"
+			Filename = "PIC\BG.jpg"
+			Placement = "Stretch"
+			HorzAlign = "Left"
+			VertAlign = "Top"
+			ClipLeft = "0"
+			ClipRight = "0"
+			ClipTop = "0"
+			ClipBottom = "0"/>
+		<Element
+			CID = "1063404279"
+			Type = "StaticText"
+			X = "28"
+			Y = "5"
+			Width = "191"
+			Height = "21"
+			Flags = "0"
+			FillColour = "236,233,216,0,16"
+			TextColour = "0,0,0,0,19"
+			Typeface = "华文新魏"
+			FontAttributes = "0"
+			TextSize = "160"
+			Text = "电磁线圈炮智能手环"
+			IsDisabled = "0"
+			Fill = "None"
+			HorzAlign = "Centre"
+			VertAlign = "Centre"/>
+		<Element
+			CID = "1063396932"
+			Type = "StaticText"
+			X = "75"
+			Y = "106"
+			Width = "95"
+			Height = "20"
+			Flags = "0"
+			FillColour = "236,233,216,0,16"
+			TextColour = "0,0,0,0,19"
+			Typeface = "LED Display7"
+			FontAttributes = "0"
+			TextSize = "200"
+			Text = ""
+			IsDisabled = "0"
+			Fill = "None"
+			HorzAlign = "Centre"
+			VertAlign = "Centre"/>
+	</Elements>
+	<Connections
+		CID = "2"/>
+	<Groups
+		CID = "3">
+		<Group
+			CID = "1063408801"
+			Elements = "1063404279"/>
+		<Group
+			CID = "1063408493"
+			Elements = "1063396932"/>
+	</Groups>
+	<SelectionGroups
+		CID = "4"/>
+	<Notes
+		CID = "5">
+		<Note
+			CID = "1528002835"
+			Name = "Description"
+			NextCID = "2">
+			<Text
+				CID = "1">
+				
+			</Text>
+		</Note>
+	</Notes>
+</Screen>
