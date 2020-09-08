@@ -4,13 +4,15 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define LV_USE_CHART
+
 
 LV_FONT_DECLARE(myFont);
+LV_FONT_DECLARE(dxLED7);
 LV_FONT_DECLARE(myLED_Font);
 
 /* Find the image here: https://github.com/lvgl/lv_examples/tree/master/assets */
 LV_IMG_DECLARE(me);
+LV_IMG_DECLARE(TTGO_BG);
 
 TTGOClass *ttgo;
 
@@ -23,7 +25,7 @@ lv_obj_t *btn30;
 lv_obj_t *btn40;
 
 lv_obj_t *label;
-lv_obj_t *label1;
+lv_obj_t *label1; 
 
 lv_obj_t *label_data;
 
@@ -147,36 +149,45 @@ void lv_ex_tileview_1(void)
     lv_style_set_text_color(&led_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&led_style, LV_STATE_DEFAULT, &myLED_Font);
 
+    static lv_style_t led7_style;
+    lv_style_init(&led7_style);
+    lv_style_set_text_color(&led7_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
+    lv_style_set_text_font(&led7_style, LV_STATE_DEFAULT, &dxLED7);
+
     // static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {1,0}, {1,1}};
-    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {1,0}, {1,1}};
+    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {1,0}, {1,1}, {1,2}};
     lv_obj_t *tileview;
     tileview = lv_tileview_create(lv_scr_act(), NULL);
-    lv_tileview_set_valid_positions(tileview, valid_pos, 5);
+    lv_tileview_set_valid_positions(tileview, valid_pos, 6);
     lv_tileview_set_edge_flash(tileview, true);
 
     lv_obj_t* tile_0_0 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_0_1 = lv_obj_create( tileview, NULL);
+    lv_obj_t* tile_0_2 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_1_0 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_1_1 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_0_2 = lv_obj_create( tileview, NULL);
+    lv_obj_t* tile_1_2 = lv_obj_create( tileview, NULL);
 
     lv_obj_set_size( tile_0_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_1, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_0_2, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_1, LV_HOR_RES,LV_VER_RES);
-    lv_obj_set_size( tile_0_2, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_1_2, LV_HOR_RES,LV_VER_RES);
 
     lv_obj_set_pos( tile_0_0, 0,   0);
     lv_obj_set_pos( tile_0_1, 0,   LV_VER_RES);
+    lv_obj_set_pos( tile_0_2, 0,   2*LV_VER_RES);
     lv_obj_set_pos( tile_1_0, LV_HOR_RES,   0);
     lv_obj_set_pos( tile_1_1, LV_HOR_RES,   LV_VER_RES);
-    lv_obj_set_pos( tile_0_2, 0,   2*LV_VER_RES);
+    lv_obj_set_pos( tile_1_2, LV_HOR_RES,   2*LV_VER_RES);
 
     lv_tileview_add_element(tileview, tile_0_0 );
     lv_tileview_add_element(tileview, tile_0_1 );
+    lv_tileview_add_element(tileview, tile_0_2 );
     lv_tileview_add_element(tileview, tile_1_0 );
     lv_tileview_add_element(tileview, tile_1_1 );
-    lv_tileview_add_element(tileview, tile_0_2 );
+    lv_tileview_add_element(tileview, tile_1_2 );
 
     //------------------------------tile_0_0-----------------------------------------------------
     btn = lv_btn_create(tile_0_0, NULL);
@@ -187,6 +198,7 @@ void lv_ex_tileview_1(void)
     // lv_obj_t *label_0_1 = lv_label_create( tile_0_1, NULL);
     lv_obj_t *label_1_0 = lv_label_create( tile_1_0, NULL);
     lv_obj_t *label_1_1 = lv_label_create( tile_1_1, NULL);
+    
 
     label_data = lv_label_create( tile_0_0, NULL);
 
@@ -299,47 +311,20 @@ void lv_ex_tileview_1(void)
 
     lv_chart_refresh(chart); /*Required after direct set*/
 
+    //------------------------------tile_1_2-----------------------------------------------------
+    lv_obj_t * img = lv_img_create(tile_1_2, NULL);
+    lv_img_set_src(img, &TTGO_BG);
+    lv_obj_align(img, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    lv_obj_t *label_1_2 = lv_label_create( tile_1_2, NULL);
+    lv_obj_add_style(label_1_2, LV_OBJ_PART_MAIN, &led7_style);
+    lv_label_set_text( label_1_2, "10:23"); 
+    lv_obj_align( label_1_2, NULL, LV_ALIGN_IN_TOP_LEFT,75,106);
+
+    
+
 }
 
-void lv_ex_chart_1(void)
-{
-    /*Create a chart*/
-    lv_obj_t * chart;
-    chart = lv_chart_create(lv_scr_act(), NULL);
-    lv_obj_set_size(chart, 200, 150);
-    lv_obj_align(chart, NULL, LV_ALIGN_CENTER, 0, 0);
-    lv_chart_set_type(chart, LV_CHART_TYPE_LINE);   /*Show lines and points too*/
-
-    /*Add two data series*/
-    lv_chart_series_t * ser1 = lv_chart_add_series(chart, LV_COLOR_RED);
-    lv_chart_series_t * ser2 = lv_chart_add_series(chart, LV_COLOR_GREEN);
-
-    /*Set the next points on 'ser1'*/
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 30);
-    lv_chart_set_next(chart, ser1, 70);
-    lv_chart_set_next(chart, ser1, 90);
-
-    /*Directly set points on 'ser2'*/
-    ser2->points[0] = 90;
-    ser2->points[1] = 70;
-    ser2->points[2] = 65;
-    ser2->points[3] = 65;
-    ser2->points[4] = 65;
-    ser2->points[5] = 65;
-    ser2->points[6] = 65;
-    ser2->points[7] = 65;
-    ser2->points[8] = 65;
-    ser2->points[9] = 65;
-
-    lv_chart_refresh(chart); /*Required after direct set*/
-}
 
 void lv_ex_keyboard_1(void)
 {
@@ -358,11 +343,8 @@ void lv_ex_keyboard_1(void)
     lv_keyboard_set_textarea(kb, ta);
 }
 
-
 void lv_ex_img_1(void)
 {
-
-
     lv_obj_t * img1 = lv_img_create(lv_scr_act(), NULL);
     lv_img_set_src(img1, &me);
     lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, -20);
@@ -453,7 +435,6 @@ void setup()
     lv_ex_tileview_1();
     // lv_ex_keyboard_1();
     // lv_ex_img_1();
-    // lv_ex_chart_1();
 
 }
 
