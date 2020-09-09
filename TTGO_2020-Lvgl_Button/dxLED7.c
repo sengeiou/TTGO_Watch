@@ -9,7 +9,7 @@
 */
 
 
-#include <lvgl/lvgl.h>
+#include <lvgl/lvgl.h>  //这里的lvgl库时TTGO_TWatch_Library-master中自带的库lvgl，在LilyGoWatch.h文件中包含。
 
 
 static const uint8_t glyph_bitmap[] = {
