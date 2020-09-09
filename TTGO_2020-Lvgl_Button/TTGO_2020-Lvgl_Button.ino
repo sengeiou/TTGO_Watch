@@ -1,21 +1,30 @@
 
 #include "config.h"
-
 #include <esp_now.h>
 #include <WiFi.h>
 
 
-
+//@-配置用户字体
 LV_FONT_DECLARE(myFont);
 LV_FONT_DECLARE(dxLED7);
 LV_FONT_DECLARE(myLED_Font);
 
-/* Find the image here: https://github.com/lvgl/lv_examples/tree/master/assets */
+//@-配置用户图片数据
 LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_BG);
 
+//@-TTGO
 TTGOClass *ttgo;
+//@-TTGO 电源管理
+AXP20X_Class *power;
+//@-TTGO 电源管理中断
+bool irq_power = false;
+//@-3轴传感器BMA423
+BMA *sensor_bma423;
+//@-TTGO 3轴中断
+bool irq_bma423 = false;
 
+//@-lvgl 控件
 lv_obj_t * btn;
 lv_obj_t *btn2;
 
@@ -29,15 +38,23 @@ lv_obj_t *label1;
 
 lv_obj_t *label_data;
 
+//@-RTC时间显示
+lv_obj_t *label_time; 
+
+//@-实时电量显示
+lv_obj_t *label_batt;
+
 /*Create a chart*/
 lv_obj_t * chart;
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
 
+
+
 bool btn2_flag = true;
 
-
+//@-WIFI NOW数据结构
 typedef struct struct_message {
     char a[32];
     int b;
@@ -52,7 +69,13 @@ struct_message send_Data;
 
 uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
 
+
+char display_buf[128];
+int system_tick = 0;
+
+
 // callback function that will be executed when data is received
+//@-wifi now 数据接收函数
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&recv_Data, incomingData, sizeof(recv_Data));
 //   Serial.print("Bytes received: ");
@@ -189,6 +212,8 @@ void lv_ex_tileview_1(void)
     lv_tileview_add_element(tileview, tile_1_1 );
     lv_tileview_add_element(tileview, tile_1_2 );
 
+    lv_tileview_set_tile_act(tileview, 1, 2, LV_ANIM_OFF);
+
     //------------------------------tile_0_0-----------------------------------------------------
     btn = lv_btn_create(tile_0_0, NULL);
     lv_obj_set_event_cb(btn, event_handler);
@@ -316,12 +341,15 @@ void lv_ex_tileview_1(void)
     lv_img_set_src(img, &TTGO_BG);
     lv_obj_align(img, NULL, LV_ALIGN_CENTER, 0, 0);
 
-    lv_obj_t *label_1_2 = lv_label_create( tile_1_2, NULL);
-    lv_obj_add_style(label_1_2, LV_OBJ_PART_MAIN, &led7_style);
-    lv_label_set_text( label_1_2, "10:23"); 
-    lv_obj_align( label_1_2, NULL, LV_ALIGN_IN_TOP_LEFT,75,106);
+    label_time = lv_label_create( tile_1_2, NULL);
+    lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_style);
+    lv_label_set_text( label_time, "10:23"); 
+    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,91,91);
 
-    
+    label_batt = lv_label_create( tile_1_2, NULL);
+    lv_obj_add_style(label_batt, LV_OBJ_PART_MAIN, &led7_style);
+    lv_label_set_text( label_batt, "NONE"); 
+    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,91,125);
 
 }
 
@@ -343,6 +371,7 @@ void lv_ex_keyboard_1(void)
     lv_keyboard_set_textarea(kb, ta);
 }
 
+
 void lv_ex_img_1(void)
 {
     lv_obj_t * img1 = lv_img_create(lv_scr_act(), NULL);
@@ -354,10 +383,177 @@ void lv_ex_img_1(void)
     lv_obj_align(img2, img1, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
 }
 
+//@-配置电源管理irq
+void setup_power_irq()
+{
+    //@-配置电源管理pin
+    pinMode(AXP202_INT, INPUT_PULLUP);
+
+    //@-挂载电源管理中断
+    attachInterrupt(AXP202_INT, [] {irq_power = true;}, FALLING);
+
+    // Must be enabled first, and then clear the interrupt status,
+    // otherwise abnormal
+    //@-允许电源管理中断
+    power->enableIRQ(AXP202_PEK_SHORTPRESS_IRQ,true);
+
+    //  Clear interrupt status
+    //@-清空电源管理中断
+    power->clearIRQ();
+}
+
+//@-配置3轴传感器irq
+void setup_bma_irq()
+{
+     // Accel parameter structure
+    Acfg cfg;
+    /*!
+        Output data rate in Hz, Optional parameters:
+            - BMA4_OUTPUT_DATA_RATE_0_78HZ
+            - BMA4_OUTPUT_DATA_RATE_1_56HZ
+            - BMA4_OUTPUT_DATA_RATE_3_12HZ
+            - BMA4_OUTPUT_DATA_RATE_6_25HZ
+            - BMA4_OUTPUT_DATA_RATE_12_5HZ
+            - BMA4_OUTPUT_DATA_RATE_25HZ
+            - BMA4_OUTPUT_DATA_RATE_50HZ
+            - BMA4_OUTPUT_DATA_RATE_100HZ
+            - BMA4_OUTPUT_DATA_RATE_200HZ
+            - BMA4_OUTPUT_DATA_RATE_400HZ
+            - BMA4_OUTPUT_DATA_RATE_800HZ
+            - BMA4_OUTPUT_DATA_RATE_1600HZ
+    */
+
+    // //@-配置touch硬件中断管脚
+    // pinMode(BMA423_INT1, INPUT_PULLUP);
+    // // attachInterrupt(BMA423_INT1, [] {
+    // //     irq_bma423 = true;
+    // // }, FALLING);
+    // attachInterrupt(BMA423_INT1, [] {
+    // irq_bma423 = true;
+    // }, RISING);
+
+
+    cfg.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
+    /*!
+        G-range, Optional parameters:
+            - BMA4_ACCEL_RANGE_2G
+            - BMA4_ACCEL_RANGE_4G
+            - BMA4_ACCEL_RANGE_8G
+            - BMA4_ACCEL_RANGE_16G
+    */
+    cfg.range = BMA4_ACCEL_RANGE_2G;
+    /*!
+        Bandwidth parameter, determines filter configuration, Optional parameters:
+            - BMA4_ACCEL_OSR4_AVG1
+            - BMA4_ACCEL_OSR2_AVG2
+            - BMA4_ACCEL_NORMAL_AVG4
+            - BMA4_ACCEL_CIC_AVG8
+            - BMA4_ACCEL_RES_AVG16
+            - BMA4_ACCEL_RES_AVG32
+            - BMA4_ACCEL_RES_AVG64
+            - BMA4_ACCEL_RES_AVG128
+    */
+    cfg.bandwidth = BMA4_ACCEL_NORMAL_AVG4;
+
+    /*! Filter performance mode , Optional parameters:
+        - BMA4_CIC_AVG_MODE
+        - BMA4_CONTINUOUS_MODE
+    */
+    cfg.perf_mode = BMA4_CONTINUOUS_MODE;
+
+    // Configure the BMA423 accelerometer
+    sensor_bma423->accelConfig(cfg);
+
+    // Enable BMA423 accelerometer
+    // Warning : Need to use feature, you must first enable the accelerometer
+    // Warning : Need to use feature, you must first enable the accelerometer
+    // Warning : Need to use feature, you must first enable the accelerometer
+    sensor_bma423->enableAccel();
+
+    // Disable BMA423 isStepCounter feature
+    sensor_bma423->enableFeature(BMA423_STEP_CNTR, false);
+    // Enable BMA423 isTilt feature
+    sensor_bma423->enableFeature(BMA423_TILT, false);
+    // Enable BMA423 isDoubleClick feature -- 采用双击屏幕唤醒中断
+    sensor_bma423->enableFeature(BMA423_WAKEUP, true);
+
+    // Reset steps
+    sensor_bma423->resetStepCounter();
+
+    // Turn off feature interrupt
+    // sensor_bma423->enableStepCountInterrupt();
+
+//    sensor_bma423->enableTiltInterrupt();
+
+    // It corresponds to isDoubleClick interrupt
+    sensor_bma423->enableWakeupInterrupt();
+}
+
+
+//@-检测电源管理中断
+void check_power_irq()
+{
+    //@-电源中断触发
+    if(irq_power == true)
+    {
+        //@-清除电源中断
+        power->clearIRQ();
+
+        // Set screen and touch to sleep mode
+        //@-设置屏幕及触摸功能进入sleep模式
+        ttgo->displaySleep();
+
+        //@-ttgo断电
+        ttgo->powerOff();
+
+        //GPIO_SEL_35为电源键 - 已测试ok
+        //GPIO_SEL_38为touch中断 - 已测试ok
+        //GPIO_SEL_39为3轴中断 - 已测试ok
+        //@-配置ttgo唤醒模式
+        // esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
+        esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
+
+
+        //@-ttgo深度sleep模式工作
+        esp_deep_sleep_start();
+    }
+}
+
+//@-检测3轴中断
+void check_bma_irq()
+{
+    //@-3轴中断触发
+    if(irq_bma423 == true)
+    {
+        Serial.println("check bma");
+        //@-清除中断
+        // sensor_bma423->clearIRQ();
+
+        // Set screen and touch to sleep mode
+        //@-设置屏幕及触摸功能进入sleep模式
+        ttgo->displaySleep();
+
+        //@-ttgo断电
+        ttgo->powerOff();
+
+        //GPIO_SEL_35为电源键 - 已测试ok
+        //GPIO_SEL_38为touch中断 - 已测试ok
+        //GPIO_SEL_39为3轴中断 - 已测试ok
+        //@-配置ttgo唤醒模式
+        esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
+
+        //@-ttgo深度sleep模式工作
+        esp_deep_sleep_start();
+    }
+}
+
+//@-配置
 void setup()
 {
+    //@-串口初始化
     Serial.begin(115200);
 
+    //@-配置wifi的now功能
     WiFi.mode(WIFI_MODE_STA);
     // Serial.println(WiFi.macAddress());   //8C:AA:B5:82:EA:58
 
@@ -378,71 +574,73 @@ void setup()
     Serial.println("Failed to add peer");
     return;
     }
-  
+
     // Once ESPNow is successfully Init, we will register for recv CB to
     // get recv packer info
     esp_now_register_recv_cb(OnDataRecv);
 
-
     send_Data.e = false;
 
+    //@-ttgo初始化
     ttgo = TTGOClass::getWatch();
     ttgo->begin();
     ttgo->openBL();
+
+    //@-ttgo初始化电源管理并开启电源监控
+    power = ttgo->power;
+    // ADC monitoring must be enabled to use the AXP202 monitoring function
+    power->adc1Enable(AXP202_VBUS_VOL_ADC1 | AXP202_VBUS_CUR_ADC1 | AXP202_BATT_CUR_ADC1 | AXP202_BATT_VOL_ADC1, true);
+    setup_power_irq();
+
+    //@-初始化3轴传感器
+    sensor_bma423 = ttgo->bma;
+    //@-配置3轴传感器BMA中断
+    setup_bma_irq();
+
+    //@-ttgo初始化lvgl库
     ttgo->lvgl_begin();
 
-    #if 0
-    static lv_style_t model_style;
-    lv_style_init(&model_style);
-    lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-    lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont);
-
-    btn10 = lv_btn_create(lv_scr_act(), NULL);
-    lv_obj_set_event_cb(btn10, event_handler);
-    lv_obj_align(btn10, NULL, LV_ALIGN_IN_TOP_MID, 0, 10);
-
-    label = lv_label_create(btn10, NULL);
-    lv_obj_add_style(label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(label, "中国");
-
-    btn2 = lv_btn_create(lv_scr_act(), NULL);
-    lv_obj_set_event_cb(btn2, event_handler);
-    lv_obj_align(btn2, NULL, LV_ALIGN_IN_TOP_MID, 0, 65);
-    lv_btn_set_checkable(btn2, true);
-    lv_btn_toggle(btn2);
-    lv_btn_set_fit2(btn2, LV_FIT_NONE, LV_FIT_TIGHT);
-
-    label = lv_label_create(btn2, NULL);
-    lv_obj_add_style(label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(label, "启动");
-
-
-    /* Create a slider in the center of the display */
-    lv_obj_t * slider = lv_slider_create(lv_scr_act(), NULL);
-    lv_obj_set_width(slider, LV_DPI * 1);
-    lv_obj_align(slider, NULL, LV_ALIGN_CENTER, 0, 30);
-    lv_obj_set_event_cb(slider, slider_event_cb);
-    lv_slider_set_range(slider, 0, 100);
-    
-    /* Create a label below the slider */
-    slider_label = lv_label_create(lv_scr_act(), NULL);
-    lv_obj_add_style(slider_label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(slider_label, "角度:0");
-    lv_obj_set_auto_realign(slider_label, true);
-    lv_obj_align(slider_label, slider, LV_ALIGN_CENTER, 0, 15);
-    #endif
-
+    //@-进入lvgl主页面
     lv_ex_tileview_1();
     // lv_ex_keyboard_1();
     // lv_ex_img_1();
 
 }
 
+//@-主循环
 void loop()
 {
-    lv_task_handler();
+    system_tick = system_tick + 1;
+
+    //@-查询电源管理中断
+    check_power_irq();
+
+    if(system_tick > 100)
+    {
+        system_tick = 0;
+
+
+        // PCF_TIMEFORMAT_HM,
+        // PCF_TIMEFORMAT_HMS,
+        //@-显示实时时间
+        sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
+        lv_label_set_text_fmt( label_time, "%s", display_buf); 
+
+        //@-显示实时电量
+        if (power->isChargeing() == false)
+        {
+            lv_label_set_text_fmt( label_batt, "Power:%d%%", power->getBattPercentage()); 
+        }
+        else
+        {
+            lv_label_set_text( label_batt, "Change..."); 
+        }
+        
+    }
 
     lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
+
+    lv_task_handler();
 
     delay(5);
 }
