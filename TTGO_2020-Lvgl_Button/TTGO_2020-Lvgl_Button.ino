@@ -10,8 +10,9 @@ LV_FONT_DECLARE(dxLED7);
 LV_FONT_DECLARE(myLED_Font);
 
 //@-配置用户图片数据
-LV_IMG_DECLARE(me);
+// LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_BG);
+LV_IMG_DECLARE(rich);
 
 //@-TTGO
 TTGOClass *ttgo;
@@ -222,7 +223,6 @@ void lv_ex_tileview_1(void)
 
     lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
     // lv_obj_t *label_0_1 = lv_label_create( tile_0_1, NULL);
-    lv_obj_t *label_1_0 = lv_label_create( tile_1_0, NULL);
     lv_obj_t *label_1_1 = lv_label_create( tile_1_1, NULL);
     
 
@@ -292,9 +292,9 @@ void lv_ex_tileview_1(void)
     // lv_obj_align( label_0_1, NULL, LV_ALIGN_CENTER,0,0);
 
     //------------------------------tile_1_0-----------------------------------------------------
-    lv_obj_add_style(label_1_0, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text( label_1_0, "3-启动"); 
-    lv_obj_align( label_1_0, NULL, LV_ALIGN_CENTER,0,0);
+    lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
+    lv_img_set_src(img1, &rich);
+    lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, 0);
 
     //------------------------------tile_1_1-----------------------------------------------------
     lv_obj_add_style(label_1_1, LV_OBJ_PART_MAIN, &model_style);
@@ -375,13 +375,13 @@ void lv_ex_keyboard_1(void)
 
 void lv_ex_img_1(void)
 {
-    lv_obj_t * img1 = lv_img_create(lv_scr_act(), NULL);
-    lv_img_set_src(img1, &me);
-    lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, -20);
+    // lv_obj_t * img1 = lv_img_create(lv_scr_act(), NULL);
+    // lv_img_set_src(img1, &me);
+    // lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, -20);
 
-    lv_obj_t * img2 = lv_img_create(lv_scr_act(), NULL);
-    lv_img_set_src(img2, LV_SYMBOL_OK "Accept");
-    lv_obj_align(img2, img1, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
+    // lv_obj_t * img2 = lv_img_create(lv_scr_act(), NULL);
+    // lv_img_set_src(img2, LV_SYMBOL_OK "Accept");
+    // lv_obj_align(img2, img1, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
 }
 
 //@-配置电源管理irq

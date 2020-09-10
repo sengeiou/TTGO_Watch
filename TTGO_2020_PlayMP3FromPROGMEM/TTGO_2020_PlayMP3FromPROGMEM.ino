@@ -14,7 +14,9 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 // #include "image.h"
-#include "test_music.h"
+// #include "test_music.h"
+// #include "new1.h"
+#include "door1.h"
 
 TTGOClass *ttgo;
 AudioGeneratorMP3 *mp3;
@@ -40,7 +42,7 @@ void setup()
     ttgo->enableLDO3();
 
     // file = new AudioFileSourcePROGMEM(image, sizeof(image));
-    file = new AudioFileSourcePROGMEM(test_music, sizeof(test_music));
+    file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
     id3 = new AudioFileSourceID3(file);
 
 #if defined(STANDARD_BACKPLANE)
@@ -56,10 +58,18 @@ void setup()
 
 void loop()
 {
-    if (mp3->isRunning()) {
-        if (!mp3->loop()) mp3->stop();
-    } else {
+    if (mp3->isRunning()) 
+    {
+        if (!mp3->loop()) 
+        mp3->stop();
+    } 
+    else 
+    {
         Serial.printf("MP3 done\n");
-        delay(1000);
+        delay(5000);
+        file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
+        id3 = new AudioFileSourceID3(file);
+        mp3 = new AudioGeneratorMP3();
+        mp3->begin(id3, out);
     }
 }
