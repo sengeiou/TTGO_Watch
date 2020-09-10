@@ -72,6 +72,7 @@ uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
 
 char display_buf[128];
 int system_tick = 0;
+int System_Sleep_Tick = 0;
 
 
 // callback function that will be executed when data is received
@@ -547,6 +548,38 @@ void check_bma_irq()
     }
 }
 
+//@-检测触摸功能
+void check_touch_pro()
+{
+    int16_t x, y;
+
+    if(ttgo->getTouch(x, y))
+    {
+        System_Sleep_Tick = 0;
+    }
+
+    System_Sleep_Tick = System_Sleep_Tick + 1;
+
+    //@-用户没有操作
+    if(System_Sleep_Tick > 10000)
+    {
+        //@-设置屏幕及触摸功能进入sleep模式
+        ttgo->displaySleep();
+
+        //@-ttgo断电
+        ttgo->powerOff();
+
+        //GPIO_SEL_35为电源键 - 已测试ok
+        //GPIO_SEL_38为touch中断 - 已测试ok
+        //GPIO_SEL_39为3轴中断 - 已测试ok
+        //@-配置ttgo唤醒模式
+        esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
+
+        //@-ttgo深度sleep模式工作
+        esp_deep_sleep_start();
+    }
+}
+
 //@-配置
 void setup()
 {
@@ -614,6 +647,9 @@ void loop()
 
     //@-查询电源管理中断
     check_power_irq();
+
+    //@-检测触摸功能
+    check_touch_pro();
 
     if(system_tick > 100)
     {
