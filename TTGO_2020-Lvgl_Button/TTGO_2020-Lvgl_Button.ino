@@ -3,6 +3,14 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
+//@-audio
+#include <HTTPClient.h>         //Remove Audio Lib error
+#include "AudioFileSourcePROGMEM.h"
+#include "AudioFileSourceID3.h"
+#include "AudioGeneratorMP3.h"
+#include "AudioOutputI2S.h"
+
+#include "door1.h"
 
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
@@ -24,6 +32,12 @@ bool irq_power = false;
 BMA *sensor_bma423;
 //@-TTGO 3轴中断
 bool irq_bma423 = false;
+
+//@-audio
+AudioGeneratorMP3 *mp3;
+AudioFileSourcePROGMEM *file;
+AudioOutputI2S *out;
+AudioFileSourceID3 *id3;
 
 //@-lvgl 控件
 lv_obj_t * btn;
@@ -580,6 +594,24 @@ void check_touch_pro()
     }
 }
 
+//@-配置打开audio功能
+void Turn_On_Audio()
+{
+    // file = new AudioFileSourcePROGMEM(image, sizeof(image));
+    file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
+    id3 = new AudioFileSourceID3(file);
+
+    #if defined(STANDARD_BACKPLANE)
+    out = new AudioOutputI2S(0, 1);
+    #elif defined(EXTERNAL_DAC_BACKPLANE)
+    out = new AudioOutputI2S();
+    //External DAC decoding
+    out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);
+    #endif
+    mp3 = new AudioGeneratorMP3();
+    mp3->begin(id3, out);
+}
+
 //@-配置
 void setup()
 {
@@ -618,6 +650,10 @@ void setup()
     ttgo = TTGOClass::getWatch();
     ttgo->begin();
     ttgo->openBL();
+
+    //!Turn on the audio power
+    ttgo->enableLDO3();
+    Turn_On_Audio();
 
     //@-ttgo初始化电源管理并开启电源监控
     power = ttgo->power;
