@@ -18,7 +18,8 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
-#include "door1.h"
+//@-用户音频文件
+#include "./audio/geji.h"
 
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
@@ -124,7 +125,7 @@ void Run_MP3_Audio()
 {
     if (mp3->isRunning() == false) 
     {
-        file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
+        file = new AudioFileSourcePROGMEM(geji, sizeof(geji));
         id3 = new AudioFileSourceID3(file);
         mp3 = new AudioGeneratorMP3();
         mp3->begin(id3, out);
@@ -172,7 +173,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     else if(obj == btn)
     {
         //@-播放音效
-        // Run_MP3_Audio();
+        Run_MP3_Audio();
 
         if(send_Data.e == false) 
         send_Data.e = true;
@@ -623,7 +624,7 @@ void check_touch_pro()
 void Turn_On_Audio()
 {
     // file = new AudioFileSourcePROGMEM(image, sizeof(image));
-    file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
+    file = new AudioFileSourcePROGMEM(geji, sizeof(geji));
     id3 = new AudioFileSourceID3(file);
 
     #if defined(STANDARD_BACKPLANE)
