@@ -1,3 +1,11 @@
+#pragma mark - Depend ESP8266Audio and ESP8266_Spiram libraries
+/*
+cd ~/Arduino/libraries
+git clone https://github.com/earlephilhower/ESP8266Audio
+git clone https://github.com/Gianbacchio/ESP8266_Spiram
+*/
+
+#define USE_MP3
 
 #include "config.h"
 #include <esp_now.h>
@@ -33,11 +41,13 @@ BMA *sensor_bma423;
 //@-TTGO 3轴中断
 bool irq_bma423 = false;
 
+#ifdef USE_MP3
 //@-audio
 AudioGeneratorMP3 *mp3;
 AudioFileSourcePROGMEM *file;
 AudioOutputI2S *out;
 AudioFileSourceID3 *id3;
+#endif
 
 //@-lvgl 控件
 lv_obj_t * btn;
@@ -109,8 +119,20 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 //   Serial.println();
 }
     
+//@-播放MP3
+void Run_MP3_Audio()
+{
+    if (mp3->isRunning() == false) 
+    {
+        file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
+        id3 = new AudioFileSourceID3(file);
+        mp3 = new AudioGeneratorMP3();
+        mp3->begin(id3, out);
+    }
+}
 
-static void event_handler(lv_obj_t *obj, lv_event_t event)
+//@-lvgl控件事件处理
+void event_handler(lv_obj_t *obj, lv_event_t event)
 {
     if (obj == btn10) {
         send_Data.b = 0;
@@ -149,6 +171,9 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
     }
     else if(obj == btn)
     {
+        //@-播放音效
+        // Run_MP3_Audio();
+
         if(send_Data.e == false) 
         send_Data.e = true;
         else if(send_Data.e == true) 
@@ -651,9 +676,11 @@ void setup()
     ttgo->begin();
     ttgo->openBL();
 
+    #ifdef USE_MP3
     //!Turn on the audio power
     ttgo->enableLDO3();
     Turn_On_Audio();
+    #endif
 
     //@-ttgo初始化电源管理并开启电源监控
     power = ttgo->power;
@@ -680,6 +707,14 @@ void setup()
 void loop()
 {
     system_tick = system_tick + 1;
+
+    #ifdef USE_MP3
+    if (mp3->isRunning()) 
+    {
+        if (!mp3->loop()) 
+        mp3->stop();
+    } 
+    #endif
 
     //@-查询电源管理中断
     check_power_irq();
