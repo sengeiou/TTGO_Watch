@@ -76,6 +76,9 @@ lv_obj_t * chart;
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
 
+lv_obj_t * ta;
+lv_obj_t * pwd_ta;
+lv_obj_t * kb;
 
 
 bool btn2_flag = true;
@@ -201,6 +204,44 @@ static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
     }
 }
 
+//@-textare 
+void ta_event_cb(lv_obj_t * ta, lv_event_t event)
+{
+    if(event == LV_EVENT_CLICKED) {
+        /* Focus on the clicked text area */
+        if(kb != NULL)
+        {
+            lv_obj_set_hidden(kb,false);
+            lv_keyboard_set_textarea(kb, ta);
+        }
+
+    }
+
+    // else if(event == LV_EVENT_INSERT) {
+    //     char * str = lv_event_get_data();
+    //     // if(str[0] == '\n') {
+    //     //     // printf("Ready\n");
+    //     // }
+    // }
+}
+
+//@-keyboard
+void kb_event_cb(lv_obj_t * event_kb, lv_event_t event)
+{
+    if(event == LV_EVENT_APPLY ) {
+      Serial.println("keyboard---> LV_EVENT_APPLY\n");
+    }
+    else if(event == LV_EVENT_CANCEL ) {
+      Serial.println("keyboard---> LV_EVENT_CANCEL\n");
+    //   lv_obj_del(kb);
+      lv_obj_set_hidden(kb,true);
+    }
+    
+    /* Just call the regular event handler */
+    lv_keyboard_def_event_cb(event_kb, event);
+    
+}
+
 
 void lv_ex_tileview_1(void)
 {
@@ -218,6 +259,28 @@ void lv_ex_tileview_1(void)
     lv_style_init(&led7_style);
     lv_style_set_text_color(&led7_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&led7_style, LV_STATE_DEFAULT, &dxLED7);
+
+    static lv_style_t style_cont1;
+    lv_style_init(&style_cont1);
+    lv_style_set_bg_opa(&style_cont1, LV_STATE_DEFAULT, LV_OPA_COVER);
+    // lv_style_set_bg_color(&style_cont1, LV_STATE_DEFAULT, lv_color_hex(0x00E500));
+    lv_style_set_bg_color(&style_cont1, LV_STATE_DEFAULT, lv_color_hex(0xFFC64B));
+
+    static lv_style_t style_cont2;
+    lv_style_init(&style_cont2);
+    lv_style_set_bg_opa(&style_cont2, LV_STATE_DEFAULT, LV_OPA_COVER);
+    lv_style_set_bg_color(&style_cont2, LV_STATE_DEFAULT, lv_color_hex(0x0AA344));
+
+    static lv_style_t style_cont3;
+    lv_style_init(&style_cont3);
+    lv_style_set_bg_opa(&style_cont3, LV_STATE_DEFAULT, LV_OPA_COVER);
+    lv_style_set_bg_color(&style_cont3, LV_STATE_DEFAULT, lv_color_hex(0xF47983));
+
+    static lv_style_t style_cont4;
+    lv_style_init(&style_cont4);
+    lv_style_set_bg_opa(&style_cont4, LV_STATE_DEFAULT, LV_OPA_COVER);
+    lv_style_set_bg_color(&style_cont4, LV_STATE_DEFAULT, lv_color_hex(0x801DAE));
+
 
     // static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {1,0}, {1,1}};
     static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {1,0}, {1,1}, {1,2}};
@@ -257,21 +320,46 @@ void lv_ex_tileview_1(void)
     lv_tileview_set_tile_act(tileview, 1, 2, LV_ANIM_OFF);
 
     //------------------------------tile_0_0-----------------------------------------------------
+    /* Create the text area */
+    ta = lv_textarea_create(tile_0_0, NULL);
+    lv_obj_set_size(ta,  100, 30);
+    lv_obj_align(ta, NULL, LV_ALIGN_CENTER, -60, -60);
+    lv_obj_set_event_cb(ta, ta_event_cb);
+    // lv_textarea_set_accepted_chars(ta, "0123456789:");
+    lv_textarea_set_max_length(ta, 10);
+    lv_textarea_set_one_line(ta, true);
+    lv_textarea_set_text(ta, "");
+
+    /* Create the password box */
+    pwd_ta = lv_textarea_create(tile_0_0, NULL);
+    lv_obj_set_size(pwd_ta, 100, 30);
+    lv_obj_align(pwd_ta, NULL, LV_ALIGN_CENTER, 50, -60);
+    lv_obj_set_event_cb(pwd_ta, ta_event_cb);
+    lv_textarea_set_text(pwd_ta, "");
+    lv_textarea_set_pwd_mode(pwd_ta, true);
+    lv_textarea_set_one_line(pwd_ta, true);
+    lv_textarea_set_cursor_hidden(pwd_ta, true);
+
+    /* Create a keyboard*/
+    kb = lv_keyboard_create(tile_0_0, NULL);
+    lv_obj_set_size(kb,  LV_HOR_RES, 120);
+    lv_obj_align(kb, NULL, LV_ALIGN_CENTER, 0, 40);
+    lv_obj_set_event_cb(kb, kb_event_cb); /* Setting a custom event handler stops the keyboard from closing automatically */
+    lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_NUM);
+    lv_keyboard_set_textarea(kb, ta);/* Focus it on one of the text areas to start */
+    lv_keyboard_set_cursor_manage(kb, true); /* Automatically show/hide cursors on text areas */
+
+
     btn = lv_btn_create(tile_0_0, NULL);
     lv_obj_set_event_cb(btn, event_handler);
     lv_obj_align(btn, NULL, LV_ALIGN_CENTER, 0, 10);
 
     lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
-    // lv_obj_t *label_0_1 = lv_label_create( tile_0_1, NULL);
-    lv_obj_t *label_1_1 = lv_label_create( tile_1_1, NULL);
-    
-
-    label_data = lv_label_create( tile_0_0, NULL);
-
     lv_obj_add_style(label_0_0, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text( label_0_0, "0-中国"); 
     lv_obj_align( label_0_0, NULL, LV_ALIGN_CENTER,0,0);
 
+    label_data = lv_label_create( tile_0_0, NULL);
     lv_obj_add_style(label_data, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
     lv_obj_align( label_data, NULL, LV_ALIGN_CENTER,0,45);
@@ -280,22 +368,22 @@ void lv_ex_tileview_1(void)
     btn10 = lv_btn_create(tile_0_1, NULL);
     lv_obj_set_width(btn10, 60);
     lv_obj_set_event_cb(btn10, event_handler);
-    lv_obj_align(btn10, NULL, LV_ALIGN_IN_TOP_MID, -30, 10);
+    lv_obj_align(btn10, NULL, LV_ALIGN_IN_TOP_MID, -30, 10);  //0
 
     btn20 = lv_btn_create(tile_0_1, NULL);
     lv_obj_set_width(btn20, 60);
     lv_obj_set_event_cb(btn20, event_handler);
-    lv_obj_align(btn20, btn10, LV_ALIGN_IN_TOP_MID, 65, 0);
+    lv_obj_align(btn20, btn10, LV_ALIGN_IN_TOP_MID, 65, 0);  //180
 
     btn30 = lv_btn_create(tile_0_1, NULL);
     lv_obj_set_width(btn30, 60);
     lv_obj_set_event_cb(btn30, event_handler);
-    lv_obj_align(btn30, NULL, LV_ALIGN_IN_TOP_MID, -30, 70);
+    lv_obj_align(btn30, NULL, LV_ALIGN_IN_TOP_MID, -30, 70);  //+
 
     btn40 = lv_btn_create(tile_0_1, NULL);
     lv_obj_set_width(btn40, 60);
     lv_obj_set_event_cb(btn40, event_handler);
-    lv_obj_align(btn40, btn30, LV_ALIGN_IN_TOP_MID, 65, 0);
+    lv_obj_align(btn40, btn30, LV_ALIGN_IN_TOP_MID, 65, 0);  //-
 
     label = lv_label_create(btn10, NULL);
     lv_obj_add_style(label, LV_OBJ_PART_MAIN, &led_style);
@@ -337,9 +425,53 @@ void lv_ex_tileview_1(void)
     lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, 0);
 
     //------------------------------tile_1_1-----------------------------------------------------
-    lv_obj_add_style(label_1_1, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text( label_1_1, "4-关闭"); 
-    lv_obj_align( label_1_1, NULL, LV_ALIGN_CENTER,0,0);
+    lv_obj_t * cont1;
+    cont1 = lv_cont_create(tile_1_1, NULL);
+    // lv_obj_set_auto_realign(cont1, true);                    /*Auto realign when the size changes*/
+    lv_obj_set_size(cont1, 100, 100);
+    lv_obj_align_origo(cont1, NULL, LV_ALIGN_IN_TOP_LEFT, 60, 60);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(cont1, LV_OBJ_PART_MAIN, &style_cont1);
+    // lv_cont_set_fit(cont1, LV_FIT_TIGHT);
+    // lv_cont_set_layout(cont1, LV_LAYOUT_COLUMN_MID);
+    // lv_cont_set_style(cont1,LV_CONT_PART_MAIN,&style_cont1);
+    lv_obj_t *sw1 = lv_switch_create(cont1, NULL);
+    lv_obj_align(sw1, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_event_cb(sw1, event_handler);
+
+    lv_obj_t * cont2;
+    cont2 = lv_cont_create(tile_1_1, NULL);
+    // lv_obj_set_auto_realign(cont2, true);                    /*Auto realign when the size changes*/
+    lv_obj_set_size(cont2, 100, 100);
+    lv_obj_align_origo(cont2, NULL, LV_ALIGN_IN_TOP_RIGHT, -60, 60);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(cont2, LV_OBJ_PART_MAIN, &style_cont2);
+    lv_obj_t *sw2 = lv_switch_create(cont2, NULL);
+    lv_obj_align(sw2, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_event_cb(sw2, event_handler);
+
+    lv_obj_t * cont3;
+    cont3 = lv_cont_create(tile_1_1, NULL);
+    // lv_obj_set_auto_realign(cont3, true);                    /*Auto realign when the size changes*/
+    lv_obj_set_size(cont3, 100, 100);
+    lv_obj_align_origo(cont3, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 60, -60);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(cont3, LV_OBJ_PART_MAIN, &style_cont3);
+    lv_obj_t *sw3 = lv_switch_create(cont3, NULL);
+    lv_obj_align(sw3, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_event_cb(sw3, event_handler);
+
+    lv_obj_t * cont4;
+    cont4 = lv_cont_create(tile_1_1, NULL);
+    // lv_obj_set_auto_realign(cont3, true);                    /*Auto realign when the size changes*/
+    lv_obj_set_size(cont4, 100, 100);
+    lv_obj_align_origo(cont4, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, -60, -60);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(cont4, LV_OBJ_PART_MAIN, &style_cont4);
+    lv_obj_t *sw4 = lv_switch_create(cont4, NULL);
+    lv_obj_align(sw4, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_event_cb(sw4, event_handler);
+
+
+    // lv_obj_add_style(label_1_1, LV_OBJ_PART_MAIN, &model_style);
+    // lv_label_set_text( label_1_1, "4-关闭"); 
+    // lv_obj_align( label_1_1, NULL, LV_ALIGN_CENTER,0,0);
 
     //------------------------------tile_0_2-----------------------------------------------------
     chart = lv_chart_create(tile_0_2, NULL);
@@ -393,25 +525,6 @@ void lv_ex_tileview_1(void)
     lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,91,125);
 
 }
-
-
-void lv_ex_keyboard_1(void)
-{
-    /*Create a keyboard and apply the styles*/
-    lv_obj_t *kb = lv_keyboard_create(lv_scr_act(), NULL);
-    lv_keyboard_set_cursor_manage(kb, true);
-
-    /*Create a text area. The keyboard will write here*/
-    lv_obj_t *ta = lv_textarea_create(lv_scr_act(), NULL);
-    lv_obj_align(ta, NULL, LV_ALIGN_IN_TOP_MID, 0, LV_DPI / 16);
-    lv_textarea_set_text(ta, "");
-    lv_coord_t max_h = LV_VER_RES / 2 - LV_DPI / 8;
-    if(lv_obj_get_height(ta) > max_h) lv_obj_set_height(ta, max_h);
-
-    /*Assign the text area to the keyboard*/
-    lv_keyboard_set_textarea(kb, ta);
-}
-
 
 void lv_ex_img_1(void)
 {
@@ -701,6 +814,7 @@ void setup()
     lv_ex_tileview_1();
     // lv_ex_keyboard_1();
     // lv_ex_img_1();
+    // lv_ex_keyboard_1();
 
 }
 
@@ -726,7 +840,6 @@ void loop()
     if(system_tick > 100)
     {
         system_tick = 0;
-
 
         // PCF_TIMEFORMAT_HM,
         // PCF_TIMEFORMAT_HMS,
