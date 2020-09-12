@@ -18,7 +18,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
-//@-用户音频文件
+//@-配置用户音频文件
 #include "./audio/geji.h"
 
 //@-配置用户字体
@@ -51,7 +51,7 @@ AudioFileSourceID3 *id3;
 #endif
 
 //@-lvgl 控件
-lv_obj_t * btn;
+lv_obj_t *btn;
 lv_obj_t *btn2;
 
 lv_obj_t *btn10;
@@ -283,39 +283,47 @@ void lv_ex_tileview_1(void)
 
 
     // static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {1,0}, {1,1}};
-    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {1,0}, {1,1}, {1,2}};
+    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {0,3}, {1,0}, {1,1}, {1,2}, {1,3}};
     lv_obj_t *tileview;
     tileview = lv_tileview_create(lv_scr_act(), NULL);
-    lv_tileview_set_valid_positions(tileview, valid_pos, 6);
+    lv_tileview_set_valid_positions(tileview, valid_pos, 8);
     lv_tileview_set_edge_flash(tileview, true);
 
     lv_obj_t* tile_0_0 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_0_1 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_0_2 = lv_obj_create( tileview, NULL);
+    lv_obj_t* tile_0_3 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_1_0 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_1_1 = lv_obj_create( tileview, NULL);
     lv_obj_t* tile_1_2 = lv_obj_create( tileview, NULL);
+    lv_obj_t* tile_1_3 = lv_obj_create( tileview, NULL);
 
     lv_obj_set_size( tile_0_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_1, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_2, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_0_3, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_1, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_2, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_1_3, LV_HOR_RES,LV_VER_RES);
 
     lv_obj_set_pos( tile_0_0, 0,   0);
     lv_obj_set_pos( tile_0_1, 0,   LV_VER_RES);
     lv_obj_set_pos( tile_0_2, 0,   2*LV_VER_RES);
+    lv_obj_set_pos( tile_0_3, 0,   3*LV_VER_RES);
     lv_obj_set_pos( tile_1_0, LV_HOR_RES,   0);
     lv_obj_set_pos( tile_1_1, LV_HOR_RES,   LV_VER_RES);
     lv_obj_set_pos( tile_1_2, LV_HOR_RES,   2*LV_VER_RES);
+    lv_obj_set_pos( tile_1_3, LV_HOR_RES,   3*LV_VER_RES);
 
     lv_tileview_add_element(tileview, tile_0_0 );
     lv_tileview_add_element(tileview, tile_0_1 );
     lv_tileview_add_element(tileview, tile_0_2 );
+    lv_tileview_add_element(tileview, tile_0_3 );
     lv_tileview_add_element(tileview, tile_1_0 );
     lv_tileview_add_element(tileview, tile_1_1 );
     lv_tileview_add_element(tileview, tile_1_2 );
+    lv_tileview_add_element(tileview, tile_1_3 );
 
     lv_tileview_set_tile_act(tileview, 1, 2, LV_ANIM_OFF);
 
@@ -508,6 +516,28 @@ void lv_ex_tileview_1(void)
     ser2->points[9] = 65;
 
     lv_chart_refresh(chart); /*Required after direct set*/
+
+    //------------------------------tile_0_3-----------------------------------------------------
+    /*Create a window*/
+    lv_obj_t * win = lv_win_create(tile_0_3, NULL);
+    lv_win_set_title(win, "Window title");                        /*Set the title*/
+
+    /*Add control button to the header*/
+    lv_obj_t * close_btn = lv_win_add_btn(win, LV_SYMBOL_CLOSE);   /*Add close button and use built-in close action*/
+    // lv_obj_set_event_cb(close_btn, lv_win_close_event_cb);
+    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
+    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
+
+    /*Add some dummy content*/
+    lv_obj_t * txt = lv_label_create(win, NULL);
+    lv_label_set_text(txt, "This is the content of the window\n\n"
+                           "You can add control buttons to\n"
+                           "the window header\n\n"
+                           "The content area becomes\n"
+                           "automatically scrollable is it's \n"
+                           "large enough.\n\n"
+                           " You can scroll the content\n"
+    );
 
     //------------------------------tile_1_2-----------------------------------------------------
     lv_obj_t * img = lv_img_create(tile_1_2, NULL);
