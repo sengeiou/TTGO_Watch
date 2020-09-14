@@ -104,6 +104,7 @@ void setup() {
   myservo.setPeriodHertz(50);    // standard 50 hz servo
   myservo.attach(servoPin, 500, 2500); // attaches the servo on pin 18 to the servo object
 
+  #if 0
   Ethernet.init(5);
 
   // start the Ethernet
@@ -112,9 +113,9 @@ void setup() {
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware) {
     Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
-    while (true) {
-      delay(1); // do nothing, no point running without Ethernet hardware
-    }
+    // while (true) {
+    //   delay(1); // do nothing, no point running without Ethernet hardware
+    // }
   }
   if (Ethernet.linkStatus() == LinkOFF) {  
     Serial.println("Ethernet cable is not connected.");
@@ -123,6 +124,7 @@ void setup() {
   // start UDP
   Udp.begin(23302);
   // Udp.beginMulticast(ip1, 23302);
+  #endif
  
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
@@ -186,6 +188,7 @@ void loop() {
     digitalWrite(2, LOW);
   }
 
+  #if 0
   // if there's data available, read a packet
   int packetSize = Udp.parsePacket();
   if (packetSize) {
@@ -218,16 +221,20 @@ void loop() {
 //    Udp.write(ReplyBuffer);
 //    Udp.endPacket();
   }
+  #endif
 
 
   if(count > 10)
   {
     count = 0;
+
+    #if 0
     // send a reply to the IP address and port that sent us the packet we received
     Udp.beginPacket(ip1, 23602);
     // Udp.write(ReplyBuffer);  //write str
     Udp.write(ReplyBuffer,128);  //write byte
     Udp.endPacket();  
+    #endif
 
 
     // Set values to send
