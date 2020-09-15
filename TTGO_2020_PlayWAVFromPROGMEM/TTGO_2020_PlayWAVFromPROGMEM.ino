@@ -19,8 +19,8 @@
 #include "AudioOutputI2S.h"
 
 // VIOLA sample taken from https://ccrma.stanford.edu/~jos/pasp/Sound_Examples.html
-#include "viola.h"
-// #include "geji_192_wav.h"
+// #include "viola.h"
+#include "geji_44k_wav.h"
 
 TTGOClass *ttgo;
 
@@ -31,7 +31,6 @@ AudioOutputI2S *out;
 
 void setup()
 {
-  WiFi.mode(WIFI_OFF); 
   Serial.begin(115200);
   ttgo = TTGOClass::getWatch();
   ttgo->begin();
@@ -46,8 +45,6 @@ void setup()
   //!Turn on the audio power
   ttgo->enableLDO3();
 
-  delay(1000);
-
   out = new AudioOutputI2S();
   // out = new AudioOutputI2SNoDAC();
   //External DAC decoding
@@ -55,7 +52,7 @@ void setup()
 
   Serial.printf("WAV start\n");
 
-  file = new AudioFileSourcePROGMEM( viola, sizeof(viola) );
+  file = new AudioFileSourcePROGMEM(geji_44k_wav, sizeof(geji_44k_wav) );
   // out = new AudioOutputI2SNoDAC();
   wav = new AudioGeneratorWAV();
   wav->begin(file, out);

@@ -28,7 +28,8 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 
 #ifdef USE_MP3
-#include "door1.h"
+// #include "door1.h"
+#include "geji_44k_mp3.h"
 #else
 #include "new_wav.h"
 #endif
@@ -61,7 +62,7 @@ void setup()
     ttgo->enableLDO3();
 
     #ifdef USE_MP3
-    file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
+    file = new AudioFileSourcePROGMEM(geji_44k_mp3, sizeof(geji_44k_mp3));
     id3 = new AudioFileSourceID3(file);
     #else
     file = new AudioFileSourcePROGMEM(new_wav, sizeof(new_wav));
@@ -105,7 +106,8 @@ void loop()
         Serial.printf("MP3 done\n");
         delay(5000);
 
-        file = new AudioFileSourcePROGMEM(door1, sizeof(door1));
+        file = new AudioFileSourcePROGMEM(geji_44k_mp3, sizeof(geji_44k_mp3));
+
         #ifdef USE_MP3
         id3 = new AudioFileSourceID3(file);
         mp3 = new AudioGeneratorMP3();
