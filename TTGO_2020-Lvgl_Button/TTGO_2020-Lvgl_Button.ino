@@ -5,7 +5,15 @@ git clone https://github.com/earlephilhower/ESP8266Audio
 git clone https://github.com/Gianbacchio/ESP8266_Spiram
 */
 
+/*
+* firmeware version string
+*/
+#define __FIRMWARE__            "20200916"
+
 #define USE_MP3
+
+#define DISPLAY_MIN_BRIGHTNESS      8
+#define DISPLAY_MAX_BRIGHTNESS      255
 
 #include "config.h"
 #include <esp_now.h>
@@ -20,19 +28,23 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 //@-配置用户音频文件
 #include "./audio/geji_44k_mp3.h"
+// #include "./audio/geji_robot.h"
 #include "./audio/beep_24_mp3.h"
-// #include "./audio/select05_mp3.h"
+#include "./audio/laozigun_robot.h"
 
 
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
 LV_FONT_DECLARE(dxLED7);
+LV_FONT_DECLARE(dxLED7_60);
 LV_FONT_DECLARE(myLED_Font);
+
 
 //@-配置用户图片数据
 // LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_BG);
 LV_IMG_DECLARE(rich);
+
 
 //@-TTGO
 TTGOClass *ttgo;
@@ -78,6 +90,9 @@ lv_obj_t * chart;
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
+
+static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event);
+static lv_obj_t * slider_light_label;
 
 lv_obj_t * ta;
 lv_obj_t * pwd_ta;
@@ -207,6 +222,21 @@ static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
     }
 }
 
+static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) {
+        static char buf[20]; /* max 3 bytes for number plus 1 null terminating byte */
+        static int  value;
+
+        value = lv_slider_get_value(slider);
+
+        snprintf(buf, 20, "杭州:%u", value);
+        lv_label_set_text(slider_light_label, buf);
+
+        ttgo->bl->adjust( value );
+    }
+}
+
 //@-textare 
 void ta_event_cb(lv_obj_t * ta, lv_event_t event)
 {
@@ -262,6 +292,11 @@ void lv_ex_tileview_1(void)
     lv_style_init(&led7_style);
     lv_style_set_text_color(&led7_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&led7_style, LV_STATE_DEFAULT, &dxLED7);
+
+    static lv_style_t led7_big_style;
+    lv_style_init(&led7_big_style);
+    lv_style_set_text_color(&led7_big_style, LV_STATE_DEFAULT, LV_COLOR_YELLOW);
+    lv_style_set_text_font(&led7_big_style, LV_STATE_DEFAULT, &dxLED7_60);
 
     static lv_style_t style_cont1;
     lv_style_init(&style_cont1);
@@ -426,9 +461,19 @@ void lv_ex_tileview_1(void)
     lv_obj_set_auto_realign(slider_label, true);
     lv_obj_align(slider_label, slider, LV_ALIGN_CENTER, 0, 15);
 
-    // lv_obj_add_style(label_0_1, LV_OBJ_PART_MAIN, &model_style);
-    // lv_label_set_text( label_0_1, "1-杭州"); 
-    // lv_obj_align( label_0_1, NULL, LV_ALIGN_CENTER,0,0);
+    //@-调整屏幕背光
+    lv_obj_t * slider_light = lv_slider_create(tile_0_1, NULL);
+    lv_obj_set_width(slider_light, LV_DPI * 1);
+    lv_obj_align(slider_light, slider_label, LV_ALIGN_CENTER, 0, 30);
+    lv_obj_set_event_cb(slider_light, slider_light_event_cb);
+    lv_slider_set_range(slider_light, DISPLAY_MIN_BRIGHTNESS, DISPLAY_MAX_BRIGHTNESS);
+
+    /* Create a label below the slider */
+    slider_light_label = lv_label_create(tile_0_1, NULL);
+    lv_obj_add_style(slider_light_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(slider_light_label, "杭州:0");
+    lv_obj_set_auto_realign(slider_light_label, true);
+    lv_obj_align(slider_light_label, slider_light, LV_ALIGN_CENTER, 0, 15);
 
     //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
@@ -548,14 +593,14 @@ void lv_ex_tileview_1(void)
     lv_obj_align(img, NULL, LV_ALIGN_CENTER, 0, 0);
 
     label_time = lv_label_create( tile_1_2, NULL);
-    lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_style);
+    lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_big_style);
     lv_label_set_text( label_time, "10:23"); 
-    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,91,91);
+    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,60,91);
 
     label_batt = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_batt, LV_OBJ_PART_MAIN, &led7_style);
     lv_label_set_text( label_batt, "NONE"); 
-    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,91,125);
+    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,91,150);
 
 }
 
@@ -770,7 +815,7 @@ void check_touch_pro()
 void Turn_On_Audio()
 {
     // file = new AudioFileSourcePROGMEM(image, sizeof(image));
-    file = new AudioFileSourcePROGMEM(beep_24_mp3, sizeof(beep_24_mp3));
+    file = new AudioFileSourcePROGMEM(laozigun_robot, sizeof(laozigun_robot));
     id3 = new AudioFileSourceID3(file);
 
     #if defined(STANDARD_BACKPLANE)
@@ -822,6 +867,7 @@ void setup()
     ttgo = TTGOClass::getWatch();
     ttgo->begin();
     ttgo->openBL();
+    ttgo->bl->adjust( 80 );
 
     #ifdef USE_MP3
     //!Turn on the audio power
