@@ -28,7 +28,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 //@-配置用户音频文件
 #include "./audio/geji_44k_mp3.h"
-// #include "./audio/geji_robot.h"
+#include "./audio/select05_mp3.h"
 #include "./audio/beep_24_mp3.h"
 #include "./audio/laozigun_robot.h"
 
@@ -88,6 +88,11 @@ lv_obj_t *label_batt;
 /*Create a chart*/
 lv_obj_t * chart;
 
+lv_obj_t *sw1;
+lv_obj_t *sw2;
+lv_obj_t *sw3;
+lv_obj_t *sw4;
+
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
 
@@ -141,12 +146,29 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 //   Serial.println();
 }
     
+
 //@-播放MP3
-void Run_MP3_Audio()
+// void Run_MP3_Audio(const void *filename_audio)
+// void Run_MP3_Audio(int audio_num)
+void Run_MP3_Audio(const void *filename_audio, uint32_t len)
 {
+    /**
+    AudioFileSourcePROGMEM::AudioFileSourcePROGMEM(const void *data, uint32_t len)
+    {
+    open(data, len);
+    }
+    */
     if (mp3->isRunning() == false) 
     {
-        file = new AudioFileSourcePROGMEM(geji_44k_mp3, sizeof(geji_44k_mp3));
+        // if(audio_num == 1)
+        // file = new AudioFileSourcePROGMEM(geji_44k_mp3, sizeof(geji_44k_mp3));
+        // else if(audio_num == 2)
+        // file = new AudioFileSourcePROGMEM(select05_mp3, sizeof(select05_mp3));
+        // else if(audio_num == 3)
+        // file = new AudioFileSourcePROGMEM(beep_24_mp3, sizeof(beep_24_mp3));
+        // else if(audio_num == 4)
+        // file = new AudioFileSourcePROGMEM(laozigun_robot, sizeof(laozigun_robot));
+        file = new AudioFileSourcePROGMEM(filename_audio, len);
         id3 = new AudioFileSourceID3(file);
         mp3 = new AudioGeneratorMP3();
         mp3->begin(id3, out);
@@ -193,9 +215,6 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     }
     else if(obj == btn)
     {
-        //@-播放音效
-        Run_MP3_Audio();
-
         if(send_Data.e == false) 
         send_Data.e = true;
         else if(send_Data.e == true) 
@@ -206,6 +225,32 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         // Send message via ESP-NOW
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     }
+
+    else if(obj == sw1)
+    {
+        //@-播放音效
+        // Run_MP3_Audio(1);
+        Run_MP3_Audio(&geji_44k_mp3, sizeof(geji_44k_mp3));
+    }
+    else if(obj == sw2)
+    {
+        //@-播放音效
+        // Run_MP3_Audio(2);
+        Run_MP3_Audio(&select05_mp3, sizeof(select05_mp3));
+    }
+    else if(obj == sw3)
+    {
+        //@-播放音效
+        // Run_MP3_Audio(3);
+        Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
+    }
+    else if(obj == sw4)
+    {
+        //@-播放音效
+        // Run_MP3_Audio(4);
+        Run_MP3_Audio(&laozigun_robot, sizeof(laozigun_robot));
+    }
+
 }
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
@@ -490,7 +535,7 @@ void lv_ex_tileview_1(void)
     // lv_cont_set_fit(cont1, LV_FIT_TIGHT);
     // lv_cont_set_layout(cont1, LV_LAYOUT_COLUMN_MID);
     // lv_cont_set_style(cont1,LV_CONT_PART_MAIN,&style_cont1);
-    lv_obj_t *sw1 = lv_switch_create(cont1, NULL);
+    sw1 = lv_switch_create(cont1, NULL);
     lv_obj_align(sw1, NULL, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_event_cb(sw1, event_handler);
 
@@ -500,7 +545,7 @@ void lv_ex_tileview_1(void)
     lv_obj_set_size(cont2, 100, 100);
     lv_obj_align_origo(cont2, NULL, LV_ALIGN_IN_TOP_RIGHT, -60, 60);  /*This parametrs will be sued when realigned*/
     lv_obj_add_style(cont2, LV_OBJ_PART_MAIN, &style_cont2);
-    lv_obj_t *sw2 = lv_switch_create(cont2, NULL);
+    sw2 = lv_switch_create(cont2, NULL);
     lv_obj_align(sw2, NULL, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_event_cb(sw2, event_handler);
 
@@ -510,7 +555,7 @@ void lv_ex_tileview_1(void)
     lv_obj_set_size(cont3, 100, 100);
     lv_obj_align_origo(cont3, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 60, -60);  /*This parametrs will be sued when realigned*/
     lv_obj_add_style(cont3, LV_OBJ_PART_MAIN, &style_cont3);
-    lv_obj_t *sw3 = lv_switch_create(cont3, NULL);
+    sw3 = lv_switch_create(cont3, NULL);
     lv_obj_align(sw3, NULL, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_event_cb(sw3, event_handler);
 
@@ -520,7 +565,7 @@ void lv_ex_tileview_1(void)
     lv_obj_set_size(cont4, 100, 100);
     lv_obj_align_origo(cont4, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, -60, -60);  /*This parametrs will be sued when realigned*/
     lv_obj_add_style(cont4, LV_OBJ_PART_MAIN, &style_cont4);
-    lv_obj_t *sw4 = lv_switch_create(cont4, NULL);
+    sw4 = lv_switch_create(cont4, NULL);
     lv_obj_align(sw4, NULL, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_event_cb(sw4, event_handler);
 
