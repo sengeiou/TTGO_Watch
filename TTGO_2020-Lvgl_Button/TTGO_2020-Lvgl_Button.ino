@@ -16,13 +16,14 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #define DISPLAY_MAX_BRIGHTNESS      255
 
 
-#define MAIN_BACKPIC_NUM_1    //宇航员
-// #define MAIN_BACKPIC_NUM_2    //开心最重要
+// #define MAIN_BACKPIC_NUM_1    //宇航员
+#define MAIN_BACKPIC_NUM_2    //开心最重要
 
 
 #include "config.h"
 #include <esp_now.h>
 #include <WiFi.h>
+#include <Update.h>
 
 //@-audio
 #include <HTTPClient.h>         //Remove Audio Lib error
@@ -363,7 +364,7 @@ void lv_ex_tileview_1(void)
     static lv_style_t led7_style_white;
     lv_style_init(&led7_style_white);
     // lv_style_set_text_color(&led7_style_white, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-    lv_style_set_text_color(&led7_style_white, LV_STATE_DEFAULT, lv_color_hex(0xFFC64B));
+    lv_style_set_text_color(&led7_style_white, LV_STATE_DEFAULT, lv_color_hex(0x4E7AC5));
     lv_style_set_text_font(&led7_style_white, LV_STATE_DEFAULT, &dxLED7);
 
     static lv_style_t led7_style_red;
@@ -676,19 +677,31 @@ void lv_ex_tileview_1(void)
     lv_label_set_text( label_time, "--:--"); 
     #ifdef MAIN_BACKPIC_NUM_1
     lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,0,91);
-    #else
-    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,70,120);
+    #endif
+    #ifdef MAIN_BACKPIC_NUM_2
+    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,90,150);
     #endif
 
     label_time_date = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_time_date, LV_OBJ_PART_MAIN, &led7_style_white);
-    lv_label_set_text( label_time_date, "----/--/--  --"); 
+    // lv_label_set_text( label_time_date, "----/--/--  --");
+    lv_label_set_text( label_time_date, "--/-- --"); 
+    #ifdef MAIN_BACKPIC_NUM_1
     lv_obj_align( label_time_date, NULL, LV_ALIGN_IN_TOP_LEFT,20,140);
+    #endif
+    #ifdef MAIN_BACKPIC_NUM_2
+    lv_obj_align( label_time_date, NULL, LV_ALIGN_IN_TOP_LEFT,110,10);
+    #endif
 
     label_batt = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_batt, LV_OBJ_PART_MAIN, &led7_style_red);
     lv_label_set_text( label_batt, "--"); 
+    #ifdef MAIN_BACKPIC_NUM_1
     lv_obj_align( label_batt, NULL, LV_ALIGN_IN_BOTTOM_RIGHT,-25,-10);
+    #endif
+    #ifdef MAIN_BACKPIC_NUM_2
+    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_BOTTOM_RIGHT,-20,-85);
+    #endif
 
 }
 
@@ -1010,25 +1023,26 @@ void Display_TimeBAT_Info()
     switch (DayOfWeek)
     {
     case 1:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "MON");
+        // snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d %s", dt.year, dt.month, dt.day, "MON");
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "MON");
         break;
     case 2:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "TUES");
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "TUES");
         break;
     case 3:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "WED");
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "WED");
         break;
     case 4:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "THUR");
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "THUR");
         break;
     case 5:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "FRI");
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "FRI");
         break;
     case 6:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SAT");
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "SAT");
         break;
     case 7:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SUN");
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "SUN");
         break;
     
     default:
