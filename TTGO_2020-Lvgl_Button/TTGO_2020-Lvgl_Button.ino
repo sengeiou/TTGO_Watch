@@ -81,6 +81,7 @@ lv_obj_t *label_data;
 
 //@-RTC时间显示
 lv_obj_t *label_time; 
+lv_obj_t *label_time_date; 
 
 //@-实时电量显示
 lv_obj_t *label_batt;
@@ -125,6 +126,7 @@ uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
 char display_buf[128];
 int system_tick = 0;
 int System_Sleep_Tick = 0;
+
 
 
 // callback function that will be executed when data is received
@@ -639,13 +641,18 @@ void lv_ex_tileview_1(void)
 
     label_time = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_big_style);
-    lv_label_set_text( label_time, "10:23"); 
+    lv_label_set_text( label_time, "--:--"); 
     lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,60,91);
+
+    label_time_date = lv_label_create( tile_1_2, NULL);
+    lv_obj_add_style(label_time_date, LV_OBJ_PART_MAIN, &led7_style);
+    lv_label_set_text( label_time_date, "----/--/--  --"); 
+    lv_obj_align( label_time_date, NULL, LV_ALIGN_IN_TOP_LEFT,20,145);
 
     label_batt = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_batt, LV_OBJ_PART_MAIN, &led7_style);
     lv_label_set_text( label_batt, "NONE"); 
-    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,91,150);
+    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,70,180);
 
 }
 
@@ -787,8 +794,8 @@ void check_power_irq()
         //GPIO_SEL_38为touch中断 - 已测试ok
         //GPIO_SEL_39为3轴中断 - 已测试ok
         //@-配置ttgo唤醒模式
-        // esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
-        esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
+        esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
+        // esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
 
 
         //@-ttgo深度sleep模式工作
@@ -817,6 +824,7 @@ void check_bma_irq()
         //GPIO_SEL_38为touch中断 - 已测试ok
         //GPIO_SEL_39为3轴中断 - 已测试ok
         //@-配置ttgo唤醒模式
+        // esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
         esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
 
         //@-ttgo深度sleep模式工作
@@ -849,7 +857,8 @@ void check_touch_pro()
         //GPIO_SEL_38为touch中断 - 已测试ok
         //GPIO_SEL_39为3轴中断 - 已测试ok
         //@-配置ttgo唤醒模式
-        esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
+        esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
+        // esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
 
         //@-ttgo深度sleep模式工作
         esp_deep_sleep_start();
@@ -872,6 +881,16 @@ void Turn_On_Audio()
     #endif
     mp3 = new AudioGeneratorMP3();
     mp3->begin(id3, out);
+}
+
+//@-设置RTC
+void Set_RTC()
+{
+   ttgo->rtc->disableAlarm();
+
+   ttgo->rtc->setDateTime(2020, 9, 17, 9, 57, 10);
+
+   ttgo->rtc->enableAlarm();
 }
 
 //@-配置
@@ -912,7 +931,10 @@ void setup()
     ttgo = TTGOClass::getWatch();
     ttgo->begin();
     ttgo->openBL();
-    ttgo->bl->adjust( 80 );
+    ttgo->bl->adjust( 30 );
+
+    //@-设置RTC
+    // Set_RTC();
 
     #ifdef USE_MP3
     //!Turn on the audio power
@@ -965,11 +987,44 @@ void loop()
     {
         system_tick = 0;
 
+        RTC_Date dt = ttgo->rtc->getDateTime();
+        int DayOfWeek = ttgo->rtc->getDayOfWeek(dt.day, dt.month, dt.year);
+
         // PCF_TIMEFORMAT_HM,
         // PCF_TIMEFORMAT_HMS,
         //@-显示实时时间
         sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
         lv_label_set_text_fmt( label_time, "%s", display_buf); 
+
+        switch (DayOfWeek)
+        {
+        case 1:
+            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "MON");
+            break;
+        case 2:
+            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "TUES");
+            break;
+        case 3:
+            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "WED");
+            break;
+        case 4:
+            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "THUR");
+            break;
+        case 5:
+            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "FRI");
+            break;
+        case 6:
+            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SAT");
+            break;
+        case 7:
+            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SUN");
+            break;
+        
+        default:
+            break;
+        }
+        // sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD));
+        lv_label_set_text_fmt( label_time_date, "%s", display_buf); 
 
         //@-显示实时电量
         if (power->isChargeing() == false)

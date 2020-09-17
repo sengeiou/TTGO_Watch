@@ -23,7 +23,7 @@ int servoPin = 13;
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 // uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  
-uint8_t broadcastAddress[] = {0x8C, 0xAA, 0xB5, 0x82, 0xEA, 0x58};    //TTGO_2020
+uint8_t broadcastAddress[] = {0x8C, 0xAA, 0xB5, 0x82, 0xEA, 0x58};    //TTGO_2020 白色
 
 // Structure example to send data
 // Must match the receiver structure
@@ -65,6 +65,8 @@ long Recv_Packet_Count = 0;
 
 int data = 0;
 
+bool Ethernet_Connect_Flag = false;
+
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   // Serial.print("\r\nLast Packet Send Status:\t");
@@ -104,7 +106,7 @@ void setup() {
   myservo.setPeriodHertz(50);    // standard 50 hz servo
   myservo.attach(servoPin, 500, 2500); // attaches the servo on pin 18 to the servo object
 
-  #if 0
+  #if 1
   Ethernet.init(5);
 
   // start the Ethernet
@@ -119,11 +121,19 @@ void setup() {
   }
   if (Ethernet.linkStatus() == LinkOFF) {  
     Serial.println("Ethernet cable is not connected.");
+    Ethernet_Connect_Flag = false;
   }
-
-  // start UDP
-  Udp.begin(23302);
-  // Udp.beginMulticast(ip1, 23302);
+  else if (Ethernet.linkStatus() == LinkON)
+  {
+    Ethernet_Connect_Flag = true;
+  }
+  
+  if(Ethernet_Connect_Flag ==  true)
+  {
+    // start UDP
+    Udp.begin(23302);
+    // Udp.beginMulticast(ip1, 23302);
+  }
   #endif
  
   // Set device as a Wi-Fi Station
@@ -188,38 +198,41 @@ void loop() {
     digitalWrite(2, LOW);
   }
 
-  #if 0
-  // if there's data available, read a packet
-  int packetSize = Udp.parsePacket();
-  if (packetSize) {
+  #if 1
+  if(Ethernet_Connect_Flag == true)
+  {
+    // if there's data available, read a packet
+    int packetSize = Udp.parsePacket();
+    if (packetSize) {
 
-    Recv_Packet_Count = Recv_Packet_Count + 1;
+      Recv_Packet_Count = Recv_Packet_Count + 1;
 
-    //@-网络数据包信息
-    // Serial.print("Received packet of size ");
-    // Serial.println(packetSize);
-    // Serial.print("From ");
-    // IPAddress remote = Udp.remoteIP();
-    // for (int i=0; i < 4; i++) {
-    //   Serial.print(remote[i], DEC);
-    //   if (i < 3) {
-    //     Serial.print(".");
-    //   }
-    // }
-    // Serial.print(", port ");
-    // Serial.println(Udp.remotePort());
+      //@-网络数据包信息
+      // Serial.print("Received packet of size ");
+      // Serial.println(packetSize);
+      // Serial.print("From ");
+      // IPAddress remote = Udp.remoteIP();
+      // for (int i=0; i < 4; i++) {
+      //   Serial.print(remote[i], DEC);
+      //   if (i < 3) {
+      //     Serial.print(".");
+      //   }
+      // }
+      // Serial.print(", port ");
+      // Serial.println(Udp.remotePort());
 
-    // read the packet into packetBufffer
-    // Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
-    // Serial.println("Contents:");
-    // Serial.println(packetBuffer);
+      // read the packet into packetBufffer
+      // Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+      // Serial.println("Contents:");
+      // Serial.println(packetBuffer);
 
-    // myservo.write(packetBuffer[0]);
+      // myservo.write(packetBuffer[0]);
 
-    // send a reply to the IP address and port that sent us the packet we received
-//    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-//    Udp.write(ReplyBuffer);
-//    Udp.endPacket();
+      // send a reply to the IP address and port that sent us the packet we received
+  //    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+  //    Udp.write(ReplyBuffer);
+  //    Udp.endPacket();
+    }
   }
   #endif
 
@@ -228,12 +241,15 @@ void loop() {
   {
     count = 0;
 
-    #if 0
-    // send a reply to the IP address and port that sent us the packet we received
-    Udp.beginPacket(ip1, 23602);
-    // Udp.write(ReplyBuffer);  //write str
-    Udp.write(ReplyBuffer,128);  //write byte
-    Udp.endPacket();  
+    #if 1
+    if(Ethernet_Connect_Flag == true)
+    {
+      // send a reply to the IP address and port that sent us the packet we received
+      Udp.beginPacket(ip1, 23602);
+      // Udp.write(ReplyBuffer);  //write str
+      Udp.write(ReplyBuffer,128);  //write byte
+      Udp.endPacket();  
+    }
     #endif
 
 
