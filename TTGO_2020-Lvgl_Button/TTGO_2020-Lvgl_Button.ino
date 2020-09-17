@@ -15,6 +15,11 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #define DISPLAY_MIN_BRIGHTNESS      8
 #define DISPLAY_MAX_BRIGHTNESS      255
 
+
+#define MAIN_BACKPIC_NUM_1    //宇航员
+// #define MAIN_BACKPIC_NUM_2    //开心最重要
+
+
 #include "config.h"
 #include <esp_now.h>
 #include <WiFi.h>
@@ -33,6 +38,8 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "./audio/laozigun_robot.h"
 
 
+
+
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
 LV_FONT_DECLARE(dxLED7);
@@ -42,7 +49,7 @@ LV_FONT_DECLARE(myLED_Font);
 
 //@-配置用户图片数据
 // LV_IMG_DECLARE(me);
-LV_IMG_DECLARE(TTGO_BG);
+LV_IMG_DECLARE(TTGO_Main);
 LV_IMG_DECLARE(rich);
 
 
@@ -94,6 +101,16 @@ lv_obj_t *sw2;
 lv_obj_t *sw3;
 lv_obj_t *sw4;
 
+lv_obj_t *tileview;
+lv_obj_t* tile_0_0;
+lv_obj_t* tile_0_1;
+lv_obj_t* tile_0_2;
+lv_obj_t* tile_0_3;
+lv_obj_t* tile_1_0;
+lv_obj_t* tile_1_1;
+lv_obj_t* tile_1_2;
+lv_obj_t* tile_1_3;
+
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
 
@@ -126,6 +143,9 @@ uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
 char display_buf[128];
 int system_tick = 0;
 int System_Sleep_Tick = 0;
+
+int display_time_bat_info_tick = 0;
+
 
 
 
@@ -253,6 +273,11 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         Run_MP3_Audio(&laozigun_robot, sizeof(laozigun_robot));
     }
 
+    // else if(obj == tile_1_2)
+    // {
+    //     Serial.printf("tile_1_2\n");
+    // }
+
 }
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
@@ -335,10 +360,16 @@ void lv_ex_tileview_1(void)
     lv_style_set_text_color(&led_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&led_style, LV_STATE_DEFAULT, &myLED_Font);
 
-    static lv_style_t led7_style;
-    lv_style_init(&led7_style);
-    lv_style_set_text_color(&led7_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-    lv_style_set_text_font(&led7_style, LV_STATE_DEFAULT, &dxLED7);
+    static lv_style_t led7_style_white;
+    lv_style_init(&led7_style_white);
+    // lv_style_set_text_color(&led7_style_white, LV_STATE_DEFAULT, LV_COLOR_WHITE);
+    lv_style_set_text_color(&led7_style_white, LV_STATE_DEFAULT, lv_color_hex(0xFFC64B));
+    lv_style_set_text_font(&led7_style_white, LV_STATE_DEFAULT, &dxLED7);
+
+    static lv_style_t led7_style_red;
+    lv_style_init(&led7_style_red);
+    lv_style_set_text_color(&led7_style_red, LV_STATE_DEFAULT, LV_COLOR_RED);
+    lv_style_set_text_font(&led7_style_red, LV_STATE_DEFAULT, &dxLED7);
 
     static lv_style_t led7_big_style;
     lv_style_init(&led7_big_style);
@@ -369,19 +400,18 @@ void lv_ex_tileview_1(void)
 
     // static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {1,0}, {1,1}};
     static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {0,3}, {1,0}, {1,1}, {1,2}, {1,3}};
-    lv_obj_t *tileview;
     tileview = lv_tileview_create(lv_scr_act(), NULL);
     lv_tileview_set_valid_positions(tileview, valid_pos, 8);
     lv_tileview_set_edge_flash(tileview, true);
 
-    lv_obj_t* tile_0_0 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_0_1 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_0_2 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_0_3 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_1_0 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_1_1 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_1_2 = lv_obj_create( tileview, NULL);
-    lv_obj_t* tile_1_3 = lv_obj_create( tileview, NULL);
+    tile_0_0 = lv_obj_create( tileview, NULL);
+    tile_0_1 = lv_obj_create( tileview, NULL);
+    tile_0_2 = lv_obj_create( tileview, NULL);
+    tile_0_3 = lv_obj_create( tileview, NULL);
+    tile_1_0 = lv_obj_create( tileview, NULL);
+    tile_1_1 = lv_obj_create( tileview, NULL);
+    tile_1_2 = lv_obj_create( tileview, NULL);
+    tile_1_3 = lv_obj_create( tileview, NULL);
 
     lv_obj_set_size( tile_0_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_1, LV_HOR_RES,LV_VER_RES);
@@ -400,6 +430,8 @@ void lv_ex_tileview_1(void)
     lv_obj_set_pos( tile_1_1, LV_HOR_RES,   LV_VER_RES);
     lv_obj_set_pos( tile_1_2, LV_HOR_RES,   2*LV_VER_RES);
     lv_obj_set_pos( tile_1_3, LV_HOR_RES,   3*LV_VER_RES);
+
+    // lv_obj_set_event_cb(tile_1_2, event_handler);
 
     lv_tileview_add_element(tileview, tile_0_0 );
     lv_tileview_add_element(tileview, tile_0_1 );
@@ -636,23 +668,27 @@ void lv_ex_tileview_1(void)
 
     //------------------------------tile_1_2-----------------------------------------------------
     lv_obj_t * img = lv_img_create(tile_1_2, NULL);
-    lv_img_set_src(img, &TTGO_BG);
+    lv_img_set_src(img, &TTGO_Main);
     lv_obj_align(img, NULL, LV_ALIGN_CENTER, 0, 0);
 
     label_time = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_big_style);
     lv_label_set_text( label_time, "--:--"); 
-    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,60,91);
+    #ifdef MAIN_BACKPIC_NUM_1
+    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,0,91);
+    #else
+    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,70,120);
+    #endif
 
     label_time_date = lv_label_create( tile_1_2, NULL);
-    lv_obj_add_style(label_time_date, LV_OBJ_PART_MAIN, &led7_style);
+    lv_obj_add_style(label_time_date, LV_OBJ_PART_MAIN, &led7_style_white);
     lv_label_set_text( label_time_date, "----/--/--  --"); 
-    lv_obj_align( label_time_date, NULL, LV_ALIGN_IN_TOP_LEFT,20,145);
+    lv_obj_align( label_time_date, NULL, LV_ALIGN_IN_TOP_LEFT,20,140);
 
     label_batt = lv_label_create( tile_1_2, NULL);
-    lv_obj_add_style(label_batt, LV_OBJ_PART_MAIN, &led7_style);
-    lv_label_set_text( label_batt, "NONE"); 
-    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,70,180);
+    lv_obj_add_style(label_batt, LV_OBJ_PART_MAIN, &led7_style_red);
+    lv_label_set_text( label_batt, "--"); 
+    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_BOTTOM_RIGHT,-25,-10);
 
 }
 
@@ -840,6 +876,8 @@ void check_touch_pro()
     if(ttgo->getTouch(x, y))
     {
         System_Sleep_Tick = 0;
+        //@-显示复位
+        display_time_bat_info_tick = 0;
     }
 
     System_Sleep_Tick = System_Sleep_Tick + 1;
@@ -961,13 +999,60 @@ void setup()
     // lv_ex_keyboard_1();
     // lv_ex_img_1();
     // lv_ex_keyboard_1();
+}
 
+void Display_TimeBAT_Info()
+{
+    //@-显示年月日
+    RTC_Date dt = ttgo->rtc->getDateTime();
+    int DayOfWeek = ttgo->rtc->getDayOfWeek(dt.day, dt.month, dt.year);
+
+    switch (DayOfWeek)
+    {
+    case 1:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "MON");
+        break;
+    case 2:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "TUES");
+        break;
+    case 3:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "WED");
+        break;
+    case 4:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "THUR");
+        break;
+    case 5:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "FRI");
+        break;
+    case 6:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SAT");
+        break;
+    case 7:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SUN");
+        break;
+    
+    default:
+        break;
+    }
+    // sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD));
+    lv_label_set_text_fmt( label_time_date, "%s", display_buf); 
+
+    //@-显示实时电量
+    if (power->isChargeing() == false)
+    {
+        lv_label_set_text_fmt( label_batt, "%d%%", power->getBattPercentage()); 
+    }
+    else
+    {
+        lv_label_set_text( label_batt, "IN"); 
+    }
 }
 
 //@-主循环
 void loop()
 {
     system_tick = system_tick + 1;
+    display_time_bat_info_tick = display_time_bat_info_tick + 1;
 
     #ifdef USE_MP3
     if (mp3->isRunning()) 
@@ -987,53 +1072,21 @@ void loop()
     {
         system_tick = 0;
 
-        RTC_Date dt = ttgo->rtc->getDateTime();
-        int DayOfWeek = ttgo->rtc->getDayOfWeek(dt.day, dt.month, dt.year);
-
         // PCF_TIMEFORMAT_HM,
         // PCF_TIMEFORMAT_HMS,
         //@-显示实时时间
         sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
         lv_label_set_text_fmt( label_time, "%s", display_buf); 
 
-        switch (DayOfWeek)
+        if(display_time_bat_info_tick < 5000)
         {
-        case 1:
-            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "MON");
-            break;
-        case 2:
-            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "TUES");
-            break;
-        case 3:
-            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "WED");
-            break;
-        case 4:
-            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "THUR");
-            break;
-        case 5:
-            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "FRI");
-            break;
-        case 6:
-            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SAT");
-            break;
-        case 7:
-            snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d  %s", dt.year, dt.month, dt.day, "SUN");
-            break;
-        
-        default:
-            break;
+            //@-显示年月日及电量
+            Display_TimeBAT_Info();
         }
-        // sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD));
-        lv_label_set_text_fmt( label_time_date, "%s", display_buf); 
-
-        //@-显示实时电量
-        if (power->isChargeing() == false)
+        else 
         {
-            lv_label_set_text_fmt( label_batt, "Power:%d%%", power->getBattPercentage()); 
-        }
-        else
-        {
-            lv_label_set_text( label_batt, "Change..."); 
+            lv_label_set_text( label_time_date, " "); 
+            lv_label_set_text( label_batt, " "); 
         }
         
     }
