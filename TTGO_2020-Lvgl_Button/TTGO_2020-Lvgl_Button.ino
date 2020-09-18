@@ -21,7 +21,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 
 #include "config.h"
-#include <esp_now.h>
+// #include <esp_now.h>
 #include <WiFi.h>
 //@-OTA远程更新
 #include <Update.h>
@@ -38,25 +38,25 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 
 //@-配置用户音频文件
-#include "./audio/geji_44k_mp3.h"
+// #include "./audio/geji_44k_mp3.h"
 #include "./audio/select05_mp3.h"
-#include "./audio/beep_24_mp3.h"
-#include "./audio/laozigun_robot.h"
-
+// #include "./audio/beep_24_mp3.h"
+// #include "./audio/laozigun_robot.h"
 
 
 
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
+// LV_FONT_DECLARE(myLED_Font);
 LV_FONT_DECLARE(dxLED7);
 LV_FONT_DECLARE(dxLED7_60);
-LV_FONT_DECLARE(myLED_Font);
+
 
 
 //@-配置用户图片数据
 // LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_Main);
-LV_IMG_DECLARE(rich);
+// LV_IMG_DECLARE(rich);
 
 
 //@-TTGO
@@ -130,20 +130,20 @@ lv_obj_t * kb;
 
 bool btn2_flag = true;
 
-//@-WIFI NOW数据结构
-typedef struct struct_message {
-    char a[32];
-    int b;
-    float c;
-    String d;
-    bool e;
-} struct_message;
+// //@-WIFI NOW数据结构
+// typedef struct struct_message {
+//     char a[32];
+//     int b;
+//     float c;
+//     String d;
+//     bool e;
+// } struct_message;
 
-// Create a struct_message called myData
-struct_message recv_Data;
-struct_message send_Data;
+// // Create a struct_message called myData
+// struct_message recv_Data;
+// struct_message send_Data;
 
-uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
+// uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
 
 
 char display_buf[128];
@@ -161,24 +161,24 @@ String NVS_OTA_ADD_PATH;
 int NVS_Backlight_Value;
 
 
-// callback function that will be executed when data is received
-//@-wifi now 数据接收函数
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&recv_Data, incomingData, sizeof(recv_Data));
-//   Serial.print("Bytes received: ");
-//   Serial.println(len);
-//   Serial.print("Char: ");
-//   Serial.println(recv_Data.a);
-//   Serial.print("Int: ");
-//   Serial.println(recv_Data.b);
-//   Serial.print("Float: ");
-//   Serial.println(recv_Data.c);
-//   Serial.print("String: ");
-//   Serial.println(recv_Data.d);
-//   Serial.print("Bool: ");
-//   Serial.println(recv_Data.e);
-//   Serial.println();
-}
+// // callback function that will be executed when data is received
+// //@-wifi now 数据接收函数
+// void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+//   memcpy(&recv_Data, incomingData, sizeof(recv_Data));
+// //   Serial.print("Bytes received: ");
+// //   Serial.println(len);
+// //   Serial.print("Char: ");
+// //   Serial.println(recv_Data.a);
+// //   Serial.print("Int: ");
+// //   Serial.println(recv_Data.b);
+// //   Serial.print("Float: ");
+// //   Serial.println(recv_Data.c);
+// //   Serial.print("String: ");
+// //   Serial.println(recv_Data.d);
+// //   Serial.print("Bool: ");
+// //   Serial.println(recv_Data.e);
+// //   Serial.println();
+// }
     
 
 //@-播放MP3
@@ -213,24 +213,24 @@ void Run_MP3_Audio(const void *filename_audio, uint32_t len)
 void event_handler(lv_obj_t *obj, lv_event_t event)
 {
     if (obj == btn10) {
-        send_Data.b = 0;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        // send_Data.b = 0;
+        // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     } 
     else if (obj == btn20) {
-        send_Data.b = 180;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        // send_Data.b = 180;
+        // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     } 
     else if (obj == btn30) {
-        send_Data.b = send_Data.b + 10;
-        if(send_Data.b > 180)
-        send_Data.b = 180;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        // send_Data.b = send_Data.b + 10;
+        // if(send_Data.b > 180)
+        // send_Data.b = 180;
+        // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     } 
     else if (obj == btn40) {
-        send_Data.b = send_Data.b - 10;
-        if(send_Data.b < 0)
-        send_Data.b = 0;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        // send_Data.b = send_Data.b - 10;
+        // if(send_Data.b < 0)
+        // send_Data.b = 0;
+        // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     } 
     else if (obj == btn2) {
 
@@ -249,22 +249,23 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     }
     else if(obj == btn)
     {
-        if(send_Data.e == false) 
-        send_Data.e = true;
-        else if(send_Data.e == true) 
-        send_Data.e = false;
+        // if(send_Data.e == false) 
+        // send_Data.e = true;
+        // else if(send_Data.e == true) 
+        // send_Data.e = false;
 
-        // Serial.printf("dx\n");
+        // // Serial.printf("dx\n");
 
-        // Send message via ESP-NOW
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        // // Send message via ESP-NOW
+        // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     }
 
     else if(obj == sw1)
     {
         //@-播放音效
         // Run_MP3_Audio(1);
-        Run_MP3_Audio(&geji_44k_mp3, sizeof(geji_44k_mp3));
+        // Run_MP3_Audio(&geji_44k_mp3, sizeof(geji_44k_mp3));
+        Run_MP3_Audio(&select05_mp3, sizeof(select05_mp3));
     }
     else if(obj == sw2)
     {
@@ -276,13 +277,15 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     {
         //@-播放音效
         // Run_MP3_Audio(3);
-        Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
+        // Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
+        Run_MP3_Audio(&select05_mp3, sizeof(select05_mp3));
     }
     else if(obj == sw4)
     {
         //@-播放音效
         // Run_MP3_Audio(4);
-        Run_MP3_Audio(&laozigun_robot, sizeof(laozigun_robot));
+        // Run_MP3_Audio(&laozigun_robot, sizeof(laozigun_robot));
+        Run_MP3_Audio(&select05_mp3, sizeof(select05_mp3));
     }
 
     // else if(obj == tile_1_2)
@@ -295,14 +298,14 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) {
-        static char buf[20]; /* max 3 bytes for number plus 1 null terminating byte */
+        // static char buf[20]; /* max 3 bytes for number plus 1 null terminating byte */
 
-        send_Data.b = lv_slider_get_value(slider);
+        // send_Data.b = lv_slider_get_value(slider);
 
-        snprintf(buf, 20, "角度:%u", send_Data.b);
-        lv_label_set_text(slider_label, buf);
+        // snprintf(buf, 20, "角度:%u", send_Data.b);
+        // lv_label_set_text(slider_label, buf);
 
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     }
 }
 
@@ -374,7 +377,7 @@ void lv_ex_tileview_1(void)
     static lv_style_t led_style;
     lv_style_init(&led_style);
     lv_style_set_text_color(&led_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-    lv_style_set_text_font(&led_style, LV_STATE_DEFAULT, &myLED_Font);
+    lv_style_set_text_font(&led_style, LV_STATE_DEFAULT, &myFont);
 
     static lv_style_t led7_style_white;
     lv_style_init(&led7_style_white);
@@ -502,7 +505,7 @@ void lv_ex_tileview_1(void)
 
     label_data = lv_label_create( tile_0_0, NULL);
     lv_obj_add_style(label_data, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
+    // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
     lv_obj_align( label_data, NULL, LV_ALIGN_CENTER,0,45);
     
     //------------------------------tile_0_1-----------------------------------------------------
@@ -572,7 +575,7 @@ void lv_ex_tileview_1(void)
 
     //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
-    lv_img_set_src(img1, &rich);
+    lv_img_set_src(img1, &TTGO_Main);
     lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, 0);
 
     //------------------------------tile_1_1-----------------------------------------------------
@@ -935,7 +938,7 @@ void check_touch_pro()
 void Turn_On_Audio()
 {
     // file = new AudioFileSourcePROGMEM(image, sizeof(image));
-    file = new AudioFileSourcePROGMEM(laozigun_robot, sizeof(laozigun_robot));
+    file = new AudioFileSourcePROGMEM(select05_mp3, sizeof(select05_mp3));
     id3 = new AudioFileSourceID3(file);
 
     #if defined(STANDARD_BACKPLANE)
@@ -1034,32 +1037,32 @@ void setup()
     Serial.println(NVS_Backlight_Value);
 
     //@-配置wifi的now功能
-    WiFi.mode(WIFI_MODE_STA);
+    // WiFi.mode(WIFI_MODE_STA);
     // Serial.println(WiFi.macAddress());   //8C:AA:B5:82:EA:58
 
-    // Init ESP-NOW
-    if (esp_now_init() != ESP_OK) {
-        Serial.println("Error initializing ESP-NOW");
-        return;
-    }
+    // // Init ESP-NOW
+    // if (esp_now_init() != ESP_OK) {
+    //     Serial.println("Error initializing ESP-NOW");
+    //     return;
+    // }
 
-    // Register peer
-    esp_now_peer_info_t peerInfo;
-    memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-    peerInfo.channel = 0;  
-    peerInfo.encrypt = false;
+    // // Register peer
+    // esp_now_peer_info_t peerInfo;
+    // memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+    // peerInfo.channel = 0;  
+    // peerInfo.encrypt = false;
 
-    // Add peer        
-    if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-    }
+    // // Add peer        
+    // if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    // Serial.println("Failed to add peer");
+    // return;
+    // }
 
-    // Once ESPNow is successfully Init, we will register for recv CB to
-    // get recv packer info
-    esp_now_register_recv_cb(OnDataRecv);
+    // // Once ESPNow is successfully Init, we will register for recv CB to
+    // // get recv packer info
+    // esp_now_register_recv_cb(OnDataRecv);
 
-    send_Data.e = false;
+    // send_Data.e = false;
 
     //@-ttgo初始化
     ttgo = TTGOClass::getWatch();
@@ -1188,7 +1191,7 @@ void loop()
         
     }
 
-    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
+    // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
 
     lv_task_handler();
 
