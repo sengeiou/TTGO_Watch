@@ -23,7 +23,11 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "config.h"
 #include <esp_now.h>
 #include <WiFi.h>
+//@-OTA远程更新
 #include <Update.h>
+
+//@-NVS文件系统
+#include "TridentTD_ESP32NVS.h"
 
 //@-audio
 #include <HTTPClient.h>         //Remove Audio Lib error
@@ -31,6 +35,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "AudioFileSourceID3.h"
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
+
 
 //@-配置用户音频文件
 #include "./audio/geji_44k_mp3.h"
@@ -148,6 +153,12 @@ int System_Sleep_Tick = 0;
 int display_time_bat_info_tick = 0;
 
 
+//@-NVS数据
+String NVS_WIFI_SSID;
+String NVS_WIFI_PASS;
+String NVS_OTA_ADD_HOST;
+String NVS_OTA_ADD_PATH;
+int NVS_Backlight_Value;
 
 
 // callback function that will be executed when data is received
@@ -307,6 +318,10 @@ static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event)
         lv_label_set_text(slider_light_label, buf);
 
         ttgo->bl->adjust( value );
+
+        //@-写入NVS
+        Setup_NVS(4,"backlight_value", "NULL", value);   
+
     }
 }
 
@@ -935,7 +950,7 @@ void Turn_On_Audio()
 }
 
 //@-设置RTC
-void Set_RTC()
+void Setup_RTC()
 {
    ttgo->rtc->disableAlarm();
 
@@ -944,11 +959,79 @@ void Set_RTC()
    ttgo->rtc->enableAlarm();
 }
 
+//@-配置NVS存储信息
+void Setup_NVS(int opt, String key, String key_StrValue, int key_IntValue)
+{
+    //@-正常模式
+    if(opt == 1)
+    {
+        NVS.begin();
+        String NVSTime = NVS.getString("NVSTime");
+
+        //@-初始化
+        if(NVSTime.equals("dx-error"))
+        {
+            NVS.setString("NVSTime", "1");
+            NVS.setString("version", "V1.0");
+            NVS.setString("fireware_version", "TTGO.ino.esp32.bin");
+            NVS.setString("wifi_ssid", "wuyiyi");
+            NVS.setString("wifi_pass", "10238831");
+            NVS.setString("oat_add_host", "www.dingxiao1023.com");
+            NVS.setString("oat_add_path", "/media/images/TTGO.ino.esp32.bin");
+            NVS.setInt("backlight_value", 30);
+        }
+
+        //@-读取NVS数据
+        else
+        {
+            NVS_WIFI_SSID = NVS.getString("wifi_ssid");
+            NVS_WIFI_PASS = NVS.getString("wifi_pass");
+            NVS_OTA_ADD_HOST = NVS.getString("oat_add_host");
+            NVS_OTA_ADD_PATH = NVS.getString("oat_add_path");
+            NVS_Backlight_Value = NVS.getInt("backlight_value");
+        }
+
+        NVS.close();
+    }
+
+    //@-擦除NVS
+    else if(opt == 2)
+    {
+        //@-擦除NVS
+        NVS.begin();
+        NVS.eraseAll();
+        NVS.close();
+    }
+
+    //@-写入String Key
+    else if(opt == 3)
+    {
+        NVS.begin();
+        NVS.setString(key, key_StrValue);
+        NVS.close();
+    }
+
+    //@-写入Int Key
+    else if(opt == 4)
+    {
+        NVS.begin();
+        NVS.setInt(key, key_IntValue);
+        NVS.close();
+    }
+
+}
+
+
 //@-配置
 void setup()
 {
     //@-串口初始化
     Serial.begin(115200);
+
+    //@-配置NVS
+    Setup_NVS(1, "NULL", "NULL", 0);
+
+    Serial.println(NVS_Backlight_Value);
 
     //@-配置wifi的now功能
     WiFi.mode(WIFI_MODE_STA);
@@ -982,10 +1065,10 @@ void setup()
     ttgo = TTGOClass::getWatch();
     ttgo->begin();
     ttgo->openBL();
-    ttgo->bl->adjust( 30 );
+    ttgo->bl->adjust( NVS_Backlight_Value );
 
     //@-设置RTC
-    // Set_RTC();
+    // Setup_RTC();
 
     #ifdef USE_MP3
     //!Turn on the audio power
