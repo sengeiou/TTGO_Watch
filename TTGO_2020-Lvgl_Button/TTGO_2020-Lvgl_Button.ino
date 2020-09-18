@@ -5,6 +5,9 @@ git clone https://github.com/earlephilhower/ESP8266Audio
 git clone https://github.com/Gianbacchio/ESP8266_Spiram
 */
 
+
+// C:\Users\DX\Documents\Arduino\libraries\TTGO_TWatch_Library-master\src
+
 /*
 * firmeware version string
 */
@@ -117,6 +120,13 @@ lv_obj_t* tile_1_1;
 lv_obj_t* tile_1_2;
 lv_obj_t* tile_1_3;
 
+//@-定时器
+lv_obj_t * lmeter;
+//@-定时器数值
+lv_obj_t *label_timer;
+//@-定时器增减方向
+lv_obj_t *sw_timer_dir;
+
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
 
@@ -159,6 +169,11 @@ String NVS_WIFI_PASS;
 String NVS_OTA_ADD_HOST;
 String NVS_OTA_ADD_PATH;
 int NVS_Backlight_Value;
+
+
+//@-定时器0~99min
+int Alarm_Timer_Data = 0;
+bool Alarm_Timer_SetData_Dir = false;  //false:增加  true:减少
 
 
 // callback function that will be executed when data is received
@@ -289,6 +304,37 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     // {
     //     Serial.printf("tile_1_2\n");
     // }
+
+    //@-定时器
+    else if(obj == lmeter)
+    {
+        //@-定时器数值增加
+        if(Alarm_Timer_SetData_Dir == false)
+        {
+            Alarm_Timer_Data = Alarm_Timer_Data + 1;
+            if(Alarm_Timer_Data > 99)
+            Alarm_Timer_Data = 99;
+        }
+        else if(Alarm_Timer_SetData_Dir == true)
+        {
+            Alarm_Timer_Data = Alarm_Timer_Data - 1;
+            if(Alarm_Timer_Data <= 1)
+            Alarm_Timer_Data = 1;
+        }
+
+        lv_linemeter_set_value(lmeter, Alarm_Timer_Data);
+
+        lv_label_set_text_fmt(label_timer, "%2d", Alarm_Timer_Data);
+    }
+    //@-定时器数值方向
+    else if(obj == sw_timer_dir)
+    {
+        if(event == LV_EVENT_VALUE_CHANGED) {
+            Alarm_Timer_SetData_Dir = lv_switch_get_state(sw_timer_dir);
+
+            ttgo->motor->onec();
+        }
+    }
 
 }
 
@@ -718,6 +764,27 @@ void lv_ex_tileview_1(void)
     lv_obj_align( label_batt, NULL, LV_ALIGN_IN_BOTTOM_RIGHT,-20,-85);
     #endif
 
+    //------------------------------tile_1_3-----------------------------------------------------
+    /*Create a line meter */
+    lmeter = lv_linemeter_create(tile_1_3, NULL);
+    lv_linemeter_set_range(lmeter, 0, 99);                   /*Set the range*/
+    lv_linemeter_set_value(lmeter, Alarm_Timer_Data);                       /*Set the current value*/
+    lv_linemeter_set_scale(lmeter, 240, 20);                  /*Set the angle and number of lines*/
+    lv_obj_set_size(lmeter, 150, 150);
+    lv_obj_set_event_cb(lmeter, event_handler);
+    lv_obj_align(lmeter, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    label_timer = lv_label_create( tile_1_3, NULL);
+    lv_obj_add_style(label_timer, LV_OBJ_PART_MAIN, &led7_style_red);
+    lv_label_set_text( label_timer, "--"); 
+    lv_obj_align(label_timer, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    sw_timer_dir = lv_switch_create(tile_1_3, NULL);
+    lv_obj_align(sw_timer_dir, NULL, LV_ALIGN_CENTER, 90, 50);
+    lv_obj_set_event_cb(sw_timer_dir, event_handler);
+
+
+
 }
 
 void lv_ex_img_1(void)
@@ -1066,6 +1133,8 @@ void setup()
     ttgo->begin();
     ttgo->openBL();
     ttgo->bl->adjust( NVS_Backlight_Value );
+
+    ttgo->motor_begin();
 
     //@-设置RTC
     // Setup_RTC();

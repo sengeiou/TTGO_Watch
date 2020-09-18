@@ -22,6 +22,7 @@ void setup()
 //    ttgo->rtc->setDateTime(2020, 9, 9, 11, 16, 10);
 
 //    ttgo->rtc->setAlarmByMinutes(1);
+    //   ttgo->rtc->setAlarmByHours
 
 //    ttgo->rtc->enableAlarm();
 }
