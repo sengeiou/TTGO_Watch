@@ -15,6 +15,8 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 #define USE_MP3
 
+#define uS_TO_S_FACTOR 1000000
+
 #define DISPLAY_MIN_BRIGHTNESS      8
 #define DISPLAY_MAX_BRIGHTNESS      255
 
@@ -126,6 +128,8 @@ lv_obj_t * lmeter;
 lv_obj_t *label_timer;
 //@-定时器增减方向
 lv_obj_t *sw_timer_dir;
+//@-定时器启停
+lv_obj_t *sw_timer_run;
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
@@ -172,9 +176,33 @@ int NVS_Backlight_Value;
 
 
 //@-定时器0~99min
-int Alarm_Timer_Data = 0;
+int Alarm_Timer_Data = 1;
 bool Alarm_Timer_SetData_Dir = false;  //false:增加  true:减少
+bool Alarm_Timer_Run = false;  
+bool rtcIrq = false;
+int all_second = 0;
+bool Set_Alarm_Run_Flag = false;   
+int  Alarm_Run_Time = 5;
 
+/*
+Method to print the reason by which ESP32
+has been awaken from sleep
+*/
+void Print_Wakeup_Reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); Set_Alarm_Run_Flag = true; break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+}
 
 // callback function that will be executed when data is received
 //@-wifi now 数据接收函数
@@ -222,6 +250,59 @@ void Run_MP3_Audio(const void *filename_audio, uint32_t len)
         mp3 = new AudioGeneratorMP3();
         mp3->begin(id3, out);
     }
+}
+
+//@-Timer告警设置
+void Setup_Timer_Alarm(bool run_flag)
+{
+    int alarm_time_minute = 0;
+    int alarm_time_hour = 0;
+    int add_hour = 0;
+    int all_minutes = 0;
+
+
+    if(run_flag == true)
+    {
+        //@-获取当前时间
+        RTC_Date current_date = ttgo->rtc->getDateTime();
+
+        alarm_time_hour = current_date.hour;
+
+        all_minutes = current_date.minute + Alarm_Timer_Data;
+        all_second = Alarm_Timer_Data * 60;
+
+        while((all_minutes > 59))
+        {
+            all_minutes = all_minutes - 60;
+            add_hour++;
+        }
+
+        pinMode(RTC_INT, INPUT_PULLUP);
+        attachInterrupt(RTC_INT, [] {
+        rtcIrq = 1;
+        }, FALLING);
+
+        alarm_time_minute = all_minutes;
+        alarm_time_hour = alarm_time_hour + add_hour;
+
+        ttgo->rtc->disableAlarm();
+
+        ttgo->rtc->setAlarmByMinutes(alarm_time_minute);
+        // ttgo->rtc->setAlarmByHours(alarm_time_hour);
+
+        ttgo->rtc->enableAlarm();
+
+
+        // esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
+    }
+
+    Serial.print("Hour:");
+    Serial.println(alarm_time_hour);
+    Serial.print("Minutes:");
+    Serial.println(alarm_time_minute);
+    Serial.print("all second:");
+    Serial.println(all_second);
+
 }
 
 //@-lvgl控件事件处理
@@ -324,13 +405,22 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
 
         lv_linemeter_set_value(lmeter, Alarm_Timer_Data);
 
-        lv_label_set_text_fmt(label_timer, "%2d", Alarm_Timer_Data);
+        lv_label_set_text_fmt(label_timer, "%02d", Alarm_Timer_Data);
     }
     //@-定时器数值方向
     else if(obj == sw_timer_dir)
     {
         if(event == LV_EVENT_VALUE_CHANGED) {
             Alarm_Timer_SetData_Dir = lv_switch_get_state(sw_timer_dir);
+        }
+    }
+    //@-定时器启停控制
+    else if(obj == sw_timer_run)
+    {
+        if(event == LV_EVENT_VALUE_CHANGED) {
+            Alarm_Timer_Run = lv_switch_get_state(sw_timer_run);
+
+            Setup_Timer_Alarm(Alarm_Timer_Run);
 
             ttgo->motor->onec();
         }
@@ -504,7 +594,10 @@ void lv_ex_tileview_1(void)
     lv_tileview_add_element(tileview, tile_1_2 );
     lv_tileview_add_element(tileview, tile_1_3 );
 
+    if(Set_Alarm_Run_Flag == false)
     lv_tileview_set_tile_act(tileview, 1, 2, LV_ANIM_OFF);
+    else if(Set_Alarm_Run_Flag == true)
+    lv_tileview_set_tile_act(tileview, 1, 3, LV_ANIM_OFF);
 
     //------------------------------tile_0_0-----------------------------------------------------
     /* Create the text area */
@@ -740,7 +833,7 @@ void lv_ex_tileview_1(void)
     lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,0,91);
     #endif
     #ifdef MAIN_BACKPIC_NUM_2
-    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,90,150);
+    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,60,150);  //90,150
     #endif
 
     label_time_date = lv_label_create( tile_1_2, NULL);
@@ -776,12 +869,16 @@ void lv_ex_tileview_1(void)
 
     label_timer = lv_label_create( tile_1_3, NULL);
     lv_obj_add_style(label_timer, LV_OBJ_PART_MAIN, &led7_style_red);
-    lv_label_set_text( label_timer, "--"); 
+    lv_label_set_text_fmt(label_timer, "%02d", Alarm_Timer_Data);
     lv_obj_align(label_timer, NULL, LV_ALIGN_CENTER, 0, 0);
 
     sw_timer_dir = lv_switch_create(tile_1_3, NULL);
     lv_obj_align(sw_timer_dir, NULL, LV_ALIGN_CENTER, 90, 50);
     lv_obj_set_event_cb(sw_timer_dir, event_handler);
+
+    sw_timer_run = lv_switch_create(tile_1_3, NULL);
+    lv_obj_align(sw_timer_run, NULL, LV_ALIGN_CENTER, 90, -50);
+    lv_obj_set_event_cb(sw_timer_run, event_handler);
 
 
 
@@ -928,6 +1025,12 @@ void check_power_irq()
         esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
         // esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
 
+        if(Alarm_Timer_Run == true)
+        {
+            // RTC_INT定义在twatch2020_v1.h #define RTC_INT 37
+            // esp_sleep_enable_ext0_wakeup(RTC_INT, 0);
+            esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
+        }
 
         //@-ttgo深度sleep模式工作
         esp_deep_sleep_start();
@@ -992,6 +1095,13 @@ void check_touch_pro()
         //@-配置ttgo唤醒模式
         esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
         // esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
+
+        if(Alarm_Timer_Run == true)
+        {
+            // RTC_INT定义在twatch2020_v1.h #define RTC_INT 37
+            // esp_sleep_enable_ext0_wakeup(RTC_INT, 0);
+            esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
+        }
 
         //@-ttgo深度sleep模式工作
         esp_deep_sleep_start();
@@ -1094,6 +1204,9 @@ void setup()
 {
     //@-串口初始化
     Serial.begin(115200);
+
+    //@打印wakeup_reason
+    Print_Wakeup_Reason();
 
     //@-配置NVS
     Setup_NVS(1, "NULL", "NULL", 0);
@@ -1214,6 +1327,32 @@ void Display_TimeBAT_Info()
     }
 }
 
+//@-检测闹钟
+void Check_Alarm()
+{
+   if (rtcIrq) 
+   {
+       rtcIrq = 0;
+       detachInterrupt(RTC_INT);
+       ttgo->rtc->resetAlarm();
+       Set_Alarm_Run_Flag = true;
+       Serial.println("alarm.....");
+   }
+
+   if(Set_Alarm_Run_Flag == true)
+   {
+       if((mp3->isRunning()) == false)
+       {
+        Alarm_Run_Time = Alarm_Run_Time - 1;
+        if(Alarm_Run_Time == 0)
+        Set_Alarm_Run_Flag = false;
+
+        Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
+        ttgo->motor->onec();
+       }
+   }
+}
+
 //@-主循环
 void loop()
 {
@@ -1234,6 +1373,9 @@ void loop()
     //@-检测触摸功能
     check_touch_pro();
 
+    //@-检测闹钟
+    Check_Alarm();
+
     if(system_tick > 100)
     {
         system_tick = 0;
@@ -1241,7 +1383,7 @@ void loop()
         // PCF_TIMEFORMAT_HM,
         // PCF_TIMEFORMAT_HMS,
         //@-显示实时时间
-        sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
+        sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HMS));
         lv_label_set_text_fmt( label_time, "%s", display_buf); 
 
         if(display_time_bat_info_tick < 5000)
