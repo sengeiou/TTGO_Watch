@@ -265,6 +265,7 @@ void Setup_Timer_Alarm(bool run_flag)
     {
         //@-获取当前时间
         RTC_Date current_date = ttgo->rtc->getDateTime();
+        int DayOfWeek = ttgo->rtc->getDayOfWeek(current_date.day, current_date.month, current_date.year);
 
         alarm_time_hour = current_date.hour;
 
@@ -278,30 +279,45 @@ void Setup_Timer_Alarm(bool run_flag)
         }
 
         pinMode(RTC_INT, INPUT_PULLUP);
-        attachInterrupt(RTC_INT, [] {
-        rtcIrq = 1;
-        }, FALLING);
+        attachInterrupt(RTC_INT, [] {rtcIrq = 1;}, FALLING);
 
         alarm_time_minute = all_minutes;
         alarm_time_hour = alarm_time_hour + add_hour;
 
+
         ttgo->rtc->disableAlarm();
 
-        ttgo->rtc->setAlarmByMinutes(alarm_time_minute);
+        ttgo->rtc->resetAlarm();
+
+        ttgo->rtc->setAlarm(alarm_time_hour, alarm_time_minute, current_date.day, DayOfWeek);
+
+        // ttgo->rtc->setAlarmByMinutes(alarm_time_minute);
         // ttgo->rtc->setAlarmByHours(alarm_time_hour);
+        // ttgo->rtc->setAlarmByDays(current_date.day);
+        // ttgo->rtc->setAlarmByWeekDay(DayOfWeek);
 
         ttgo->rtc->enableAlarm();
+
+        RTC_Alarm RTC_Temp = ttgo->rtc->getAlarm();
+        Serial.print("Hour:");
+        Serial.println(RTC_Temp.hour);
+        Serial.print("Minutes:");
+        Serial.println(RTC_Temp.minute);
+        Serial.print("Day:");
+        Serial.println(RTC_Temp.day);
+        Serial.print("Weekday:");
+        Serial.println(RTC_Temp.weekday);
 
 
         // esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
     }
 
-    Serial.print("Hour:");
-    Serial.println(alarm_time_hour);
-    Serial.print("Minutes:");
-    Serial.println(alarm_time_minute);
-    Serial.print("all second:");
-    Serial.println(all_second);
+    // Serial.print("Hour:");
+    // Serial.println(alarm_time_hour);
+    // Serial.print("Minutes:");
+    // Serial.println(alarm_time_minute);
+    // Serial.print("all second:");
+    // Serial.println(all_second);
 
 }
 
@@ -1028,8 +1044,8 @@ void check_power_irq()
         if(Alarm_Timer_Run == true)
         {
             // RTC_INT定义在twatch2020_v1.h #define RTC_INT 37
-            // esp_sleep_enable_ext0_wakeup(RTC_INT, 0);
-            esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
+            esp_sleep_enable_ext0_wakeup(DX_RTC_INT, 0);
+            // esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
         }
 
         //@-ttgo深度sleep模式工作
@@ -1099,8 +1115,8 @@ void check_touch_pro()
         if(Alarm_Timer_Run == true)
         {
             // RTC_INT定义在twatch2020_v1.h #define RTC_INT 37
-            // esp_sleep_enable_ext0_wakeup(RTC_INT, 0);
-            esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
+            esp_sleep_enable_ext0_wakeup(DX_RTC_INT, 0);
+            // esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
         }
 
         //@-ttgo深度sleep模式工作
@@ -1344,7 +1360,7 @@ void Check_Alarm()
        if((mp3->isRunning()) == false)
        {
         Alarm_Run_Time = Alarm_Run_Time - 1;
-        if(Alarm_Run_Time == 0)
+        if(Alarm_Run_Time <= 0)
         Set_Alarm_Run_Flag = false;
 
         Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
