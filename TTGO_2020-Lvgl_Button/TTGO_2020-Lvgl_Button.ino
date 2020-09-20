@@ -1264,6 +1264,7 @@ void setup()
     ttgo->bl->adjust( NVS_Backlight_Value );
 
     ttgo->motor_begin();
+    ttgo->motor->onec();
 
     //@-设置RTC
     // Setup_RTC();
@@ -1303,6 +1304,9 @@ void Display_TimeBAT_Info()
 
     switch (DayOfWeek)
     {
+    case 0:
+        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "SUN");
+        break;
     case 1:
         // snprintf(display_buf, sizeof(display_buf), "%02d-%02d-%02d %s", dt.year, dt.month, dt.day, "MON");
         snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "MON");
@@ -1322,10 +1326,7 @@ void Display_TimeBAT_Info()
     case 6:
         snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "SAT");
         break;
-    case 7:
-        snprintf(display_buf, sizeof(display_buf), "%02d-%02d %s", dt.month, dt.day, "SUN");
-        break;
-    
+
     default:
         break;
     }
