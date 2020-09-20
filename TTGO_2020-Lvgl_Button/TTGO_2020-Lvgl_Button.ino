@@ -117,10 +117,12 @@ lv_obj_t* tile_0_0;
 lv_obj_t* tile_0_1;
 lv_obj_t* tile_0_2;
 lv_obj_t* tile_0_3;
+lv_obj_t* tile_0_4;
 lv_obj_t* tile_1_0;
 lv_obj_t* tile_1_1;
 lv_obj_t* tile_1_2;
 lv_obj_t* tile_1_3;
+lv_obj_t* tile_1_4;
 
 //@-定时器
 lv_obj_t * lmeter;
@@ -195,9 +197,9 @@ void Print_Wakeup_Reason(){
 
   switch(wakeup_reason)
   {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); Set_Alarm_Run_Flag = true; break;
     case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); Set_Alarm_Run_Flag = true; break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
     case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
     default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
@@ -259,7 +261,6 @@ void Setup_Timer_Alarm(bool run_flag)
     int alarm_time_hour = 0;
     int add_hour = 0;
     int all_minutes = 0;
-
 
     if(run_flag == true)
     {
@@ -567,37 +568,43 @@ void lv_ex_tileview_1(void)
 
 
     // static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {1,0}, {1,1}};
-    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {0,3}, {1,0}, {1,1}, {1,2}, {1,3}};
+    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {0,3}, {0,4},{1,0}, {1,1}, {1,2}, {1,3}, {1,4}};
     tileview = lv_tileview_create(lv_scr_act(), NULL);
-    lv_tileview_set_valid_positions(tileview, valid_pos, 8);
+    lv_tileview_set_valid_positions(tileview, valid_pos, 10);
     lv_tileview_set_edge_flash(tileview, true);
 
     tile_0_0 = lv_obj_create( tileview, NULL);
     tile_0_1 = lv_obj_create( tileview, NULL);
     tile_0_2 = lv_obj_create( tileview, NULL);
     tile_0_3 = lv_obj_create( tileview, NULL);
+    tile_0_4 = lv_obj_create( tileview, NULL);
     tile_1_0 = lv_obj_create( tileview, NULL);
     tile_1_1 = lv_obj_create( tileview, NULL);
     tile_1_2 = lv_obj_create( tileview, NULL);
     tile_1_3 = lv_obj_create( tileview, NULL);
+    tile_1_4 = lv_obj_create( tileview, NULL);
 
     lv_obj_set_size( tile_0_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_1, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_2, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_3, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_0_4, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_1, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_2, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_3, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_1_4, LV_HOR_RES,LV_VER_RES);
 
     lv_obj_set_pos( tile_0_0, 0,   0);
     lv_obj_set_pos( tile_0_1, 0,   LV_VER_RES);
     lv_obj_set_pos( tile_0_2, 0,   2*LV_VER_RES);
     lv_obj_set_pos( tile_0_3, 0,   3*LV_VER_RES);
+    lv_obj_set_pos( tile_0_4, 0,   4*LV_VER_RES);
     lv_obj_set_pos( tile_1_0, LV_HOR_RES,   0);
     lv_obj_set_pos( tile_1_1, LV_HOR_RES,   LV_VER_RES);
     lv_obj_set_pos( tile_1_2, LV_HOR_RES,   2*LV_VER_RES);
     lv_obj_set_pos( tile_1_3, LV_HOR_RES,   3*LV_VER_RES);
+    lv_obj_set_pos( tile_1_4, LV_HOR_RES,   4*LV_VER_RES);
 
     // lv_obj_set_event_cb(tile_1_2, event_handler);
 
@@ -605,10 +612,12 @@ void lv_ex_tileview_1(void)
     lv_tileview_add_element(tileview, tile_0_1 );
     lv_tileview_add_element(tileview, tile_0_2 );
     lv_tileview_add_element(tileview, tile_0_3 );
+    lv_tileview_add_element(tileview, tile_0_4 );
     lv_tileview_add_element(tileview, tile_1_0 );
     lv_tileview_add_element(tileview, tile_1_1 );
     lv_tileview_add_element(tileview, tile_1_2 );
     lv_tileview_add_element(tileview, tile_1_3 );
+    lv_tileview_add_element(tileview, tile_1_4 );
 
     if(Set_Alarm_Run_Flag == false)
     lv_tileview_set_tile_act(tileview, 1, 2, LV_ANIM_OFF);
@@ -725,6 +734,65 @@ void lv_ex_tileview_1(void)
     lv_obj_set_auto_realign(slider_light_label, true);
     lv_obj_align(slider_light_label, slider_light, LV_ALIGN_CENTER, 0, 15);
 
+    //------------------------------tile_0_2-----------------------------------------------------
+    
+    //------------------------------tile_0_3-----------------------------------------------------
+    /*Create a window*/
+    lv_obj_t * win = lv_win_create(tile_0_3, NULL);
+    lv_win_set_title(win, "Window title");                        /*Set the title*/
+
+    /*Add control button to the header*/
+    lv_obj_t * close_btn = lv_win_add_btn(win, LV_SYMBOL_CLOSE);   /*Add close button and use built-in close action*/
+    // lv_obj_set_event_cb(close_btn, lv_win_close_event_cb);
+    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
+    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
+
+    /*Add some dummy content*/
+    lv_obj_t * txt = lv_label_create(win, NULL);
+    lv_label_set_text(txt, "This is the content of the window\n\n"
+                           "You can add control buttons to\n"
+                           "the window header\n\n"
+                           "The content area becomes\n"
+                           "automatically scrollable is it's \n"
+                           "large enough.\n\n"
+                           " You can scroll the content\n"
+    );
+    //------------------------------tile_0_4-----------------------------------------------------
+    chart = lv_chart_create(tile_0_4, NULL);
+    lv_obj_set_size(chart, 200, 150);
+    lv_obj_align(chart, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_chart_set_type(chart, LV_CHART_TYPE_LINE);   /*Show lines and points too*/
+
+    /*Add two data series*/
+    lv_chart_series_t * ser1 = lv_chart_add_series(chart, LV_COLOR_RED);
+    lv_chart_series_t * ser2 = lv_chart_add_series(chart, LV_COLOR_GREEN);
+
+    /*Set the next points on 'ser1'*/
+    lv_chart_set_next(chart, ser1, 10);
+    lv_chart_set_next(chart, ser1, 10);
+    lv_chart_set_next(chart, ser1, 10);
+    lv_chart_set_next(chart, ser1, 10);
+    lv_chart_set_next(chart, ser1, 10);
+    lv_chart_set_next(chart, ser1, 10);
+    lv_chart_set_next(chart, ser1, 10);
+    lv_chart_set_next(chart, ser1, 30);
+    lv_chart_set_next(chart, ser1, 70);
+    lv_chart_set_next(chart, ser1, 90);
+
+    /*Directly set points on 'ser2'*/
+    ser2->points[0] = 90;
+    ser2->points[1] = 70;
+    ser2->points[2] = 65;
+    ser2->points[3] = 65;
+    ser2->points[4] = 65;
+    ser2->points[5] = 65;
+    ser2->points[6] = 65;
+    ser2->points[7] = 65;
+    ser2->points[8] = 65;
+    ser2->points[9] = 65;
+
+    lv_chart_refresh(chart); /*Required after direct set*/
+
     //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
     lv_img_set_src(img1, &rich);
@@ -778,64 +846,6 @@ void lv_ex_tileview_1(void)
     // lv_obj_add_style(label_1_1, LV_OBJ_PART_MAIN, &model_style);
     // lv_label_set_text( label_1_1, "4-关闭"); 
     // lv_obj_align( label_1_1, NULL, LV_ALIGN_CENTER,0,0);
-
-    //------------------------------tile_0_2-----------------------------------------------------
-    chart = lv_chart_create(tile_0_2, NULL);
-    lv_obj_set_size(chart, 200, 150);
-    lv_obj_align(chart, NULL, LV_ALIGN_CENTER, 0, 0);
-    lv_chart_set_type(chart, LV_CHART_TYPE_LINE);   /*Show lines and points too*/
-
-    /*Add two data series*/
-    lv_chart_series_t * ser1 = lv_chart_add_series(chart, LV_COLOR_RED);
-    lv_chart_series_t * ser2 = lv_chart_add_series(chart, LV_COLOR_GREEN);
-
-    /*Set the next points on 'ser1'*/
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 10);
-    lv_chart_set_next(chart, ser1, 30);
-    lv_chart_set_next(chart, ser1, 70);
-    lv_chart_set_next(chart, ser1, 90);
-
-    /*Directly set points on 'ser2'*/
-    ser2->points[0] = 90;
-    ser2->points[1] = 70;
-    ser2->points[2] = 65;
-    ser2->points[3] = 65;
-    ser2->points[4] = 65;
-    ser2->points[5] = 65;
-    ser2->points[6] = 65;
-    ser2->points[7] = 65;
-    ser2->points[8] = 65;
-    ser2->points[9] = 65;
-
-    lv_chart_refresh(chart); /*Required after direct set*/
-
-    //------------------------------tile_0_3-----------------------------------------------------
-    /*Create a window*/
-    lv_obj_t * win = lv_win_create(tile_0_3, NULL);
-    lv_win_set_title(win, "Window title");                        /*Set the title*/
-
-    /*Add control button to the header*/
-    lv_obj_t * close_btn = lv_win_add_btn(win, LV_SYMBOL_CLOSE);   /*Add close button and use built-in close action*/
-    // lv_obj_set_event_cb(close_btn, lv_win_close_event_cb);
-    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
-    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
-
-    /*Add some dummy content*/
-    lv_obj_t * txt = lv_label_create(win, NULL);
-    lv_label_set_text(txt, "This is the content of the window\n\n"
-                           "You can add control buttons to\n"
-                           "the window header\n\n"
-                           "The content area becomes\n"
-                           "automatically scrollable is it's \n"
-                           "large enough.\n\n"
-                           " You can scroll the content\n"
-    );
 
     //------------------------------tile_1_2-----------------------------------------------------
     lv_obj_t * img = lv_img_create(tile_1_2, NULL);
