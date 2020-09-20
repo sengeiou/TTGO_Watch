@@ -21,8 +21,9 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #define DISPLAY_MAX_BRIGHTNESS      255
 
 
-// #define MAIN_BACKPIC_NUM_1    //宇航员
-#define MAIN_BACKPIC_NUM_2    //开心最重要
+// #define MAIN_BACKPIC_NUM_1  //宇航员
+// #define MAIN_BACKPIC_NUM_2     //开心最重要
+#define MAIN_BACKPIC_NUM_3     //十年饮冰
 
 
 #include "config.h"
@@ -62,6 +63,7 @@ LV_FONT_DECLARE(myLED_Font);
 // LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_Main);
 LV_IMG_DECLARE(rich);
+LV_IMG_DECLARE(TTGO_Main_Biaoyu);
 
 
 //@-TTGO
@@ -132,6 +134,9 @@ lv_obj_t *label_timer;
 lv_obj_t *sw_timer_dir;
 //@-定时器启停
 lv_obj_t *sw_timer_run;
+
+//@-十年饮冰标语
+lv_obj_t * img_biaoyu;
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_label;
@@ -537,12 +542,12 @@ void lv_ex_tileview_1(void)
 
     static lv_style_t led7_style_red;
     lv_style_init(&led7_style_red);
-    lv_style_set_text_color(&led7_style_red, LV_STATE_DEFAULT, LV_COLOR_RED);
+    lv_style_set_text_color(&led7_style_red, LV_STATE_DEFAULT, lv_color_hex(0x2ADD9C));
     lv_style_set_text_font(&led7_style_red, LV_STATE_DEFAULT, &dxLED7);
 
     static lv_style_t led7_big_style;
     lv_style_init(&led7_big_style);
-    lv_style_set_text_color(&led7_big_style, LV_STATE_DEFAULT, LV_COLOR_YELLOW);
+    lv_style_set_text_color(&led7_big_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&led7_big_style, LV_STATE_DEFAULT, &dxLED7_60);
 
     static lv_style_t style_cont1;
@@ -735,6 +740,7 @@ void lv_ex_tileview_1(void)
     lv_obj_align(slider_light_label, slider_light, LV_ALIGN_CENTER, 0, 15);
 
     //------------------------------tile_0_2-----------------------------------------------------
+    //@-wifi
     
     //------------------------------tile_0_3-----------------------------------------------------
     /*Create a window*/
@@ -861,6 +867,9 @@ void lv_ex_tileview_1(void)
     #ifdef MAIN_BACKPIC_NUM_2
     lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,60,150);  //90,150
     #endif
+    #ifdef MAIN_BACKPIC_NUM_3
+    lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,35,60);  
+    #endif
 
     label_time_date = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_time_date, LV_OBJ_PART_MAIN, &led7_style_white);
@@ -872,6 +881,9 @@ void lv_ex_tileview_1(void)
     #ifdef MAIN_BACKPIC_NUM_2
     lv_obj_align( label_time_date, NULL, LV_ALIGN_IN_TOP_LEFT,110,10);
     #endif
+    #ifdef MAIN_BACKPIC_NUM_3
+    lv_obj_align( label_time_date, NULL, LV_ALIGN_IN_TOP_LEFT,60,117);
+    #endif
 
     label_batt = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_batt, LV_OBJ_PART_MAIN, &led7_style_red);
@@ -881,6 +893,16 @@ void lv_ex_tileview_1(void)
     #endif
     #ifdef MAIN_BACKPIC_NUM_2
     lv_obj_align( label_batt, NULL, LV_ALIGN_IN_BOTTOM_RIGHT,-20,-85);
+    #endif
+    #ifdef MAIN_BACKPIC_NUM_3
+    lv_obj_align( label_batt, NULL, LV_ALIGN_IN_TOP_LEFT,5,210);
+    #endif
+
+    #ifdef MAIN_BACKPIC_NUM_3
+    img_biaoyu = lv_img_create(tile_1_2, NULL);
+    lv_img_set_src(img_biaoyu, &TTGO_Main_Biaoyu);
+    lv_obj_align(img_biaoyu, NULL, LV_ALIGN_IN_TOP_LEFT, 29, 116);
+    lv_obj_set_hidden(img_biaoyu,true);
     #endif
 
     //------------------------------tile_1_3-----------------------------------------------------
@@ -906,7 +928,8 @@ void lv_ex_tileview_1(void)
     lv_obj_align(sw_timer_run, NULL, LV_ALIGN_CENTER, 90, -50);
     lv_obj_set_event_cb(sw_timer_run, event_handler);
 
-
+    //------------------------------tile_1_4-----------------------------------------------------
+    //@-远程升级
 
 }
 
@@ -1415,6 +1438,10 @@ void loop()
 
         if(display_time_bat_info_tick < 5000)
         {
+            #ifdef MAIN_BACKPIC_NUM_3
+            lv_obj_set_hidden(img_biaoyu,true); 
+            #endif
+
             //@-显示年月日及电量
             Display_TimeBAT_Info();
         }
@@ -1422,6 +1449,10 @@ void loop()
         {
             lv_label_set_text( label_time_date, " "); 
             lv_label_set_text( label_batt, " "); 
+
+            #ifdef MAIN_BACKPIC_NUM_3
+            lv_obj_set_hidden(img_biaoyu,false); 
+            #endif
         }
         
     }
