@@ -26,8 +26,6 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #define MAIN_BACKPIC_NUM_3     //十年饮冰
 
 
-
-
 //@-ttgo配置
 #include "config.h"
 
@@ -104,6 +102,7 @@ lv_obj_t *label_data;
 
 //@-RTC时间显示
 lv_obj_t *label_time; 
+lv_obj_t *label_time_second;
 lv_obj_t *label_time_date; 
 
 //@-实时电量显示
@@ -158,6 +157,7 @@ lv_obj_t * wifi_connect_info_label;
 lv_obj_t * wifi_scan_btn;
 lv_obj_t * wifi_save_btn;
 lv_obj_t * wifi_connect_btn;
+lv_obj_t * wifi_bg_bottom;
 
 static lv_obj_t * wifi_kb;            //@-wifi密码输入键盘
 static lv_obj_t * wifi_ta_password;   //@-wifi密码输入框
@@ -216,6 +216,9 @@ bool wifi_scan_flag = false;
 String wifi_ssidName;
 String wifi_password;
 unsigned long wifi_timeout = 10000; // 10sec
+WiFiClient wifi_update_client;
+
+
 
 /*
 Method to print the reason by which ESP32
@@ -480,15 +483,14 @@ void wifi_popupPWMsgBox(){
 
 //@-更新wifi底部信息栏
 void updateBottomStatus(lv_color_t color, String text){
-  lv_obj_set_style_local_bg_color(wifi_connect_info_label, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT,color);
+  lv_obj_set_style_local_bg_color(wifi_bg_bottom, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT,color);
   lv_label_set_text(wifi_connect_info_label, text.c_str());
 }
 
 //@-wifi scan 任务
 void scanWIFITask(void *pvParameters) 
 {
-    //@-配置WIFI模式
-    WiFi.mode(WIFI_STA);
+    //@-WIFI断开连接
     WiFi.disconnect();
 
     vTaskDelay(1000); 
@@ -784,11 +786,11 @@ void lv_ex_tileview_1(void)
     lv_style_set_text_color(&led_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&led_style, LV_STATE_DEFAULT, &myLED_Font);
 
-    static lv_style_t led7_style_white;
-    lv_style_init(&led7_style_white);
-    // lv_style_set_text_color(&led7_style_white, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-    lv_style_set_text_color(&led7_style_white, LV_STATE_DEFAULT, lv_color_hex(0x4E7AC5));
-    lv_style_set_text_font(&led7_style_white, LV_STATE_DEFAULT, &dxLED7);
+    static lv_style_t led7_style_black;
+    lv_style_init(&led7_style_black);
+    lv_style_set_text_color(&led7_style_black, LV_STATE_DEFAULT, LV_COLOR_BLACK);
+    // lv_style_set_text_color(&led7_style_black, LV_STATE_DEFAULT, lv_color_hex(0x4E7AC5));
+    lv_style_set_text_font(&led7_style_black, LV_STATE_DEFAULT, &dxLED7);
 
     static lv_style_t led7_style_red;
     lv_style_init(&led7_style_red);
@@ -1043,14 +1045,22 @@ void lv_ex_tileview_1(void)
     lv_obj_add_style(label_temp, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text(label_temp, "CONNT");
 
+    wifi_bg_bottom = lv_obj_create(tile_0_2, NULL);
+    lv_obj_clean_style_list(wifi_bg_bottom, LV_OBJ_PART_MAIN);
+    lv_obj_set_style_local_bg_opa(wifi_bg_bottom, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT,LV_OPA_COVER);
+    lv_obj_set_style_local_bg_color(wifi_bg_bottom, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT,LV_COLOR_ORANGE);
+    lv_obj_align(wifi_bg_bottom, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 10);
+    // lv_obj_set_pos(wifi_bg_bottom, 0, 450);
+    lv_obj_set_size(wifi_bg_bottom, LV_HOR_RES, 20);
+
     wifi_connect_info_label = lv_label_create(tile_0_2, NULL);
     // lv_obj_add_style(wifi_connect_info_label, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text(wifi_connect_info_label, "#34495e wifi not connect please scan the wifi to connect...");
     lv_label_set_recolor(wifi_connect_info_label, true); 
     lv_label_set_long_mode(wifi_connect_info_label, LV_LABEL_LONG_SROLL_CIRC); /* Make sure text will wrap */
     lv_obj_set_width(wifi_connect_info_label, LV_HOR_RES - 100);
-    lv_obj_align(wifi_connect_info_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -20);
-    
+    lv_obj_align(wifi_connect_info_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -13);
+
     //------------------------------tile_0_3-----------------------------------------------------
     /*Create a window*/
     lv_obj_t * win = lv_win_create(tile_0_3, NULL);
@@ -1180,8 +1190,15 @@ void lv_ex_tileview_1(void)
     lv_obj_align( label_time, NULL, LV_ALIGN_IN_TOP_LEFT,35,60);  
     #endif
 
+    label_time_second = lv_label_create( tile_1_2, NULL);
+    lv_obj_add_style(label_time_second, LV_OBJ_PART_MAIN, &led7_style_black);
+    lv_label_set_text( label_time_second, "--"); 
+    #ifdef MAIN_BACKPIC_NUM_3
+    lv_obj_align( label_time_second, NULL, LV_ALIGN_IN_TOP_LEFT,160,85);  
+    #endif
+
     label_time_date = lv_label_create( tile_1_2, NULL);
-    lv_obj_add_style(label_time_date, LV_OBJ_PART_MAIN, &led7_style_white);
+    lv_obj_add_style(label_time_date, LV_OBJ_PART_MAIN, &led7_style_black);
     // lv_label_set_text( label_time_date, "----/--/--  --");
     lv_label_set_text( label_time_date, "--/-- --"); 
     #ifdef MAIN_BACKPIC_NUM_1
@@ -1609,6 +1626,10 @@ void setup()
     Setup_ESP_NOW();
     #endif
 
+    //@-配置WIFI模式
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+
     //@-ttgo初始化
     ttgo = TTGOClass::getWatch();
     ttgo->begin();
@@ -1757,8 +1778,12 @@ void loop()
         // PCF_TIMEFORMAT_HM,
         // PCF_TIMEFORMAT_HMS,
         //@-显示实时时间
-        sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HMS));
+        sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
         lv_label_set_text_fmt( label_time, "%s", display_buf); 
+
+        RTC_Date dt_temp = ttgo->rtc->getDateTime();
+        sprintf(display_buf, "%02d", dt_temp.second);
+        lv_label_set_text_fmt(label_time_second, "%s", display_buf); 
 
         if(display_time_bat_info_tick < 5000)
         {
