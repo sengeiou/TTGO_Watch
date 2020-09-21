@@ -13,6 +13,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 */
 #define __FIRMWARE__            "20200916"
 
+// #define USE_ESP_NOW
 #define USE_MP3
 
 #define uS_TO_S_FACTOR 1000000
@@ -20,18 +21,24 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #define DISPLAY_MIN_BRIGHTNESS      8
 #define DISPLAY_MAX_BRIGHTNESS      255
 
-
 // #define MAIN_BACKPIC_NUM_1  //宇航员
 // #define MAIN_BACKPIC_NUM_2     //开心最重要
 #define MAIN_BACKPIC_NUM_3     //十年饮冰
 
 
+
+
+//@-ttgo配置
 #include "config.h"
+
+#ifdef USE_ESP_NOW
 #include <esp_now.h>
+#endif
+
+//@-wifi
 #include <WiFi.h>
 //@-OTA远程更新
 #include <Update.h>
-
 //@-NVS文件系统
 #include "TridentTD_ESP32NVS.h"
 
@@ -42,15 +49,11 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
-
 //@-配置用户音频文件
 #include "./audio/geji_44k_mp3.h"
 #include "./audio/select05_mp3.h"
 #include "./audio/beep_24_mp3.h"
 #include "./audio/laozigun_robot.h"
-
-
-
 
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
@@ -148,9 +151,23 @@ lv_obj_t * ta;
 lv_obj_t * pwd_ta;
 lv_obj_t * kb;
 
+//@-WIFI 配置信息
+lv_obj_t * wifi_list;
+lv_obj_t * wifi_def_info_label;
+lv_obj_t * wifi_connect_info_label;
+lv_obj_t * wifi_scan_btn;
+lv_obj_t * wifi_save_btn;
+lv_obj_t * wifi_connect_btn;
+
+static lv_obj_t * wifi_kb;            //@-wifi密码输入键盘
+static lv_obj_t * wifi_ta_password;   //@-wifi密码输入框
+static lv_obj_t * wifi_mbox_connect;  //@-wifi密码输入对话框
+
 
 bool btn2_flag = true;
 
+
+#ifdef USE_ESP_NOW
 //@-WIFI NOW数据结构
 typedef struct struct_message {
     char a[32];
@@ -165,6 +182,7 @@ struct_message recv_Data;
 struct_message send_Data;
 
 uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
+#endif
 
 
 char display_buf[128];
@@ -181,7 +199,6 @@ String NVS_OTA_ADD_HOST;
 String NVS_OTA_ADD_PATH;
 int NVS_Backlight_Value;
 
-
 //@-定时器0~99min
 int Alarm_Timer_Data = 1;
 bool Alarm_Timer_SetData_Dir = false;  //false:增加  true:减少
@@ -190,6 +207,15 @@ bool rtcIrq = false;
 int all_second = 0;
 bool Set_Alarm_Run_Flag = false;   
 int  Alarm_Run_Time = 5;
+
+//@-WIFI
+TaskHandle_t ntWifiScanTaskHandler;
+TaskHandle_t ntWifiConnectTaskHandler;
+int WIFI_Scan_Num = 0;
+bool wifi_scan_flag = false;
+String wifi_ssidName;
+String wifi_password;
+unsigned long wifi_timeout = 10000; // 10sec
 
 /*
 Method to print the reason by which ESP32
@@ -211,6 +237,8 @@ void Print_Wakeup_Reason(){
   }
 }
 
+
+#ifdef USE_ESP_NOW
 // callback function that will be executed when data is received
 //@-wifi now 数据接收函数
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
@@ -228,6 +256,115 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 //   Serial.print("Bool: ");
 //   Serial.println(recv_Data.e);
 //   Serial.println();
+}
+#endif
+
+//@-开始wifi连接任务
+void beginWIFITask(void *pvParameters) {
+
+    updateBottomStatus(LV_COLOR_TEAL,"Connecting WIFI: " + wifi_ssidName);
+
+    unsigned long startingTime = millis();
+
+    WiFi.begin(wifi_ssidName.c_str(), wifi_password.c_str());
+    while (WiFi.status() != WL_CONNECTED && (millis() - startingTime) < wifi_timeout)
+    {
+        vTaskDelay(250);
+    }
+
+    if(WiFi.status() != WL_CONNECTED) 
+    {
+        updateBottomStatus(LV_COLOR_RED, "Please check your wifi password and try again.");
+        vTaskDelay(2500);
+        // networkScanner();
+        vTaskDelete(NULL);
+    }
+  
+    updateBottomStatus(LV_COLOR_GREEN, "WIFI is Connected! Local IP: " +  WiFi.localIP().toString());
+    // networkScanner();
+    vTaskDelete(NULL);
+}
+
+//@-wifi连接
+void connectWIFI(){
+
+  if(wifi_ssidName == NULL || wifi_ssidName.length() <1 || wifi_password == NULL || wifi_password.length() <1)
+  {
+    return;
+  }
+  
+  //@-删除wifi扫描任务
+  if(wifi_scan_flag == true)
+  {
+    wifi_scan_flag = false;
+    vTaskDelete(ntWifiScanTaskHandler);
+    vTaskDelay(500);
+    xTaskCreate(beginWIFITask,"BeginWIFITask",2048,NULL,0, &ntWifiConnectTaskHandler);   
+  }  
+  else
+  {
+    updateBottomStatus(LV_COLOR_RED, "Please Scan Wifi first.");
+  }
+             
+}
+
+//@-wifi密码输入消息框事件
+static void wifi_mbox_event_handler(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_move_background(wifi_kb);
+        lv_obj_move_background(wifi_mbox_connect);
+      
+        if(strcmp(lv_msgbox_get_active_btn_text(obj), "Connect")==0)
+        {
+            wifi_password = lv_textarea_get_text(wifi_ta_password);
+            wifi_password.trim();
+            connectWIFI();
+        }
+    }
+}
+
+//@-创建wifi密码输入消息框
+static void WIFI_makePassWordMsgBox()
+{
+  wifi_mbox_connect = lv_msgbox_create(lv_scr_act(), NULL);
+  static const char * btns[] ={"Connect", "Cancel", ""};
+  
+  wifi_ta_password = lv_textarea_create(wifi_mbox_connect, NULL);
+  lv_obj_set_size(wifi_ta_password, 200, 40);
+  lv_textarea_set_text(wifi_ta_password, "");
+
+  lv_msgbox_add_btns(wifi_mbox_connect, btns);
+  lv_obj_set_width(wifi_mbox_connect, 200);
+  lv_obj_set_event_cb(wifi_mbox_connect, wifi_mbox_event_handler);
+  lv_obj_align(wifi_mbox_connect, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_move_background(wifi_mbox_connect);
+}
+
+//@-wifi键盘事件
+static void wifi_keyboard_event_cb(lv_obj_t * kb, lv_event_t event)
+{
+  lv_keyboard_def_event_cb(kb, event);
+
+  if(event == LV_EVENT_APPLY){
+    lv_obj_move_background(kb);
+    
+  }else if(event == LV_EVENT_CANCEL){
+    lv_obj_move_background(kb);
+  }
+}
+
+//@-创建wifi键盘
+static void WIFI_makeKeyboard()
+{
+  wifi_kb = lv_keyboard_create(lv_scr_act(), NULL);
+  lv_obj_set_size(wifi_kb,  LV_HOR_RES, LV_VER_RES / 2);
+  lv_keyboard_set_cursor_manage(wifi_kb, true);
+  
+  lv_keyboard_set_textarea(wifi_kb, wifi_ta_password);
+  lv_obj_set_event_cb(wifi_kb, wifi_keyboard_event_cb);
+  lv_obj_move_background(wifi_kb);
 }
     
 
@@ -327,28 +464,125 @@ void Setup_Timer_Alarm(bool run_flag)
 
 }
 
+//@-wifi连接
+void wifi_popupPWMsgBox(){
+  if(NVS_WIFI_SSID == NULL || NVS_WIFI_SSID.length() == 0){
+    return;
+  }
+
+    // lv_textarea_set_text(ta_password, ""); 
+    // lv_msgbox_set_text(mbox_connect, ssidName.c_str());
+    // lv_obj_move_foreground(mbox_connect);
+    
+    // lv_obj_move_foreground(kb);
+    // lv_keyboard_set_textarea(kb, ta_password);
+}
+
+//@-更新wifi底部信息栏
+void updateBottomStatus(lv_color_t color, String text){
+  lv_obj_set_style_local_bg_color(wifi_connect_info_label, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT,color);
+  lv_label_set_text(wifi_connect_info_label, text.c_str());
+}
+
+//@-wifi scan 任务
+void scanWIFITask(void *pvParameters) 
+{
+    //@-配置WIFI模式
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+
+    vTaskDelay(1000); 
+    while (1) {
+        updateBottomStatus(LV_COLOR_ORANGE, "::: Searching Available WIFI :::");        
+        int n = WiFi.scanNetworks();
+        if (n <= 0) 
+        {
+            updateBottomStatus(LV_COLOR_RED, "Sorry no networks found!");        
+        }
+        else
+        {
+            lv_dropdown_clear_options(wifi_list);  
+            vTaskDelay(10);
+            for (int i = 0; i < n; ++i) 
+            {
+                                
+                String item = WiFi.SSID(i) + " (" + WiFi.RSSI(i) +") " + ((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
+                lv_dropdown_add_option(wifi_list,item.c_str(),LV_DROPDOWN_POS_LAST);
+                vTaskDelay(10);
+            }
+
+            updateBottomStatus(LV_COLOR_GREEN, String(n) + " networks found!");                     
+        }
+
+        vTaskDelay(30000); 
+    } 
+}
+
+//@-WIFI密码输入消息框
+void WIFI_popupPWMsgBox(){
+
+    if(wifi_ssidName == NULL || wifi_ssidName.length() == 0)
+    {
+        return;
+    }
+
+    lv_textarea_set_text(wifi_ta_password, ""); 
+    lv_msgbox_set_text(wifi_mbox_connect, wifi_ssidName.c_str());
+    lv_obj_move_foreground(wifi_mbox_connect);
+    
+    lv_obj_move_foreground(wifi_kb);
+    lv_keyboard_set_textarea(wifi_kb, wifi_ta_password);
+}
+
+//@-wifi list 事件
+void wifi_list_event_handler(lv_obj_t * obj, lv_event_t event){
+  
+  if(event == LV_EVENT_VALUE_CHANGED) {
+        char buf[32];
+        lv_dropdown_get_selected_str(obj, buf, sizeof(buf));
+        wifi_ssidName = String(buf);
+        
+        for (int i = 0; i < wifi_ssidName.length()-1; i++) {
+          if (wifi_ssidName.substring(i, i+2) == " (") {
+              wifi_ssidName = wifi_ssidName.substring(0, i);
+            break;
+          }
+        }
+        
+        WIFI_popupPWMsgBox();
+    }
+}
+
 //@-lvgl控件事件处理
 void event_handler(lv_obj_t *obj, lv_event_t event)
 {
     if (obj == btn10) {
+        #ifdef USE_ESP_NOW
         send_Data.b = 0;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        #endif
     } 
     else if (obj == btn20) {
+        #ifdef USE_ESP_NOW
         send_Data.b = 180;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        #endif
     } 
     else if (obj == btn30) {
+        #ifdef USE_ESP_NOW
         send_Data.b = send_Data.b + 10;
         if(send_Data.b > 180)
         send_Data.b = 180;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        #endif
     } 
     else if (obj == btn40) {
+        #ifdef USE_ESP_NOW
         send_Data.b = send_Data.b - 10;
         if(send_Data.b < 0)
         send_Data.b = 0;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        #endif
     } 
     else if (obj == btn2) {
 
@@ -367,6 +601,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     }
     else if(obj == btn)
     {
+        #ifdef USE_ESP_NOW
         if(send_Data.e == false) 
         send_Data.e = true;
         else if(send_Data.e == true) 
@@ -376,6 +611,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
 
         // Send message via ESP-NOW
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        #endif
     }
 
     else if(obj == sw1)
@@ -448,11 +684,24 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         }
     }
 
+
+    //@-wifi-------------------------------------
+    else if(obj == wifi_scan_btn)
+    {
+        if(wifi_scan_flag == false)
+        {
+            wifi_scan_flag = true;
+            // dx_task = lv_task_create(start_wifi_scan_task, 1000, LV_TASK_PRIO_MID, &user_data);
+            vTaskDelay(500);
+            xTaskCreate(scanWIFITask,"ScanWIFITask",4096, NULL,1,&ntWifiScanTaskHandler);
+        }
+    }
 }
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) {
+        #ifdef USE_ESP_NOW
         static char buf[20]; /* max 3 bytes for number plus 1 null terminating byte */
 
         send_Data.b = lv_slider_get_value(slider);
@@ -461,6 +710,7 @@ static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
         lv_label_set_text(slider_label, buf);
 
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        #endif
     }
 }
 
@@ -671,7 +921,12 @@ void lv_ex_tileview_1(void)
 
     label_data = lv_label_create( tile_0_0, NULL);
     lv_obj_add_style(label_data, LV_OBJ_PART_MAIN, &model_style);
+    #ifdef USE_ESP_NOW
     lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
+    #else
+    lv_label_set_text(label_data, "启动");
+    #endif
+
     lv_obj_align( label_data, NULL, LV_ALIGN_CENTER,0,45);
     
     //------------------------------tile_0_1-----------------------------------------------------
@@ -741,6 +996,60 @@ void lv_ex_tileview_1(void)
 
     //------------------------------tile_0_2-----------------------------------------------------
     //@-wifi
+    /*Create a normal drop down list*/
+    wifi_list = lv_dropdown_create(tile_0_2, NULL);
+    lv_dropdown_set_show_selected(wifi_list, false);
+    lv_dropdown_set_text(wifi_list, "WIFI");
+    lv_dropdown_set_options(wifi_list, "...Searching...");
+    lv_obj_align(wifi_list, NULL, LV_ALIGN_IN_TOP_LEFT, 20, 20);
+    lv_obj_set_event_cb(wifi_list, wifi_list_event_handler);
+
+    wifi_def_info_label = lv_label_create(tile_0_2, NULL);
+    // lv_obj_add_style(wifi_def_info_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text_fmt(wifi_def_info_label, "#ff7500 saved wifi ssid is: %s", NVS_WIFI_SSID);
+    lv_label_set_recolor(wifi_def_info_label, true); 
+    lv_label_set_long_mode(wifi_def_info_label, LV_LABEL_LONG_SROLL_CIRC); /* Make sure text will wrap */
+    lv_obj_set_width(wifi_def_info_label, LV_HOR_RES - 100);
+    lv_obj_align(wifi_def_info_label, NULL, LV_ALIGN_IN_TOP_MID, 0, 60);
+
+    wifi_scan_btn = lv_btn_create(tile_0_2, NULL);
+    lv_obj_set_width(wifi_scan_btn, 80);
+    lv_obj_set_event_cb(wifi_scan_btn, event_handler);
+    lv_obj_align(wifi_scan_btn, NULL, LV_ALIGN_IN_TOP_MID, -40, 90);  
+    lv_obj_set_hidden(wifi_scan_btn,false); 
+
+    wifi_save_btn = lv_btn_create(tile_0_2, NULL);
+    lv_obj_set_width(wifi_save_btn, 80);
+    lv_obj_set_event_cb(wifi_save_btn, event_handler);
+    lv_obj_align(wifi_save_btn, NULL, LV_ALIGN_IN_TOP_MID, -40, 150);  
+    lv_obj_set_hidden(wifi_save_btn,false); 
+
+    wifi_connect_btn = lv_btn_create(tile_0_2, NULL);
+    lv_obj_set_width(wifi_connect_btn, 80);
+    lv_obj_set_height(wifi_connect_btn, 100);
+    lv_obj_set_event_cb(wifi_connect_btn, event_handler);
+    lv_obj_align(wifi_connect_btn, NULL, LV_ALIGN_IN_TOP_MID, 50, 90); 
+    lv_obj_set_hidden(wifi_connect_btn,false); 
+
+    lv_obj_t * label_temp = lv_label_create(wifi_scan_btn, NULL);
+    lv_obj_add_style(label_temp, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_temp, "SCAN");
+
+    label_temp = lv_label_create(wifi_save_btn, NULL);
+    lv_obj_add_style(label_temp, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_temp, "SAVE");
+
+    label_temp = lv_label_create(wifi_connect_btn, NULL);
+    lv_obj_add_style(label_temp, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_temp, "CONNT");
+
+    wifi_connect_info_label = lv_label_create(tile_0_2, NULL);
+    // lv_obj_add_style(wifi_connect_info_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(wifi_connect_info_label, "#34495e wifi not connect please scan the wifi to connect...");
+    lv_label_set_recolor(wifi_connect_info_label, true); 
+    lv_label_set_long_mode(wifi_connect_info_label, LV_LABEL_LONG_SROLL_CIRC); /* Make sure text will wrap */
+    lv_obj_set_width(wifi_connect_info_label, LV_HOR_RES - 100);
+    lv_obj_align(wifi_connect_info_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -20);
     
     //------------------------------tile_0_3-----------------------------------------------------
     /*Create a window*/
@@ -930,6 +1239,7 @@ void lv_ex_tileview_1(void)
 
     //------------------------------tile_1_4-----------------------------------------------------
     //@-远程升级
+
 
 }
 
@@ -1247,22 +1557,10 @@ void Setup_NVS(int opt, String key, String key_StrValue, int key_IntValue)
 
 }
 
-
-//@-配置
-void setup()
+#ifdef USE_ESP_NOW
+void Setup_ESP_NOW()
 {
-    //@-串口初始化
-    Serial.begin(115200);
-
-    //@打印wakeup_reason
-    Print_Wakeup_Reason();
-
-    //@-配置NVS
-    Setup_NVS(1, "NULL", "NULL", 0);
-
-    Serial.println(NVS_Backlight_Value);
-
-    //@-配置wifi的now功能
+    //@-配置wifi的now功能 Payload is limited to 250 bytes. 
     WiFi.mode(WIFI_MODE_STA);
     // Serial.println(WiFi.macAddress());   //8C:AA:B5:82:EA:58
 
@@ -1289,6 +1587,27 @@ void setup()
     esp_now_register_recv_cb(OnDataRecv);
 
     send_Data.e = false;
+}
+#endif
+
+
+//@-配置
+void setup()
+{
+    //@-串口初始化
+    Serial.begin(115200);
+
+    //@打印wakeup_reason
+    Print_Wakeup_Reason();
+
+    //@-配置NVS
+    Setup_NVS(1, "NULL", "NULL", 0);
+
+    Serial.println(NVS_Backlight_Value);
+
+    #ifdef USE_ESP_NOW
+    Setup_ESP_NOW();
+    #endif
 
     //@-ttgo初始化
     ttgo = TTGOClass::getWatch();
@@ -1321,6 +1640,11 @@ void setup()
 
     //@-ttgo初始化lvgl库
     ttgo->lvgl_begin();
+
+    //@-静态创建wifi消息框
+    WIFI_makePassWordMsgBox();
+    //@-静态创建wifi密码输入键盘
+    WIFI_makeKeyboard();
 
     //@-进入lvgl主页面
     lv_ex_tileview_1();
@@ -1378,7 +1702,7 @@ void Display_TimeBAT_Info()
 }
 
 //@-检测闹钟
-void Check_Alarm()
+void check_alarm()
 {
    if (rtcIrq) 
    {
@@ -1424,7 +1748,7 @@ void loop()
     check_touch_pro();
 
     //@-检测闹钟
-    Check_Alarm();
+    check_alarm();
 
     if(system_tick > 100)
     {
@@ -1457,7 +1781,7 @@ void loop()
         
     }
 
-    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
+    // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
 
     lv_task_handler();
 
