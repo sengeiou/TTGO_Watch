@@ -5,6 +5,8 @@ git clone https://github.com/earlephilhower/ESP8266Audio
 git clone https://github.com/Gianbacchio/ESP8266_Spiram
 */
 
+//const char* ssid = "8879";
+//const char* password = "blackbug381";
 
 // C:\Users\DX\Documents\Arduino\libraries\TTGO_TWatch_Library-master\src
 
@@ -35,8 +37,8 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 //@-wifi
 #include <WiFi.h>
-//@-OTA远程更新
-#include <Update.h>
+// //@-OTA远程更新
+// #include <Update.h>
 //@-NVS文件系统
 #include "TridentTD_ESP32NVS.h"
 
@@ -166,6 +168,9 @@ static lv_obj_t * wifi_kb;            //@-wifi密码输入键盘
 static lv_obj_t * wifi_ta_password;   //@-wifi密码输入框
 static lv_obj_t * wifi_mbox_connect;  //@-wifi密码输入对话框
 
+//@-固件更新
+lv_obj_t * firmware_update_btn;
+lv_obj_t * firmwareUpdata_label;
 
 bool btn2_flag = true;
 
@@ -214,13 +219,17 @@ int  Alarm_Run_Time = 5;
 //@-WIFI
 TaskHandle_t ntWifiScanTaskHandler;
 TaskHandle_t ntWifiConnectTaskHandler;
+//@-固件更新任务
+TaskHandle_t ntFireWarmTaskHandler;  
 int WIFI_Scan_Num = 0;
 bool wifi_scan_flag = false;
 bool wifi_connect_flag = false;
 String wifi_ssidName;
 String wifi_password;
 unsigned long wifi_timeout = 10000; // 10sec
-WiFiClient wifi_update_client;
+//@-固件更新任务运行标志
+bool firmware_begin_flag = false; 
+
 
 
 
@@ -708,9 +717,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             ttgo->motor->onec();
         }
     }
-
-
-    //@-wifi-------------------------------------
+    //@-wifi扫描-------------------------------------
     else if(obj == wifi_scan_btn)
     {
         //@-wifi扫描任务结束及连接任务结束
@@ -722,6 +729,22 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             xTaskCreate(scanWIFITask,"ScanWIFITask",4096, NULL,1,&ntWifiScanTaskHandler);
         }
     }
+
+    //@-固件更新-----------------------------------
+    else if(obj == firmware_update_btn)
+    {
+        //@-wifi是否连接
+        if(WiFi.status() == WL_CONNECTED)
+        {
+            if(firmware_begin_flag == false)
+            {
+                firmware_begin_flag = true;
+
+                xTaskCreate(updateFirewarmTask,"updateFirewarmTask",4096, NULL,1,&ntFireWarmTaskHandler);
+            }
+        }
+    }
+    
 }
 
 static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
@@ -1285,6 +1308,32 @@ void lv_ex_tileview_1(void)
 
     //------------------------------tile_1_4-----------------------------------------------------
     //@-远程升级
+    lv_obj_t * label_updateTemp = lv_label_create(tile_1_4, NULL);
+    lv_obj_add_style(label_updateTemp, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_updateTemp, "OnLine Firmware Update");
+    lv_obj_align(label_updateTemp, NULL, LV_ALIGN_IN_TOP_MID, 0, 10);
+
+    firmware_update_btn = lv_btn_create(tile_1_4, NULL);
+    lv_obj_set_width(firmware_update_btn, 100);
+    lv_obj_set_height(firmware_update_btn, 60);
+    lv_obj_set_event_cb(firmware_update_btn, event_handler);
+    lv_obj_align(firmware_update_btn, NULL, LV_ALIGN_CENTER, 0, 0); 
+    lv_obj_set_hidden(firmware_update_btn,false); 
+
+    label_updateTemp = lv_label_create(firmware_update_btn, NULL);
+    lv_obj_add_style(label_updateTemp, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_updateTemp, "Update");
+
+    firmwareUpdata_label = lv_label_create(tile_1_4, NULL);
+    lv_obj_add_style(firmwareUpdata_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(firmwareUpdata_label, "check update");
+    lv_obj_align(firmwareUpdata_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
+
+    /*Create a Preloader object*/
+    // lv_obj_t * preload = lv_spinner_create(lv_scr_act(), NULL);
+    // lv_obj_set_size(preload, 130, 130);
+    // lv_obj_align(preload, NULL, LV_ALIGN_CENTER, 0, 0);
+
 
 
 }
