@@ -108,6 +108,9 @@ lv_obj_t *label_time_date;
 //@-实时电量显示
 lv_obj_t *label_batt;
 
+//@-WIFI连接图标
+lv_obj_t * label_wifi;
+
 /*Create a chart*/
 lv_obj_t * chart;
 
@@ -213,6 +216,7 @@ TaskHandle_t ntWifiScanTaskHandler;
 TaskHandle_t ntWifiConnectTaskHandler;
 int WIFI_Scan_Num = 0;
 bool wifi_scan_flag = false;
+bool wifi_connect_flag = false;
 String wifi_ssidName;
 String wifi_password;
 unsigned long wifi_timeout = 10000; // 10sec
@@ -265,6 +269,13 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 //@-开始wifi连接任务
 void beginWIFITask(void *pvParameters) {
 
+    //@-判断wifi是否已连接
+    if(WiFi.status() == WL_CONNECTED) 
+        WiFi.disconnect();
+    {
+        vTaskDelay(1000);
+    }
+
     updateBottomStatus(LV_COLOR_TEAL,"Connecting WIFI: " + wifi_ssidName);
 
     unsigned long startingTime = millis();
@@ -278,14 +289,17 @@ void beginWIFITask(void *pvParameters) {
     if(WiFi.status() != WL_CONNECTED) 
     {
         updateBottomStatus(LV_COLOR_RED, "Please check your wifi password and try again.");
-        vTaskDelay(2500);
-        // networkScanner();
+        WiFi.disconnect();
+        wifi_connect_flag = false;
+        vTaskDelay(1000);
         vTaskDelete(NULL);
     }
   
     updateBottomStatus(LV_COLOR_GREEN, "WIFI is Connected! Local IP: " +  WiFi.localIP().toString());
-    // networkScanner();
+    wifi_connect_flag = false;
+    vTaskDelay(1000);
     vTaskDelete(NULL);
+
 }
 
 //@-wifi连接
@@ -296,17 +310,17 @@ void connectWIFI(){
     return;
   }
   
-  //@-删除wifi扫描任务
-  if(wifi_scan_flag == true)
+  //@-wifi扫描任务结束及连接任务结束
+  if((wifi_scan_flag == false) && (wifi_connect_flag == false))
   {
-    wifi_scan_flag = false;
-    vTaskDelete(ntWifiScanTaskHandler);
-    vTaskDelay(500);
+    wifi_connect_flag = true;
+    // vTaskDelete(ntWifiScanTaskHandler);
+    // vTaskDelay(500);
     xTaskCreate(beginWIFITask,"BeginWIFITask",2048,NULL,0, &ntWifiConnectTaskHandler);   
   }  
   else
   {
-    updateBottomStatus(LV_COLOR_RED, "Please Scan Wifi first.");
+    updateBottomStatus(LV_COLOR_RED, "WIFI is working please wait..");
   }
              
 }
@@ -491,12 +505,17 @@ void updateBottomStatus(lv_color_t color, String text){
 void scanWIFITask(void *pvParameters) 
 {
     //@-WIFI断开连接
-    WiFi.disconnect();
+    // WiFi.disconnect();
 
-    vTaskDelay(1000); 
-    while (1) {
+    vTaskDelay(500); 
+
+    // while (1) 
+    // {
         updateBottomStatus(LV_COLOR_ORANGE, "::: Searching Available WIFI :::");        
         int n = WiFi.scanNetworks();
+
+        vTaskDelay(2000);
+
         if (n <= 0) 
         {
             updateBottomStatus(LV_COLOR_RED, "Sorry no networks found!");        
@@ -516,8 +535,12 @@ void scanWIFITask(void *pvParameters)
             updateBottomStatus(LV_COLOR_GREEN, String(n) + " networks found!");                     
         }
 
-        vTaskDelay(30000); 
-    } 
+        wifi_scan_flag = false;
+
+        vTaskDelete(NULL);
+
+        // vTaskDelay(30000); 
+    // } 
 }
 
 //@-WIFI密码输入消息框
@@ -690,11 +713,12 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     //@-wifi-------------------------------------
     else if(obj == wifi_scan_btn)
     {
-        if(wifi_scan_flag == false)
+        //@-wifi扫描任务结束及连接任务结束
+        if((wifi_scan_flag == false) && (wifi_connect_flag == false))
         {
             wifi_scan_flag = true;
             // dx_task = lv_task_create(start_wifi_scan_task, 1000, LV_TASK_PRIO_MID, &user_data);
-            vTaskDelay(500);
+            // vTaskDelay(500);
             xTaskCreate(scanWIFITask,"ScanWIFITask",4096, NULL,1,&ntWifiScanTaskHandler);
         }
     }
@@ -1176,6 +1200,11 @@ void lv_ex_tileview_1(void)
     lv_obj_t * img = lv_img_create(tile_1_2, NULL);
     lv_img_set_src(img, &TTGO_Main);
     lv_obj_align(img, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    label_wifi = lv_label_create(tile_1_2, NULL);
+    lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
+    lv_obj_align( label_wifi, NULL, LV_ALIGN_IN_TOP_RIGHT,-2,5); 
+    lv_obj_set_hidden(label_wifi,true);  
 
     label_time = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_big_style);
@@ -1780,18 +1809,19 @@ void loop()
         //@-显示实时时间
         sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
         lv_label_set_text_fmt( label_time, "%s", display_buf); 
-
+        //@-显示实时时间-秒
         RTC_Date dt_temp = ttgo->rtc->getDateTime();
         sprintf(display_buf, "%02d", dt_temp.second);
         lv_label_set_text_fmt(label_time_second, "%s", display_buf); 
 
+        //@-显示年月日及电量
         if(display_time_bat_info_tick < 5000)
         {
             #ifdef MAIN_BACKPIC_NUM_3
             lv_obj_set_hidden(img_biaoyu,true); 
             #endif
 
-            //@-显示年月日及电量
+            
             Display_TimeBAT_Info();
         }
         else 
@@ -1804,6 +1834,11 @@ void loop()
             #endif
         }
         
+        //@-显示WIFI连接状态
+        if(WiFi.status() == WL_CONNECTED)
+        lv_obj_set_hidden(label_wifi,false); 
+        else
+        lv_obj_set_hidden(label_wifi,true); 
     }
 
     // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
