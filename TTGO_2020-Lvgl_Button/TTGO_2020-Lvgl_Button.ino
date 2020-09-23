@@ -13,7 +13,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 /*
 * firmeware version string
 */
-#define __FIRMWARE__            "20200916"
+#define __FIRMWARE__            "20200922"
 
 // #define USE_ESP_NOW
 #define USE_MP3
@@ -1326,7 +1326,7 @@ void lv_ex_tileview_1(void)
 
     firmwareUpdata_label = lv_label_create(tile_1_4, NULL);
     lv_obj_add_style(firmwareUpdata_label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(firmwareUpdata_label, "check update");
+    lv_label_set_text_fmt(firmwareUpdata_label, "Version:%s", __FIRMWARE__);
     lv_obj_align(firmwareUpdata_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
 
     /*Create a Preloader object*/
