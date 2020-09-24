@@ -378,9 +378,11 @@ void loop() {
     }
  
     http.end(); //Free the resources
+
+    delay(5000);
   }
  
-  delay(20000);
+  delay(20);
  
 }
 

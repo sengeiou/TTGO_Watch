@@ -61,7 +61,6 @@ LV_FONT_DECLARE(dxLED7);
 LV_FONT_DECLARE(dxLED7_60);
 LV_FONT_DECLARE(myLED_Font);
 
-
 //@-配置用户图片数据
 // LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_Main);
@@ -172,6 +171,11 @@ static lv_obj_t * wifi_mbox_connect;  //@-wifi密码输入对话框
 lv_obj_t * firmware_update_btn;
 lv_obj_t * firmwareUpdata_label;
 
+//@-天气预报信息
+lv_obj_t * weather_title_label;
+lv_obj_t * weather_info_label;
+lv_obj_t * weatcher_get_btn;
+
 bool btn2_flag = true;
 
 
@@ -230,7 +234,13 @@ unsigned long wifi_timeout = 10000; // 10sec
 //@-固件更新任务运行标志
 bool firmware_begin_flag = false; 
 
-
+//@-天气预报
+//@-天气任务运行标志
+TaskHandle_t ntWeatherTaskHandler;
+int Getweather_tick = 0;
+bool weather_begin_flag = false; 
+bool weather_json_flag = false;
+float weather_temputer = 0;
 
 
 /*
@@ -744,6 +754,25 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             }
         }
     }
+
+    //@-获取天气-----------------------------------
+    else if(obj == weatcher_get_btn)
+    {
+        //@-wifi是否连接
+        if(WiFi.status() == WL_CONNECTED)
+        {
+            if(weather_begin_flag == false)
+            {
+
+                weather_json_flag = false;
+
+                weather_begin_flag = true;
+
+                xTaskCreate(GetweatherTask,"GetweatherTask",4096, NULL,0,&ntWeatherTaskHandler);
+            }
+        }
+    }
+    
     
 }
 
@@ -1109,26 +1138,28 @@ void lv_ex_tileview_1(void)
     lv_obj_align(wifi_connect_info_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -13);
 
     //------------------------------tile_0_3-----------------------------------------------------
-    /*Create a window*/
-    lv_obj_t * win = lv_win_create(tile_0_3, NULL);
-    lv_win_set_title(win, "Window title");                        /*Set the title*/
+    weather_title_label = lv_label_create(tile_0_3, NULL);
+    // lv_obj_add_style(weather_title_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(weather_title_label, "#34495e Hangzhou Weather");
+    lv_label_set_recolor(weather_title_label, true); 
+    // lv_label_set_long_mode(weather_title_label, LV_LABEL_LONG_SROLL_CIRC); /* Make sure text will wrap */
+    // lv_obj_set_width(weather_title_label, LV_HOR_RES - 100);
+    lv_obj_align(weather_title_label, NULL, LV_ALIGN_IN_TOP_MID, 0, 10);
 
-    /*Add control button to the header*/
-    lv_obj_t * close_btn = lv_win_add_btn(win, LV_SYMBOL_CLOSE);   /*Add close button and use built-in close action*/
-    // lv_obj_set_event_cb(close_btn, lv_win_close_event_cb);
-    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
-    lv_win_add_btn(win, LV_SYMBOL_SETTINGS);        /*Add a setup button*/
+    weather_info_label = lv_label_create(tile_0_3, NULL);
+    // lv_obj_add_style(weather_info_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(weather_info_label, " NULL ");
+    lv_label_set_recolor(weather_info_label, true); 
+    lv_obj_align(weather_info_label, NULL, LV_ALIGN_CENTER, 0, 0);
 
-    /*Add some dummy content*/
-    lv_obj_t * txt = lv_label_create(win, NULL);
-    lv_label_set_text(txt, "This is the content of the window\n\n"
-                           "You can add control buttons to\n"
-                           "the window header\n\n"
-                           "The content area becomes\n"
-                           "automatically scrollable is it's \n"
-                           "large enough.\n\n"
-                           " You can scroll the content\n"
-    );
+    weatcher_get_btn = lv_btn_create(tile_0_3, NULL);
+    lv_obj_set_width(weatcher_get_btn, 160);
+    lv_obj_set_event_cb(weatcher_get_btn, event_handler);
+    lv_obj_align(weatcher_get_btn, NULL, LV_ALIGN_IN_TOP_MID, 0, 180);  
+
+    lv_obj_t * weather_title_label = lv_label_create(weatcher_get_btn, NULL);
+    lv_label_set_text(weather_title_label, "Get Weather Data");
+
     //------------------------------tile_0_4-----------------------------------------------------
     chart = lv_chart_create(tile_0_4, NULL);
     lv_obj_set_size(chart, 200, 150);
@@ -1888,6 +1919,9 @@ void loop()
         lv_obj_set_hidden(label_wifi,false); 
         else
         lv_obj_set_hidden(label_wifi,true); 
+
+        sprintf(display_buf, "%d--temp:%.2f", Getweather_tick,weather_temputer);
+        lv_label_set_text(weather_info_label, display_buf); 
     }
 
     // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
