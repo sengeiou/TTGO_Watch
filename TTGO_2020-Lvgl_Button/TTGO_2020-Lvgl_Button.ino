@@ -205,11 +205,19 @@ int display_time_bat_info_tick = 0;
 
 
 //@-NVS数据
-String NVS_WIFI_SSID;
-String NVS_WIFI_PASS;
-String NVS_OTA_ADD_HOST;
-String NVS_OTA_ADD_PATH;
-int NVS_Backlight_Value;
+String NVS_WIFI_SSID;            //@-默认WIFIssid
+String NVS_WIFI_PASS;            //@-默认WIFI密码
+bool   NVS_WIFI_AUTO;            //@-自动连接WIFI方式
+String NVS_OTA_ADD_HOST;         //@-OTA服务器地址
+String NVS_OTA_ADD_PATH;         //@-OTA更新路径
+int NVS_Backlight_Value;         //@-TTGO背光数值
+String NVS_Weather_Pick_Today;   //@-最新一次天气获取的日期---年-月-日  
+String NVS_Weather_Info;         //@-最新一次天气数据--温度-最高温度-最低温度-气压-湿度-天气情况
+int    NVS_Weather_Pick_Flag;    //@-今天的天气数据是否已获取标志
+String NVS_Timer_Info;           //@-计时器数据-小时-分钟-日期-星期
+int    NVS_Timer_Flag;           //@-是否有定时器标志
+
+
 
 //@-定时器0~99min
 int Alarm_Timer_Data = 1;
@@ -502,19 +510,6 @@ void Setup_Timer_Alarm(bool run_flag)
 
 }
 
-//@-wifi连接
-void wifi_popupPWMsgBox(){
-  if(NVS_WIFI_SSID == NULL || NVS_WIFI_SSID.length() == 0){
-    return;
-  }
-
-    // lv_textarea_set_text(ta_password, ""); 
-    // lv_msgbox_set_text(mbox_connect, ssidName.c_str());
-    // lv_obj_move_foreground(mbox_connect);
-    
-    // lv_obj_move_foreground(kb);
-    // lv_keyboard_set_textarea(kb, ta_password);
-}
 
 //@-更新wifi底部信息栏
 void updateBottomStatus(lv_color_t color, String text){
@@ -814,7 +809,7 @@ static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event)
 
         ttgo->bl->adjust( value );
 
-        //@-写入NVS
+        //@-将背光值写入NVS
         Setup_NVS(4,"backlight_value", "NULL", value);   
 
     }
@@ -1639,17 +1634,25 @@ void Setup_NVS(int opt, String key, String key_StrValue, int key_IntValue)
         NVS.begin();
         String NVSTime = NVS.getString("NVSTime");
 
+        // Serial.println(NVSTime);
+
         //@-初始化
         if(NVSTime.equals("dx-error"))
         {
             NVS.setString("NVSTime", "1");
-            NVS.setString("version", "V1.0");
-            NVS.setString("fireware_version", "TTGO.ino.esp32.bin");
             NVS.setString("wifi_ssid", "wuyiyi");
             NVS.setString("wifi_pass", "10238831");
             NVS.setString("oat_add_host", "www.dingxiao1023.com");
             NVS.setString("oat_add_path", "/media/images/TTGO.ino.esp32.bin");
             NVS.setInt("backlight_value", 30);
+
+            NVS.setString("weather_pick_today", "2020-09-25");  //@-年-月-日
+            NVS.setString("weather_pick_info", "20.23-20.23-20.23-1000-65-Clouds");  //@-温度-最高温度-最低温度-气压-湿度-天气情况
+            NVS.setInt("weather_pick_flag", 0);   //@-今天的天气数据是否已获取标志
+
+            NVS.setString("timer_info", "08-23-25-5");  //@-小时-分钟-日期-星期
+            NVS.setInt("timer_flag", 0);   //@-是否有定时器标志
+
         }
 
         //@-读取NVS数据
@@ -1660,6 +1663,13 @@ void Setup_NVS(int opt, String key, String key_StrValue, int key_IntValue)
             NVS_OTA_ADD_HOST = NVS.getString("oat_add_host");
             NVS_OTA_ADD_PATH = NVS.getString("oat_add_path");
             NVS_Backlight_Value = NVS.getInt("backlight_value");
+
+            NVS_Weather_Pick_Today = NVS.getString("weather_pick_today");  //@-年-月-日  
+            NVS_Weather_Info = NVS.getString("weather_pick_info");         //@-温度-最高温度-最低温度-气压-湿度-天气情况
+            NVS_Weather_Pick_Flag = NVS.getInt("weather_pick_flag");       //@-今天的天气数据是否已获取标志
+
+            NVS_Timer_Info = NVS.getString("timer_info");                  //@-小时-分钟-日期-星期
+            NVS_Timer_Flag = NVS.getInt("timer_flag");                     //@-是否有定时器标志
         }
 
         NVS.close();
@@ -1739,6 +1749,8 @@ void setup()
     Setup_NVS(1, "NULL", "NULL", 0);
 
     Serial.println(NVS_Backlight_Value);
+    if(NVS_Backlight_Value == 0)
+    NVS_Backlight_Value = 30;
 
     #ifdef USE_ESP_NOW
     Setup_ESP_NOW();
@@ -1752,10 +1764,9 @@ void setup()
     ttgo = TTGOClass::getWatch();
     ttgo->begin();
     ttgo->openBL();
-    ttgo->bl->adjust( NVS_Backlight_Value );
-
     ttgo->motor_begin();
     ttgo->motor->onec();
+    ttgo->bl->adjust( NVS_Backlight_Value );
 
     //@-设置RTC
     // Setup_RTC();

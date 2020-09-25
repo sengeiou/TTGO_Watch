@@ -83,11 +83,24 @@ void GetweatherTask(void *pvParameters)
           //@-连接openweathermap网址API
           // http.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444",root_ca);
           
+          // {"coord":{"lon":120.16,"lat":30.29},
+          //  "weather":[{"id":803,"main":"Clouds","description":"broken clouds","icon":"04d"}],
+          //  "base":"stations",
+          //  "main":{"temp":296.94,"feels_like":298.52,"temp_min":294.26,"temp_max":298.15,"pressure":1010,"humidity":64},
+          //  "visibility":10000,
+          //  "wind":{"speed":0.89,"deg":90,"gust":4.47},
+          //  "clouds":{"all":69},
+          //  "dt":1600916525,
+          //  "sys":{"type":3,"id":2035262,"country":"CN","sunrise":1600897724,"sunset":1600941243},
+          //  "timezone":28800,
+          //  "id":1808926,
+          //  "name":"Hangzhou",
+          //  "cod":200}
+
           if(weather_use_http_id == 0)
           http.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444");
           else if(weather_use_http_id == 1)
           http1.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444");
-          
           
           //@-HTTP返回
           int httpCode;
@@ -121,19 +134,6 @@ void GetweatherTask(void *pvParameters)
                 else
                 weather_json_flag = true;
 
-              // {"coord":{"lon":120.16,"lat":30.29},
-              //  "weather":[{"id":803,"main":"Clouds","description":"broken clouds","icon":"04d"}],
-              //  "base":"stations",
-              //  "main":{"temp":296.94,"feels_like":298.52,"temp_min":294.26,"temp_max":298.15,"pressure":1010,"humidity":64},
-              //  "visibility":10000,
-              //  "wind":{"speed":0.89,"deg":90,"gust":4.47},
-              //  "clouds":{"all":69},
-              //  "dt":1600916525,
-              //  "sys":{"type":3,"id":2035262,"country":"CN","sunrise":1600897724,"sunset":1600941243},
-              //  "timezone":28800,
-              //  "id":1808926,
-              //  "name":"Hangzhou",
-              //  "cod":200}
 
               JsonObject& coord_data = message["coord"];
               int lon = coord_data["lon"];
