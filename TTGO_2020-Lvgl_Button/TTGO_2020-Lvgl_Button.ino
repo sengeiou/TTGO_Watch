@@ -50,10 +50,10 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "AudioOutputI2S.h"
 
 //@-配置用户音频文件
-#include "./audio/geji_44k_mp3.h"
+// #include "./audio/geji_44k_mp3.h"
 #include "./audio/select05_mp3.h"
 #include "./audio/beep_24_mp3.h"
-#include "./audio/laozigun_robot.h"
+// #include "./audio/laozigun_robot.h"
 
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
@@ -65,7 +65,7 @@ LV_FONT_DECLARE(myLED_Font);
 // LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_Main);
 LV_IMG_DECLARE(rich);
-LV_IMG_DECLARE(TTGO_Main_Biaoyu);
+LV_IMG_DECLARE(TTGO_Main_Biaoyu);   //@-标语
 
 
 //@-TTGO
@@ -241,6 +241,8 @@ int Getweather_tick = 0;
 bool weather_begin_flag = false; 
 bool weather_json_flag = false;
 float weather_temputer = 0;
+int weather_use_http_id = 0;
+int weather_use_http_last_id = 0;
 
 
 /*
@@ -662,7 +664,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     {
         //@-播放音效
         // Run_MP3_Audio(1);
-        Run_MP3_Audio(&geji_44k_mp3, sizeof(geji_44k_mp3));
+        Run_MP3_Audio(&select05_mp3, sizeof(select05_mp3));
     }
     else if(obj == sw2)
     {
@@ -680,7 +682,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     {
         //@-播放音效
         // Run_MP3_Audio(4);
-        Run_MP3_Audio(&laozigun_robot, sizeof(laozigun_robot));
+        Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
     }
 
     // else if(obj == tile_1_2)
@@ -767,6 +769,13 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
                 weather_json_flag = false;
 
                 weather_begin_flag = true;
+
+                weather_use_http_last_id = weather_use_http_id;
+                
+                if(weather_use_http_id == 0)
+                weather_use_http_id = 1;
+                else if(weather_use_http_id == 1)
+                weather_use_http_id = 0;
 
                 xTaskCreate(GetweatherTask,"GetweatherTask",4096, NULL,0,&ntWeatherTaskHandler);
             }
@@ -1597,7 +1606,7 @@ void check_touch_pro()
 void Turn_On_Audio()
 {
     // file = new AudioFileSourcePROGMEM(image, sizeof(image));
-    file = new AudioFileSourcePROGMEM(laozigun_robot, sizeof(laozigun_robot));
+    file = new AudioFileSourcePROGMEM(beep_24_mp3, sizeof(beep_24_mp3));
     id3 = new AudioFileSourceID3(file);
 
     #if defined(STANDARD_BACKPLANE)

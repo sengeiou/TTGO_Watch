@@ -47,113 +47,148 @@
 // "-----END CERTIFICATE-----\n";
 
 HTTPClient http;
+HTTPClient http1;
 //@-json数据格式化
-StaticJsonBuffer<2000> jsonBuffer;
+// DynamicJsonBuffer
+StaticJsonBuffer<1500> jsonBuffer;
+
 
 //@-获取天气任务
 void GetweatherTask(void *pvParameters) 
 {
-  Serial.println("weather start..."); 
-
-  while((Getweather_tick < 5) && (weather_json_flag == false))
+  if((http.connected() == true) || (http1.connected() == true))
   {
-      //@-天气数据获取次数
-      Getweather_tick = Getweather_tick + 1;
-
-      //@-判断wifi连接
-      if((WiFi.status() == WL_CONNECTED)) 
-      { 
-        // http.begin("http://www.dx1023.com/video"); //Specify the URL
-
-        //@-连接openweathermap网址API
-        // http.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444",root_ca);
-        http.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444");
-
-        //@-HTTP返回
-        int httpCode = http.GET(); //Make the request
-        
-        //@-HTTP返回正常  (httpCode > 0) 
-        if (httpCode == 200) 
-        { 
-              //@-获得数据
-              String payload = http.getString();
-
-              // Serial.println(httpCode);
-              // Serial.println(payload);
-
-              // JsonObject& message = jsonBuffer.parseObject((char *)payload);
-              JsonObject& message = jsonBuffer.parseObject(payload);
-              if (!message.success()) 
-              {
-                weather_json_flag = false;
-                Serial.println("JSON parse failed"); 
-              }
-              else
-              weather_json_flag = true;
-
-            // {"coord":{"lon":120.16,"lat":30.29},
-            //  "weather":[{"id":803,"main":"Clouds","description":"broken clouds","icon":"04d"}],
-            //  "base":"stations",
-            //  "main":{"temp":296.94,"feels_like":298.52,"temp_min":294.26,"temp_max":298.15,"pressure":1010,"humidity":64},
-            //  "visibility":10000,
-            //  "wind":{"speed":0.89,"deg":90,"gust":4.47},
-            //  "clouds":{"all":69},
-            //  "dt":1600916525,
-            //  "sys":{"type":3,"id":2035262,"country":"CN","sunrise":1600897724,"sunset":1600941243},
-            //  "timezone":28800,
-            //  "id":1808926,
-            //  "name":"Hangzhou",
-            //  "cod":200}
-
-            JsonObject& coord_data = message["coord"];
-            int lon = coord_data["lon"];
-            Serial.print("lon:");
-            Serial.println(lon);
-
-            String base = message["base"];
-            Serial.print("base:");
-            Serial.println(base);
-
-            // JsonObject& weather_data = message["weather"];
-            int id = message["weather"][0]["id"]; 
-            const char* main = message["weather"][0]["main"]; 
-            String description = message["weather"][0]["description"];
-            // Output to serial monitor
-            Serial.print("id:");
-            Serial.println(id);
-            Serial.print("main:");
-            Serial.println(main);
-            Serial.print("description:");
-            Serial.println(description);
-
-            JsonObject& main_data = message["main"];
-            float temp = main_data["temp"]; 
-            float temp_min = main_data["temp_min"]; 
-            float temp_maz = main_data["temp_max"]; 
-            int pressure = main_data["pressure"]; 
-            int humidity = main_data["humidity"]; 
-
-            Serial.print("temp:");
-            weather_temputer = temp - 273.15;
-            Serial.println((temp - 273.15));  //开氏温度与摄氏度之间换算
-            Serial.print("pressure:");
-            Serial.println(pressure);
-            Serial.print("humidity:");
-            Serial.println(humidity);
-        }
-        else 
-        {
-          Serial.println("Error on HTTP request");
-        }
-    
-        http.end(); //Free the resources
-      }
-      vTaskDelay(10000);
-    }
-    Getweather_tick = 0;
+    weather_use_http_id = weather_use_http_last_id;
+    Serial.println("http wait close..."); 
+    vTaskDelay(500);
     weather_begin_flag = false;
     vTaskDelay(100);
     vTaskDelete(NULL);
+  }
+  else
+  {
+    Serial.print("weather start http id:"); 
+    Serial.println(weather_use_http_id); 
+
+    while((Getweather_tick < 5) && (weather_json_flag == false))
+    {
+        //@-天气数据获取次数
+        Getweather_tick = Getweather_tick + 1;
+
+        //@-判断wifi连接
+        if((WiFi.status() == WL_CONNECTED)) 
+        { 
+          // http.begin("http://www.dx1023.com/video"); //Specify the URL
+
+          //@-连接openweathermap网址API
+          // http.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444",root_ca);
+          
+          if(weather_use_http_id == 0)
+          http.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444");
+          else if(weather_use_http_id == 1)
+          http1.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444");
+          
+          
+          //@-HTTP返回
+          int httpCode;
+          if(weather_use_http_id == 0)
+          httpCode = http.GET(); //Make the request
+          else if(weather_use_http_id == 1)
+          httpCode = http1.GET(); //Make the request
+
+          Serial.println(httpCode);
+          
+          //@-HTTP返回正常  (httpCode > 0) 
+          if (httpCode == 200) 
+          { 
+                //@-获得数据
+                String payload;
+                if(weather_use_http_id == 0)
+                payload = http.getString();
+                else if(weather_use_http_id == 1)
+                payload = http1.getString();
+
+                // Serial.println(httpCode);
+                // Serial.println(payload);
+
+                // JsonObject& message = jsonBuffer.parseObject((char *)payload);
+                JsonObject& message = jsonBuffer.parseObject(payload);
+                if (!message.success()) 
+                {
+                  weather_json_flag = false;
+                  Serial.println("JSON parse failed"); 
+                }
+                else
+                weather_json_flag = true;
+
+              // {"coord":{"lon":120.16,"lat":30.29},
+              //  "weather":[{"id":803,"main":"Clouds","description":"broken clouds","icon":"04d"}],
+              //  "base":"stations",
+              //  "main":{"temp":296.94,"feels_like":298.52,"temp_min":294.26,"temp_max":298.15,"pressure":1010,"humidity":64},
+              //  "visibility":10000,
+              //  "wind":{"speed":0.89,"deg":90,"gust":4.47},
+              //  "clouds":{"all":69},
+              //  "dt":1600916525,
+              //  "sys":{"type":3,"id":2035262,"country":"CN","sunrise":1600897724,"sunset":1600941243},
+              //  "timezone":28800,
+              //  "id":1808926,
+              //  "name":"Hangzhou",
+              //  "cod":200}
+
+              JsonObject& coord_data = message["coord"];
+              int lon = coord_data["lon"];
+              Serial.print("lon:");
+              Serial.println(lon);
+
+              String base = message["base"];
+              Serial.print("base:");
+              Serial.println(base);
+
+              // JsonObject& weather_data = message["weather"];
+              int id = message["weather"][0]["id"]; 
+              const char* main = message["weather"][0]["main"]; 
+              String description = message["weather"][0]["description"];
+              // Output to serial monitor
+              Serial.print("id:");
+              Serial.println(id);
+              Serial.print("main:");
+              Serial.println(main);
+              Serial.print("description:");
+              Serial.println(description);
+
+              JsonObject& main_data = message["main"];
+              float temp = main_data["temp"]; 
+              float temp_min = main_data["temp_min"]; 
+              float temp_maz = main_data["temp_max"]; 
+              int pressure = main_data["pressure"]; 
+              int humidity = main_data["humidity"]; 
+
+              Serial.print("temp:");
+              weather_temputer = temp - 273.15;
+              Serial.println((temp - 273.15));  //开氏温度与摄氏度之间换算
+              Serial.print("pressure:");
+              Serial.println(pressure);
+              Serial.print("humidity:");
+              Serial.println(humidity);
+          }
+          else 
+          {
+            Serial.println("Error on HTTP request");
+          }
+      
+          if(weather_use_http_id == 0)
+          http.end(); //Free the resources
+          else if(weather_use_http_id == 1)
+          http1.end(); //Free the resources
+        }
+        vTaskDelay(5000);
+      }
+      jsonBuffer.clear();  //jsonBuffer 清空
+      Getweather_tick = 0;
+      weather_begin_flag = false;
+      vTaskDelay(100);
+      vTaskDelete(NULL);
+    }
 }
 
 
