@@ -146,8 +146,12 @@ void GetweatherTask(void *pvParameters)
 
               // JsonObject& weather_data = message["weather"];
               int id = message["weather"][0]["id"]; 
-              const char* main = message["weather"][0]["main"]; 
+              // const char* main = message["weather"][0]["main"]; 
+              String main = message["weather"][0]["main"]; 
               String description = message["weather"][0]["description"];
+
+              // weather_description = description;
+
               // Output to serial monitor
               Serial.print("id:");
               Serial.println(id);
@@ -158,18 +162,27 @@ void GetweatherTask(void *pvParameters)
 
               JsonObject& main_data = message["main"];
               float temp = main_data["temp"]; 
-              float temp_min = main_data["temp_min"]; 
-              float temp_maz = main_data["temp_max"]; 
+              weather_temputer_min = main_data["temp_min"]; 
+              weather_temputer_max = main_data["temp_max"]; 
               int pressure = main_data["pressure"]; 
               int humidity = main_data["humidity"]; 
 
-              Serial.print("temp:");
               weather_temputer = temp - 273.15;
-              Serial.println((temp - 273.15));  //开氏温度与摄氏度之间换算
-              Serial.print("pressure:");
-              Serial.println(pressure);
-              Serial.print("humidity:");
-              Serial.println(humidity);
+              // weather_temputer_min = temp_min - 273.15;
+              // weather_temputer_max = temp_max - 273.15;
+              weather_pressure = pressure;
+              weather_humidity = humidity;
+
+              // Serial.print("temp:");
+              // Serial.println((temp - 273.15));  //开氏温度与摄氏度之间换算
+              // Serial.print("pressure:");
+              // Serial.println(pressure);
+              // Serial.print("humidity:");
+              // Serial.println(humidity);
+              Serial.print("temp_min:");
+              Serial.println(weather_temputer_min);
+              Serial.print("temp_max:");
+              Serial.println(weather_temputer_max);
           }
           else 
           {

@@ -218,7 +218,6 @@ String NVS_Timer_Info;           //@-计时器数据-小时-分钟-日期-星期
 int    NVS_Timer_Flag;           //@-是否有定时器标志
 
 
-
 //@-定时器0~99min
 int Alarm_Timer_Data = 1;
 bool Alarm_Timer_SetData_Dir = false;  //false:增加  true:减少
@@ -248,7 +247,12 @@ TaskHandle_t ntWeatherTaskHandler;
 int Getweather_tick = 0;
 bool weather_begin_flag = false; 
 bool weather_json_flag = false;
+String weather_description;
 float weather_temputer = 0;
+float weather_temputer_min;
+float weather_temputer_max;
+int weather_pressure;
+int weather_humidity;
 int weather_use_http_id = 0;
 int weather_use_http_last_id = 0;
 
@@ -1940,7 +1944,7 @@ void loop()
         else
         lv_obj_set_hidden(label_wifi,true); 
 
-        sprintf(display_buf, "%d--temp:%.2f", Getweather_tick,weather_temputer);
+        sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
         lv_label_set_text(weather_info_label, display_buf); 
     }
 
