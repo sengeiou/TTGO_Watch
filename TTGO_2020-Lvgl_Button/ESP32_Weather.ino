@@ -4,7 +4,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>   //V5.13.5
  
-
+//@-浏览器安全码
 // const char* root_ca= \
 // "-----BEGIN CERTIFICATE-----\n" \
 // "MIIGvjCCBaagAwIBAgIRAKL7IEo7D+v9u0G4ItYCJYwwDQYJKoZIhvcNAQELBQAw\n" \
@@ -51,7 +51,8 @@ HTTPClient http1;
 //@-json数据格式化
 // DynamicJsonBuffer
 StaticJsonBuffer<1500> jsonBuffer;
-
+String App_Html_Add = "https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";
+// String App_Html_Add = "https://lab.isaaclin.cn/nCoV/api/overall";
 
 //@-获取天气任务
 void GetweatherTask(void *pvParameters) 
@@ -98,9 +99,9 @@ void GetweatherTask(void *pvParameters)
           //  "cod":200}
 
           if(weather_use_http_id == 0)
-          http.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444");
+          http.begin(App_Html_Add);
           else if(weather_use_http_id == 1)
-          http1.begin("https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444");
+          http1.begin(App_Html_Add);
           
           //@-HTTP返回
           int httpCode;
@@ -122,7 +123,7 @@ void GetweatherTask(void *pvParameters)
                 payload = http1.getString();
 
                 // Serial.println(httpCode);
-                // Serial.println(payload);
+                Serial.println(payload);
 
                 // JsonObject& message = jsonBuffer.parseObject((char *)payload);
                 JsonObject& message = jsonBuffer.parseObject(payload);

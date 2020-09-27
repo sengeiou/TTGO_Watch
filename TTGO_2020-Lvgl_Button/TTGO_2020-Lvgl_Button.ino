@@ -13,7 +13,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 /*
 * firmeware version string
 */
-#define __FIRMWARE__            "20200922"
+#define __FIRMWARE__            "20200927-To Zhen"
 
 // #define USE_ESP_NOW
 #define USE_MP3
@@ -51,7 +51,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 
 //@-配置用户音频文件
 // #include "./audio/geji_44k_mp3.h"
-#include "./audio/select05_mp3.h"
+// #include "./audio/select05_mp3.h"
 #include "./audio/beep_24_mp3.h"
 // #include "./audio/laozigun_robot.h"
 
@@ -66,6 +66,8 @@ LV_FONT_DECLARE(myLED_Font);
 LV_IMG_DECLARE(TTGO_Main);
 LV_IMG_DECLARE(rich);
 LV_IMG_DECLARE(TTGO_Main_Biaoyu);   //@-标语
+// LV_IMG_DECLARE(zhen_alipay);
+
 
 
 //@-TTGO
@@ -170,6 +172,8 @@ static lv_obj_t * wifi_mbox_connect;  //@-wifi密码输入对话框
 //@-固件更新
 lv_obj_t * firmware_update_btn;
 lv_obj_t * firmwareUpdata_label;
+lv_obj_t * firmwareUpdata_preload;
+lv_obj_t * firmwareUpdataInfo_label;
 
 //@-天气预报信息
 lv_obj_t * weather_title_label;
@@ -336,25 +340,46 @@ void beginWIFITask(void *pvParameters) {
 }
 
 //@-wifi连接
-void connectWIFI(){
-
-  if(wifi_ssidName == NULL || wifi_ssidName.length() <1 || wifi_password == NULL || wifi_password.length() <1)
-  {
-    return;
-  }
-  
-  //@-wifi扫描任务结束及连接任务结束
-  if((wifi_scan_flag == false) && (wifi_connect_flag == false))
-  {
-    wifi_connect_flag = true;
-    // vTaskDelete(ntWifiScanTaskHandler);
-    // vTaskDelay(500);
-    xTaskCreate(beginWIFITask,"BeginWIFITask",2048,NULL,0, &ntWifiConnectTaskHandler);   
-  }  
-  else
-  {
-    updateBottomStatus(LV_COLOR_RED, "WIFI is working please wait..");
-  }
+void connectWIFI(int opt)
+{
+    if(wifi_ssidName == NULL || wifi_ssidName.length() <1 || wifi_password == NULL || wifi_password.length() <1)
+    {
+        return;
+    }
+    
+    //@-正常连接
+    if(opt == 1)
+    {
+        //@-wifi扫描任务结束及连接任务结束
+        if((wifi_scan_flag == false) && (wifi_connect_flag == false))
+        {
+            wifi_connect_flag = true;
+            // vTaskDelete(ntWifiScanTaskHandler);
+            // vTaskDelay(500);
+            xTaskCreate(beginWIFITask,"BeginWIFITask",2048,NULL,0, &ntWifiConnectTaskHandler);   
+        }  
+        else
+        {
+            updateBottomStatus(LV_COLOR_RED, "WIFI is working please wait..");
+        }
+    }
+    
+    //@-默认连接
+    else if(opt == 2)
+    {
+        //@-wifi扫描任务结束及连接任务结束
+        if(wifi_connect_flag == false)
+        {
+            wifi_connect_flag = true;
+            // vTaskDelete(ntWifiScanTaskHandler);
+            // vTaskDelay(500);
+            xTaskCreate(beginWIFITask,"BeginWIFITask",2048,NULL,0, &ntWifiConnectTaskHandler);   
+        }  
+        else
+        {
+            updateBottomStatus(LV_COLOR_RED, "WIFI is working please wait..");
+        }
+    }
              
 }
 
@@ -370,7 +395,7 @@ static void wifi_mbox_event_handler(lv_obj_t * obj, lv_event_t event)
         {
             wifi_password = lv_textarea_get_text(wifi_ta_password);
             wifi_password.trim();
-            connectWIFI();
+            connectWIFI(1);
         }
     }
 }
@@ -663,13 +688,13 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     {
         //@-播放音效
         // Run_MP3_Audio(1);
-        Run_MP3_Audio(&select05_mp3, sizeof(select05_mp3));
+        Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
     }
     else if(obj == sw2)
     {
         //@-播放音效
         // Run_MP3_Audio(2);
-        Run_MP3_Audio(&select05_mp3, sizeof(select05_mp3));
+        Run_MP3_Audio(&beep_24_mp3, sizeof(beep_24_mp3));
     }
     else if(obj == sw3)
     {
@@ -741,6 +766,31 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         }
     }
 
+    //@-wifi保存
+    else if(obj == wifi_save_btn)
+    {
+        if((wifi_ssidName != NULL || wifi_ssidName.length() != 0) && (wifi_password != NULL || wifi_password.length() != 0))
+        {
+            //@-保存ssid
+            Setup_NVS(3,"wifi_ssid", wifi_ssidName, 0);   
+            //@-保存密码
+            Setup_NVS(3,"wifi_pass", wifi_password, 0);  
+
+            //@-更新NVS
+            Setup_NVS(1, "NULL", "NULL", 0);
+
+            // Serial.println(NVS_WIFI_SSID);
+        }
+    }
+
+    //@-默认wifi连接
+    else if(obj == wifi_connect_btn)
+    {
+        wifi_ssidName = NVS_WIFI_SSID;
+        wifi_password = NVS_WIFI_PASS;
+        connectWIFI(2);
+    }
+
     //@-固件更新-----------------------------------
     else if(obj == firmware_update_btn)
     {
@@ -751,9 +801,16 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             {
                 firmware_begin_flag = true;
 
+                SetUp_firewarmUpdataInfo(true, "Updete...");
+
                 xTaskCreate(updateFirewarmTask,"updateFirewarmTask",4096, NULL,1,&ntFireWarmTaskHandler);
             }
         }
+        else
+        {
+            SetUp_firewarmUpdataInfo(false, "Pleae Connect WiFi");
+        }
+        
     }
 
     //@-获取天气-----------------------------------
@@ -1368,12 +1425,18 @@ void lv_ex_tileview_1(void)
     lv_label_set_text_fmt(firmwareUpdata_label, "Version:%s", __FIRMWARE__);
     lv_obj_align(firmwareUpdata_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
 
-    /*Create a Preloader object*/
-    // lv_obj_t * preload = lv_spinner_create(lv_scr_act(), NULL);
-    // lv_obj_set_size(preload, 130, 130);
-    // lv_obj_align(preload, NULL, LV_ALIGN_CENTER, 0, 0);
+    //@-远程更新显示
+    firmwareUpdataInfo_label = lv_label_create(tile_1_4, NULL);
+    lv_obj_add_style(firmwareUpdataInfo_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(firmwareUpdataInfo_label, "Update...");
+    lv_obj_align(firmwareUpdataInfo_label, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_hidden(firmwareUpdataInfo_label,true);
 
-
+    //@-远程更新等待旋转框
+    firmwareUpdata_preload = lv_spinner_create(tile_1_4, NULL);
+    lv_obj_set_size(firmwareUpdata_preload, 190, 190);
+    lv_obj_align(firmwareUpdata_preload, NULL, LV_ALIGN_CENTER, 0, 0); 
+    lv_obj_set_hidden(firmwareUpdata_preload,true);
 
 }
 
@@ -1645,7 +1708,7 @@ void Setup_NVS(int opt, String key, String key_StrValue, int key_IntValue)
         {
             NVS.setString("NVSTime", "1");
             NVS.setString("wifi_ssid", "wuyiyi");
-            NVS.setString("wifi_pass", "10238831");
+            NVS.setString("wifi_pass", "dingxiao");
             NVS.setString("oat_add_host", "www.dingxiao1023.com");
             NVS.setString("oat_add_path", "/media/images/TTGO.ino.esp32.bin");
             NVS.setInt("backlight_value", 30);
@@ -1855,6 +1918,25 @@ void Display_TimeBAT_Info()
     }
 }
 
+//@-设置更新信息
+void SetUp_firewarmUpdataInfo(bool flag, char *txt)
+{
+    if(flag == true)
+    {
+        lv_obj_set_hidden(firmware_update_btn,true);
+        lv_obj_set_hidden(firmwareUpdataInfo_label,false);
+        lv_obj_set_hidden(firmwareUpdata_preload,false);
+        lv_label_set_text(firmwareUpdata_label, txt);
+    }
+    else if(flag == false)
+    {
+        lv_obj_set_hidden(firmware_update_btn,false);
+        lv_obj_set_hidden(firmwareUpdataInfo_label,true);
+        lv_obj_set_hidden(firmwareUpdata_preload,true);
+        lv_label_set_text(firmwareUpdataInfo_label, txt);
+    }
+}
+
 //@-检测闹钟
 void check_alarm()
 {
@@ -1899,7 +1981,14 @@ void loop()
     check_power_irq();
 
     //@-检测触摸功能
+    if((wifi_scan_flag == false) || (wifi_connect_flag == false)
+    || (weather_begin_flag == false) || (firmware_begin_flag == false))
     check_touch_pro();
+    else
+    {
+        System_Sleep_Tick = 0;
+    }
+    
 
     //@-检测闹钟
     check_alarm();
@@ -1946,6 +2035,7 @@ void loop()
 
         sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
         lv_label_set_text(weather_info_label, display_buf); 
+
     }
 
     // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);

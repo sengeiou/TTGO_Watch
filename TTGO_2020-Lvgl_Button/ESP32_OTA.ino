@@ -71,6 +71,9 @@ void updateFirewarmTask(void *pvParameters)
         {
           Serial.println("Client Timeout !");
           wifi_update_client.stop();
+          SetUp_firewarmUpdataInfo(false, "TimeOut,Retry...");
+          firmware_begin_flag = false;
+          vTaskDelay(500);
           vTaskDelete(NULL);
         }
       }
@@ -132,7 +135,8 @@ void updateFirewarmTask(void *pvParameters)
 
     //@-打印信息
     Serial.println("contentLength : " + String(contentLength) + ", isValidContentType : " + String(isValidContentType));
- 
+    SetUp_firewarmUpdataInfo(true, "Get File...");
+
     //@-判断是否有完成的bin文件信息
     if (contentLength && isValidContentType) 
     {
@@ -171,12 +175,16 @@ void updateFirewarmTask(void *pvParameters)
           if (Update.isFinished()) 
           {
             Serial.println("Update successfully completed. Rebooting.");
+            SetUp_firewarmUpdataInfo(true, "Succes Reboot...");
+            firmware_begin_flag = false;
+            vTaskDelay(500);
             ESP.restart();
           } 
           else 
           {
             //@-打印信息
             Serial.println("Update not finished? Something went wrong!");
+            SetUp_firewarmUpdataInfo(true, "Update wrong...");
           }
         } 
         else 
@@ -192,6 +200,7 @@ void updateFirewarmTask(void *pvParameters)
         // space availability
         //@-目标bin过大，没有空间
         Serial.println("Not enough space to begin OTA");
+        SetUp_firewarmUpdataInfo(true, "Not enough space...");
         wifi_update_client.flush();
       }
     }
@@ -201,6 +210,8 @@ void updateFirewarmTask(void *pvParameters)
       Serial.println("There was no content in the response");
       wifi_update_client.flush();
     }
+    
+    SetUp_firewarmUpdataInfo(false, "Error,Retry...");
 
     firmware_begin_flag = false;
     vTaskDelay(500);
