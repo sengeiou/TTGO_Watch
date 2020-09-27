@@ -49,6 +49,8 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
+#include <StringSplitter.h>
+
 //@-配置用户音频文件
 // #include "./audio/geji_44k_mp3.h"
 // #include "./audio/select05_mp3.h"
@@ -478,6 +480,7 @@ void Setup_Timer_Alarm(bool run_flag)
     int alarm_time_hour = 0;
     int add_hour = 0;
     int all_minutes = 0;
+    char nvs_temp[64];
 
     if(run_flag == true)
     {
@@ -502,6 +505,12 @@ void Setup_Timer_Alarm(bool run_flag)
         alarm_time_minute = all_minutes;
         alarm_time_hour = alarm_time_hour + add_hour;
 
+        //@-保存定时器参数
+        snprintf(nvs_temp, sizeof(nvs_temp), "%d-%d-%d-%d", alarm_time_hour, alarm_time_minute, current_date.day, DayOfWeek);
+        Setup_NVS(3,"timer_info", nvs_temp, 0);  
+        //@-更新NVS
+        Setup_NVS(1, "NULL", "NULL", 0);
+
 
         ttgo->rtc->disableAlarm();
 
@@ -516,15 +525,15 @@ void Setup_Timer_Alarm(bool run_flag)
 
         ttgo->rtc->enableAlarm();
 
-        RTC_Alarm RTC_Temp = ttgo->rtc->getAlarm();
-        Serial.print("Hour:");
-        Serial.println(RTC_Temp.hour);
-        Serial.print("Minutes:");
-        Serial.println(RTC_Temp.minute);
-        Serial.print("Day:");
-        Serial.println(RTC_Temp.day);
-        Serial.print("Weekday:");
-        Serial.println(RTC_Temp.weekday);
+        // RTC_Alarm RTC_Temp = ttgo->rtc->getAlarm();
+        // Serial.print("Hour:");
+        Serial.println(NVS_Timer_Info);
+        // Serial.print("Minutes:");
+        // Serial.println(RTC_Temp.minute);
+        // Serial.print("Day:");
+        // Serial.println(RTC_Temp.day);
+        // Serial.print("Weekday:");
+        // Serial.println(RTC_Temp.weekday);
 
 
         // esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
