@@ -13,7 +13,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 /*
 * firmeware version string
 */
-#define __FIRMWARE__            "20200927-To Zhen"
+#define __FIRMWARE__            "20200928"
 
 // #define USE_ESP_NOW
 #define USE_MP3
@@ -115,6 +115,9 @@ lv_obj_t *label_batt;
 
 //@-WIFI连接图标
 lv_obj_t * label_wifi;
+
+//@-闹钟图标
+lv_obj_t * label_bell;
 
 /*Create a chart*/
 lv_obj_t * chart;
@@ -274,7 +277,7 @@ void Print_Wakeup_Reason(){
 
   switch(wakeup_reason)
   {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); Set_Alarm_Run_Flag = true; break;
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); Set_Alarm_Run_Flag = true;  Setup_NVS(4,"timer_flag", "NULL", 0); break;
     case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
     case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
@@ -508,6 +511,7 @@ void Setup_Timer_Alarm(bool run_flag)
         //@-保存定时器参数
         snprintf(nvs_temp, sizeof(nvs_temp), "%d-%d-%d-%d", alarm_time_hour, alarm_time_minute, current_date.day, DayOfWeek);
         Setup_NVS(3,"timer_info", nvs_temp, 0);  
+        Setup_NVS(4,"timer_flag", "NULL", 1);   //@-设置定时器标志
         //@-更新NVS
         Setup_NVS(1, "NULL", "NULL", 0);
 
@@ -528,6 +532,7 @@ void Setup_Timer_Alarm(bool run_flag)
         // RTC_Alarm RTC_Temp = ttgo->rtc->getAlarm();
         // Serial.print("Hour:");
         Serial.println(NVS_Timer_Info);
+        Serial.println(NVS_Timer_Flag);
         // Serial.print("Minutes:");
         // Serial.println(RTC_Temp.minute);
         // Serial.print("Day:");
@@ -537,6 +542,13 @@ void Setup_Timer_Alarm(bool run_flag)
 
 
         // esp_sleep_enable_timer_wakeup(all_second * uS_TO_S_FACTOR);
+    }
+    else if(run_flag == false)
+    {
+        ttgo->rtc->disableAlarm();
+        Setup_NVS(4,"timer_flag", "NULL", 0);   //@-设置定时器标志
+        //@-更新NVS
+        Setup_NVS(1, "NULL", "NULL", 0);
     }
 
     // Serial.print("Hour:");
@@ -881,6 +893,8 @@ static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event)
 
         //@-将背光值写入NVS
         Setup_NVS(4,"backlight_value", "NULL", value);   
+        //@-更新NVS
+        Setup_NVS(1, "NULL", "NULL", 0);
 
     }
 }
@@ -1333,6 +1347,11 @@ void lv_ex_tileview_1(void)
     lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
     lv_obj_align( label_wifi, NULL, LV_ALIGN_IN_TOP_RIGHT,-2,5); 
     lv_obj_set_hidden(label_wifi,true);  
+
+    label_bell = lv_label_create(tile_1_2, NULL);
+    lv_label_set_text(label_bell, LV_SYMBOL_BELL);
+    lv_obj_align( label_bell, NULL, LV_ALIGN_IN_TOP_RIGHT,-30,5); 
+    lv_obj_set_hidden(label_bell,true);  
 
     label_time = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_big_style);
@@ -1811,6 +1830,59 @@ void Setup_ESP_NOW()
 }
 #endif
 
+//@-启动配置定时器
+void Setup_AlarmAtRun()
+{
+    int time_hour;
+    int time_minute;
+    int day;
+    int DayofWeek;
+
+    //@-获取当前时间
+    RTC_Date current_date = ttgo->rtc->getDateTime();
+
+    //@-从NVS获得定时器参数
+    String strTest = NVS_Timer_Info;
+
+    //@-String 拆分器-拆分成4个元素
+    StringSplitter *splitter = new StringSplitter(strTest, '-', 4);  // new StringSplitter(string_to_split, delimiter, limit)
+    int itemCount = splitter->getItemCount();
+    // Serial.println("Item count: " + String(itemCount));
+
+    for(int i = 0; i < itemCount; i++)
+    {
+        String item = splitter->getItemAtIndex(i);
+
+        if(i == 0)
+        time_hour = item.toInt();
+        else if(i == 1)
+        time_minute = item.toInt();
+        else if(i == 2)
+        day = item.toInt();
+        else if(i == 3)
+        DayofWeek = item.toInt();
+
+        // Serial.println("Item @ index " + String(i) + ": " + String(item));
+    }
+
+    //@-确保能闹钟
+    if(time_hour == current_date.hour)
+    {
+        if(time_minute <= current_date.minute)
+        time_minute = current_date.minute + 1;
+    }
+
+    Serial.println("time_hour: " + String(time_hour));
+    Serial.println("time_minute: " + String(time_minute));
+    Serial.println("day: " + String(day));
+    Serial.println("DayofWeek: " + String(DayofWeek));
+
+    ttgo->rtc->disableAlarm();
+    ttgo->rtc->resetAlarm();
+    ttgo->rtc->setAlarm(time_hour, time_minute, day, DayofWeek);
+    ttgo->rtc->enableAlarm();
+}
+
 
 //@-配置
 void setup()
@@ -1866,6 +1938,15 @@ void setup()
 
     //@-ttgo初始化lvgl库
     ttgo->lvgl_begin();
+
+    //@-查看是有有定时器标志
+    if(NVS_Timer_Flag == 1)
+    {
+        Alarm_Timer_Run = true;  //@-恢复闹钟标志
+        pinMode(RTC_INT, INPUT_PULLUP);
+        attachInterrupt(RTC_INT, [] {rtcIrq = 1;}, FALLING);
+        Setup_AlarmAtRun();
+    }
 
     //@-静态创建wifi消息框
     WIFI_makePassWordMsgBox();
@@ -1955,6 +2036,11 @@ void check_alarm()
        detachInterrupt(RTC_INT);
        ttgo->rtc->resetAlarm();
        Set_Alarm_Run_Flag = true;
+
+       Setup_NVS(4,"timer_flag", "NULL", 0);
+       //@-更新NVS
+       Setup_NVS(1, "NULL", "NULL", 0);
+
        Serial.println("alarm.....");
    }
 
@@ -1991,7 +2077,8 @@ void loop()
 
     //@-检测触摸功能
     if((wifi_scan_flag == false) || (wifi_connect_flag == false)
-    || (weather_begin_flag == false) || (firmware_begin_flag == false))
+    || (weather_begin_flag == false) || (firmware_begin_flag == false)
+    || (Set_Alarm_Run_Flag = true))
     check_touch_pro();
     else
     {
@@ -2041,6 +2128,12 @@ void loop()
         lv_obj_set_hidden(label_wifi,false); 
         else
         lv_obj_set_hidden(label_wifi,true); 
+
+        //@-显示闹钟状态
+        if(NVS_Timer_Flag == 1)
+        lv_obj_set_hidden(label_bell,false); 
+        else
+        lv_obj_set_hidden(label_bell,true); 
 
         sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
         lv_label_set_text(weather_info_label, display_buf); 
