@@ -151,7 +151,7 @@ void GetweatherTask(void *pvParameters)
               String main = message["weather"][0]["main"]; 
               String description = message["weather"][0]["description"];
 
-              // weather_description = description;
+              weather_description = description;
 
               // Output to serial monitor
               Serial.print("id:");

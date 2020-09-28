@@ -185,8 +185,12 @@ lv_obj_t * firmwareUpdataInfo_label;
 
 //@-天气预报信息
 lv_obj_t * weather_title_label;
-lv_obj_t * weather_info_label;
-lv_obj_t * weatcher_get_btn;
+lv_obj_t * weather_data_label;
+lv_obj_t * weather_temputer_label;
+lv_obj_t * weather_pressure_label;
+lv_obj_t * weather_humidity_label;
+// lv_obj_t * weather_info_label;
+// lv_obj_t * weatcher_get_btn;
 
 bool btn2_flag = true;
 
@@ -864,10 +868,10 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     }
 
     //@-获取天气-----------------------------------
-    else if(obj == weatcher_get_btn)
-    {
-        Get_Weather_Info();
-    }
+    // else if(obj == weatcher_get_btn)
+    // {
+    //     Get_Weather_Info();
+    // }
     
 }
 
@@ -1243,25 +1247,77 @@ void lv_ex_tileview_1(void)
     // lv_obj_set_width(weather_title_label, LV_HOR_RES - 100);
     lv_obj_align(weather_title_label, NULL, LV_ALIGN_IN_TOP_MID, 0, 10);
 
+    lv_obj_t * weather_cont1 = lv_cont_create(tile_0_3, NULL);
+    lv_obj_set_size(weather_cont1, 100, 80);
+    lv_obj_align_origo(weather_cont1, NULL, LV_ALIGN_IN_TOP_LEFT, 70, 85);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(weather_cont1, LV_OBJ_PART_MAIN, &style_cont1);
+
+    lv_obj_t * weather_cont2 = lv_cont_create(tile_0_3, NULL);
+    lv_obj_set_size(weather_cont2, 100, 80);
+    lv_obj_align_origo(weather_cont2, NULL, LV_ALIGN_IN_TOP_RIGHT, -70, 85);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(weather_cont2, LV_OBJ_PART_MAIN, &style_cont1);
+
+    lv_obj_t * weather_cont3 = lv_cont_create(tile_0_3, NULL);
+    lv_obj_set_size(weather_cont3, 100, 80);
+    lv_obj_align_origo(weather_cont3, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 70, -60);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(weather_cont3, LV_OBJ_PART_MAIN, &style_cont1);
+
+    lv_obj_t * weather_cont4 = lv_cont_create(tile_0_3, NULL);
+    lv_obj_set_size(weather_cont4, 100, 80);
+    lv_obj_align_origo(weather_cont4, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, -70, -60);  /*This parametrs will be sued when realigned*/
+    lv_obj_add_style(weather_cont4, LV_OBJ_PART_MAIN, &style_cont1);
+
+    lv_obj_t * weather_temp1_label = lv_label_create(tile_0_3, NULL);
+    lv_obj_align(weather_temp1_label, NULL, LV_ALIGN_IN_TOP_LEFT, 35, 50);
+    lv_label_set_text(weather_temp1_label, "Weather");
+
+    lv_obj_t * weather_temp2_label = lv_label_create(tile_0_3, NULL);
+    lv_obj_align(weather_temp2_label, NULL, LV_ALIGN_IN_TOP_LEFT, 130, 50);
+    lv_label_set_text(weather_temp2_label, "Temputer");
+
+    lv_obj_t * weather_temp3_label = lv_label_create(tile_0_3, NULL);
+    lv_obj_align(weather_temp3_label, NULL, LV_ALIGN_IN_TOP_LEFT, 35, 145);
+    lv_label_set_text(weather_temp3_label, "Pressure");
+
+    lv_obj_t * weather_temp4_label = lv_label_create(tile_0_3, NULL);
+    lv_obj_align(weather_temp4_label, NULL, LV_ALIGN_IN_TOP_LEFT, 130, 145);
+    lv_label_set_text(weather_temp4_label, "Humidity");
 
 
+    weather_data_label = lv_label_create( tile_0_3, NULL);
+    // lv_obj_add_style(weather_data_label, LV_OBJ_PART_MAIN, &led7_style_black);
+    lv_label_set_text( weather_data_label, "-------------"); 
+    lv_obj_align( weather_data_label, NULL, LV_ALIGN_IN_TOP_LEFT,35,80); 
 
-    weather_info_label = lv_label_create(tile_0_3, NULL);
-    // lv_obj_add_style(weather_info_label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(weather_info_label, " NULL ");
-    lv_label_set_recolor(weather_info_label, true); 
-    lv_obj_align(weather_info_label, NULL, LV_ALIGN_CENTER, 0, 0);
+    weather_temputer_label = lv_label_create( tile_0_3, NULL);
+    lv_obj_add_style(weather_temputer_label, LV_OBJ_PART_MAIN, &led7_style_black);
+    lv_label_set_text( weather_temputer_label, "------"); 
+    lv_obj_align( weather_temputer_label, NULL, LV_ALIGN_IN_TOP_LEFT,130,80); 
+
+    weather_pressure_label = lv_label_create( tile_0_3, NULL);
+    lv_obj_add_style(weather_pressure_label, LV_OBJ_PART_MAIN, &led7_style_black);
+    lv_label_set_text( weather_pressure_label, "---"); 
+    lv_obj_align( weather_pressure_label, NULL, LV_ALIGN_IN_TOP_LEFT,45,170); 
+
+    weather_humidity_label = lv_label_create( tile_0_3, NULL);
+    lv_obj_add_style(weather_humidity_label, LV_OBJ_PART_MAIN, &led7_style_black);
+    lv_label_set_text( weather_humidity_label, "---"); 
+    lv_obj_align( weather_humidity_label, NULL, LV_ALIGN_IN_TOP_LEFT,150,170); 
+
+    // weather_info_label = lv_label_create(tile_0_3, NULL);
+    // // lv_obj_add_style(weather_info_label, LV_OBJ_PART_MAIN, &model_style);
+    // lv_label_set_text(weather_info_label, " NULL ");
+    // lv_label_set_recolor(weather_info_label, true); 
+    // lv_obj_align(weather_info_label, NULL, LV_ALIGN_CENTER, 0, 0);
 
 
+    // weatcher_get_btn = lv_btn_create(tile_0_3, NULL);
+    // lv_obj_set_width(weatcher_get_btn, 160);
+    // lv_obj_set_event_cb(weatcher_get_btn, event_handler);
+    // lv_obj_align(weatcher_get_btn, NULL, LV_ALIGN_IN_TOP_MID, 0, 180);  
 
-
-    weatcher_get_btn = lv_btn_create(tile_0_3, NULL);
-    lv_obj_set_width(weatcher_get_btn, 160);
-    lv_obj_set_event_cb(weatcher_get_btn, event_handler);
-    lv_obj_align(weatcher_get_btn, NULL, LV_ALIGN_IN_TOP_MID, 0, 180);  
-
-    lv_obj_t * weather_title_label = lv_label_create(weatcher_get_btn, NULL);
-    lv_label_set_text(weather_title_label, "Get Weather Data");
+    // lv_obj_t * weather_title_label = lv_label_create(weatcher_get_btn, NULL);
+    // lv_label_set_text(weather_title_label, "Get Weather Data");
 
     //------------------------------tile_0_4-----------------------------------------------------
     chart = lv_chart_create(tile_0_4, NULL);
@@ -2167,8 +2223,25 @@ void loop()
         else
         lv_obj_set_hidden(label_charge,true);
 
-        sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
-        lv_label_set_text(weather_info_label, display_buf); 
+        // sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
+        // lv_label_set_text(weather_info_label, display_buf);
+
+        // sprintf(display_buf, "%s", weather_description);
+        if(weather_json_flag == true)
+        {
+            weather_description.toCharArray(display_buf, (weather_description.length()+1));
+            lv_label_set_text(weather_data_label, display_buf); 
+
+            sprintf(display_buf, "%.2f C", weather_temputer);
+            lv_label_set_text(weather_temputer_label, display_buf); 
+                    
+            sprintf(display_buf, "%d", weather_pressure);
+            lv_label_set_text(weather_pressure_label, display_buf); 
+
+            sprintf(display_buf, "%d%%", weather_humidity);
+            lv_label_set_text(weather_humidity_label, display_buf); 
+        }
+
     }
 
     // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
