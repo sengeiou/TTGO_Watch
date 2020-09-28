@@ -267,6 +267,7 @@ int weather_pressure;
 int weather_humidity;
 int weather_use_http_id = 0;
 int weather_use_http_last_id = 0;
+bool weather_auto_get_flag = false;
 
 
 /*
@@ -647,6 +648,31 @@ void wifi_list_event_handler(lv_obj_t * obj, lv_event_t event){
     }
 }
 
+//@-获取天气数据
+void Get_Weather_Info()
+{
+    //@-wifi是否连接
+    if(WiFi.status() == WL_CONNECTED)
+    {
+        if(weather_begin_flag == false)
+        {
+
+            weather_json_flag = false;
+
+            weather_begin_flag = true;
+
+            weather_use_http_last_id = weather_use_http_id;
+            
+            if(weather_use_http_id == 0)
+            weather_use_http_id = 1;
+            else if(weather_use_http_id == 1)
+            weather_use_http_id = 0;
+
+            xTaskCreate(GetweatherTask,"GetweatherTask",4096, NULL,0,&ntWeatherTaskHandler);
+        }
+    }
+}
+
 //@-lvgl控件事件处理
 void event_handler(lv_obj_t *obj, lv_event_t event)
 {
@@ -840,28 +866,8 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     //@-获取天气-----------------------------------
     else if(obj == weatcher_get_btn)
     {
-        //@-wifi是否连接
-        if(WiFi.status() == WL_CONNECTED)
-        {
-            if(weather_begin_flag == false)
-            {
-
-                weather_json_flag = false;
-
-                weather_begin_flag = true;
-
-                weather_use_http_last_id = weather_use_http_id;
-                
-                if(weather_use_http_id == 0)
-                weather_use_http_id = 1;
-                else if(weather_use_http_id == 1)
-                weather_use_http_id = 0;
-
-                xTaskCreate(GetweatherTask,"GetweatherTask",4096, NULL,0,&ntWeatherTaskHandler);
-            }
-        }
+        Get_Weather_Info();
     }
-    
     
 }
 
@@ -1237,11 +1243,17 @@ void lv_ex_tileview_1(void)
     // lv_obj_set_width(weather_title_label, LV_HOR_RES - 100);
     lv_obj_align(weather_title_label, NULL, LV_ALIGN_IN_TOP_MID, 0, 10);
 
+
+
+
     weather_info_label = lv_label_create(tile_0_3, NULL);
     // lv_obj_add_style(weather_info_label, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text(weather_info_label, " NULL ");
     lv_label_set_recolor(weather_info_label, true); 
     lv_obj_align(weather_info_label, NULL, LV_ALIGN_CENTER, 0, 0);
+
+
+
 
     weatcher_get_btn = lv_btn_create(tile_0_3, NULL);
     lv_obj_set_width(weatcher_get_btn, 160);
@@ -1435,6 +1447,12 @@ void lv_ex_tileview_1(void)
     lv_obj_set_event_cb(sw_timer_dir, event_handler);
 
     sw_timer_run = lv_switch_create(tile_1_3, NULL);
+
+    if(NVS_Timer_Flag == 1)
+    lv_switch_on(sw_timer_run, LV_ANIM_ON);
+    else
+    lv_switch_on(sw_timer_run, LV_ANIM_OFF);
+
     lv_obj_align(sw_timer_run, NULL, LV_ALIGN_CENTER, 90, -50);
     lv_obj_set_event_cb(sw_timer_run, event_handler);
 
@@ -2125,7 +2143,15 @@ void loop()
         
         //@-显示WIFI连接状态
         if(WiFi.status() == WL_CONNECTED)
-        lv_obj_set_hidden(label_wifi,false); 
+        {
+            lv_obj_set_hidden(label_wifi,false); 
+            //@-自动获取天气数据
+            if(weather_auto_get_flag == false)
+            {
+                weather_auto_get_flag = true;
+                Get_Weather_Info();
+            }
+        }
         else
         lv_obj_set_hidden(label_wifi,true); 
 
@@ -2143,7 +2169,6 @@ void loop()
 
         sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
         lv_label_set_text(weather_info_label, display_buf); 
-
     }
 
     // lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
