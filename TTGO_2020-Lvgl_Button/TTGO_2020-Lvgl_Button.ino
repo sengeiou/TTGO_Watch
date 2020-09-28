@@ -119,6 +119,9 @@ lv_obj_t * label_wifi;
 //@-闹钟图标
 lv_obj_t * label_bell;
 
+//@-充电图标
+lv_obj_t * label_charge;
+
 /*Create a chart*/
 lv_obj_t * chart;
 
@@ -1353,6 +1356,11 @@ void lv_ex_tileview_1(void)
     lv_obj_align( label_bell, NULL, LV_ALIGN_IN_TOP_RIGHT,-30,5); 
     lv_obj_set_hidden(label_bell,true);  
 
+    label_charge = lv_label_create(tile_1_2, NULL);
+    lv_label_set_text(label_charge, LV_SYMBOL_CHARGE);
+    lv_obj_align( label_charge, NULL, LV_ALIGN_IN_TOP_RIGHT,-58,5); 
+    lv_obj_set_hidden(label_charge,true);  
+
     label_time = lv_label_create( tile_1_2, NULL);
     lv_obj_add_style(label_time, LV_OBJ_PART_MAIN, &led7_big_style);
     lv_label_set_text( label_time, "--:--"); 
@@ -1998,14 +2006,7 @@ void Display_TimeBAT_Info()
     lv_label_set_text_fmt( label_time_date, "%s", display_buf); 
 
     //@-显示实时电量
-    if (power->isChargeing() == false)
-    {
-        lv_label_set_text_fmt( label_batt, "%d%%", power->getBattPercentage()); 
-    }
-    else
-    {
-        lv_label_set_text( label_batt, "IN"); 
-    }
+    lv_label_set_text_fmt( label_batt, "%d%%", power->getBattPercentage()); 
 }
 
 //@-设置更新信息
@@ -2078,7 +2079,7 @@ void loop()
     //@-检测触摸功能
     if((wifi_scan_flag == false) || (wifi_connect_flag == false)
     || (weather_begin_flag == false) || (firmware_begin_flag == false)
-    || (Set_Alarm_Run_Flag = true))
+    || (Set_Alarm_Run_Flag = false))
     check_touch_pro();
     else
     {
@@ -2110,7 +2111,6 @@ void loop()
             lv_obj_set_hidden(img_biaoyu,true); 
             #endif
 
-            
             Display_TimeBAT_Info();
         }
         else 
@@ -2134,6 +2134,12 @@ void loop()
         lv_obj_set_hidden(label_bell,false); 
         else
         lv_obj_set_hidden(label_bell,true); 
+
+        //@-显示实时电量
+        if (power->isChargeing() == true)
+        lv_obj_set_hidden(label_charge,false);
+        else
+        lv_obj_set_hidden(label_charge,true);
 
         sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
         lv_label_set_text(weather_info_label, display_buf); 
