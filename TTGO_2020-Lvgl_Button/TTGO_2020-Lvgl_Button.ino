@@ -1285,6 +1285,8 @@ void lv_ex_tileview_1(void)
 
 
     weather_data_label = lv_label_create( tile_0_3, NULL);
+    lv_label_set_long_mode(weather_data_label, LV_LABEL_LONG_BREAK);
+    lv_obj_set_width(weather_data_label, 100);
     // lv_obj_add_style(weather_data_label, LV_OBJ_PART_MAIN, &led7_style_black);
     lv_label_set_text( weather_data_label, "-------------"); 
     lv_obj_align( weather_data_label, NULL, LV_ALIGN_IN_TOP_LEFT,35,80); 
@@ -2227,8 +2229,21 @@ void loop()
         // lv_label_set_text(weather_info_label, display_buf);
 
         // sprintf(display_buf, "%s", weather_description);
-        if(weather_json_flag == true)
+        if((weather_json_flag == true) && (weather_begin_flag == true))
         {
+            // // weather_json_flag = false;
+            // //@-String 拆分器-拆分成2个元素
+            // StringSplitter *splitter_weather = new StringSplitter(weather_description, ' ', 2);  // new StringSplitter(string_to_split, delimiter, limit)
+            // // int itemCount = splitter_weather->getItemCount();
+            // // Serial.println("Item count: " + String(itemCount));
+
+            // String weather_temp1 = splitter_weather->getItemAtIndex(0);
+            // String weather_temp2 = splitter_weather->getItemAtIndex(1);
+            // String weather_temp3 = "\n";
+            // String weather_temp4 = String (weather_temp1 + weather_temp3 + weather_temp2);
+            // Serial.println(weather_temp4);
+
+            // weather_description.toCharArray(display_buf, (weather_temp4.length()+1));
             weather_description.toCharArray(display_buf, (weather_description.length()+1));
             lv_label_set_text(weather_data_label, display_buf); 
 
