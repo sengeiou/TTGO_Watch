@@ -51,8 +51,20 @@ HTTPClient http1;
 //@-json数据格式化
 // DynamicJsonBuffer
 StaticJsonBuffer<1500> jsonBuffer;
-String App_Html_Add = "https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";
+String App_Html_Add = "https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";  //-当天数据
+String App_Html_Add1 = "https://api.openweathermap.org/data/2.5/forecast?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";     //-5 Day / 3 Hour Forecast
+
+// String App_Html_Add = "https://v0.yiketianqi.com/api?version=v9&appid=61739339&appsecret=RnWxRr51";  --中国网站
+
+// https://v0.yiketianqi.com/api?version=v9&appid=61739339&appsecret=RnWxRr51
+
 // String App_Html_Add = "https://lab.isaaclin.cn/nCoV/api/overall";
+
+// https://api.openweathermap.org/data/2.5/forecast?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444  -- 5 day weather forecast
+
+// http://api.openweathermap.org/data/2.5/find?q=London&appid=8874f49040c9bad35a788cbdb34f5444  -- 未来5天的天气，但不支持中国城市
+
+
 
 //@-获取天气任务
 void GetweatherTask(void *pvParameters) 
