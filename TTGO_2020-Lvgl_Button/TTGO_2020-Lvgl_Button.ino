@@ -2225,10 +2225,6 @@ void loop()
         else
         lv_obj_set_hidden(label_charge,true);
 
-        // sprintf(display_buf, "%d--temp:%.2f\npres:%d\nhumi:%d", Getweather_tick,weather_temputer,weather_pressure,weather_humidity);
-        // lv_label_set_text(weather_info_label, display_buf);
-
-        // sprintf(display_buf, "%s", weather_description);
         if((weather_json_flag == true) && (weather_begin_flag == true))
         {
             weather_description.toCharArray(display_buf, (weather_description.length()+1));
