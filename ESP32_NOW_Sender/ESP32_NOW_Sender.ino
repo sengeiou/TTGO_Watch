@@ -9,7 +9,7 @@
   copies or substantial portions of the Software.
 */
 
-#include <SPI.h>
+#include <SPI.h> 
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 
@@ -17,9 +17,101 @@
 #include <WiFi.h>
 #include <ESP32Servo.h>
 
+
+#ifdef ESP32_Servo
 Servo myservo;
 // Recommended PWM GPIO pins on the ESP32 include 2,4,12-19,21-23,25-27,32-33 
 int servoPin = 13;
+#endif
+
+
+typedef union	  /* DSP Send数据结构*/
+{
+	struct DSP_Send_str
+	{
+		short ECANA_INDEX_Iu;		             /* 0 -in 0.1A*/
+		short ECANA_INDEX_Iv;		             /* 1 -in 0.1A*/
+		short ECANA_INDEX_Iw;		             /* 2 -in 0.1A*/
+		short ECANA_INDEX_BAT_Iuvw;		       /* 3 -in 0.1V*/
+		short ECANA_INDEX_Uzk;		           /* 4 -in 0.1V*/
+		short ECANA_INDEX_ID;		             /* 5 */
+		short ECANA_INDEX_IQ;		             /* 6 */
+		short ECANA_INDEX_SPEED;             /* 7 */
+		short ECANA_INDEX_T1_LT;             /* 8 */
+		short ECANA_INDEX_T3_MT;             /* 9 */
+
+		short ECANA_INDEX_AnDRV;	    	     /* 10 */
+		short ECANA_INDEX_AnBRK;		         /* 11 */
+		short ECANA_INDEX_CMD_DI;            /* 12 ******/
+		short ECANA_INDEX_ERROR1;		         /* 13 */
+		short ECANA_INDEX_ERROR2;		         /* 14 */
+		short ECANA_INDEX_ERROR3;		         /* 15 */
+		short ECANA_INDEX_ERROR4;		         /* 16 */
+		short ECANA_INDEX_PSWORD;            /* 17 */
+		short ECANA_INDEX_FLOWNO_453;        /* 18 */
+		short ECANA_INDEX_FLOWNO_CZP;        /* 19 */
+
+		short ECANA_INDEX_UU_A1;		         /* 20 */
+		short ECANA_INDEX_UV_A2;		         /* 21 */
+		short ECANA_INDEX_UW;		             /* 22 */
+		short ECANA_INDEX_IZK;		           /* 23 -in 0.1A*/
+		short ECANA_INDEX_PZK;		           /* 24 -in W*/
+		short ECANA_INDEX_UUV;		           /* 25 -in 0.1V*/
+		short ECANA_INDEX_UVW;		           /* 26 -in 0.1V*/
+		short ECANA_INDEX_UWV;               /* 27 -in 0.1V*/
+		short ECANA_INDEX_AnIZK;             /* 28 *******/
+		short ECANA_INDEX_AnSPD;             /* 29 *******/
+ 
+ 		short ECANA_INDEX_AnSPDRef;		       /* 30  ******/
+		short  ECANA_INDEX_FBK_DI;           /* 31 信号反馈通道*/
+		short ECANA_INDEX_CMD_DI2;           /* 32 speaker & ZZQ第二通道 & WC KM Brake******/
+		short ECANA_INDEX_AnZzqCh2;          /* 33 ******/
+		short ECANA_INDEX_I34;		           /* 34 */
+		short ECANA_INDEX_ZC_DICAN;          /* 35 */
+		short ECANA_INDEX_ZC_DOCAN;          /* 36 */
+		short ECANA_INDEX_WC_DICANB;         /* 37 ******/
+		short ECANA_INDEX_WC_DOCANB;         /* 38 ******/
+		short ECANA_INDEX_ZZ_DICANB;         /* 39 ******/
+ 
+ 		short ECANA_INDEX_ZZ_DOCANB;         /* 40 ******/
+		short ECANA_INDEX_POS_ACT1;		       /* 41 */
+		short ECANA_INDEX_POS_ACT2;          /* 42 */
+		short ECANA_INDEX_AnZzqCh;           /* 43 ******/
+		short ECANA_INDEX_ModnNum;		       /* 44 */
+		short ECANA_INDEX_AnPOS;		         /* 45 ******/
+		short ECANA_INDEX_pid_posErr;		     /* 46 */
+		short ECANA_INDEX_IamWho;            /* 47 */
+
+
+		short ECANA_INDEX_Send_Or_Recv;          /* 48 */
+		
+		short ECANA_AfterINDEX_ecanRxOkBit;      /* 49 */
+		short ECANA_AfterINDEX_ecanRxOkCounting; /* 50 */
+		short ECANA_AfterINDEX_pid1_pos_Ref;     /* 51 */
+
+		short ECANA_AfterINDEX_DX1;              /* 52 */		
+		short ECANA_AfterINDEX_DX2;              /* 53 */	
+		short ECANA_AfterINDEX_DX3;              /* 54 */	
+		short ECANA_AfterINDEX_DX4;              /* 55 */	
+		short ECANA_AfterINDEX_DX5;              /* 56 */	
+		short ECANA_AfterINDEX_DX6;              /* 57 */	
+		short ECANA_AfterINDEX_DX7;              /* 58 */	
+		short ECANA_AfterINDEX_DX8;              /* 59 */	
+		short ECANA_AfterINDEX_DX9;              /* 60 */	
+		short ECANA_AfterINDEX_DX10;             /* 61 */																					
+
+		short ECANA_AfterINDEX_FlowNum;          /* 62 */
+		short ECANA_AfterINDEX_End;              /* 63 */
+	   
+	}DSP_Send_str;
+
+   byte DSP_Send_Buff128[128];
+   
+}_DSP_Send_Snet;
+
+//@-DSP数据发送
+_DSP_Send_Snet Snet_ESP32_Send;
+
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 // uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  
@@ -45,12 +137,17 @@ struct_message recv_Data;
 byte mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
 };
-// IPAddress ip(192, 168, 0, 20);
-IPAddress ip(172, 25, 9, 30);  //XH
-// IPAddress ip1(230, 1, 2, 3); 
-IPAddress ip1(172,25,9,61);
+IPAddress fy_ip(172, 25, 9, 20); //FY
+IPAddress xh_ip(172, 25, 9, 30);  //XH
+IPAddress local_ip(172,25,9,61);
 
-unsigned int localPort = 2300;      // local port to listen on
+IPAddress ip_m(230, 1, 2, 3); 
+short m_Port = 2300;      // local port to listen on
+
+short local_fy_Port = 23600;      // local port to listen on
+short local_xh_Port = 23602;      // local port to listen on
+short fyPort = 23200;      // local port to listen on
+short xhPort = 23302;      // local port to listen on
 int count = 0;
 int count_temp = 0;
 
@@ -59,7 +156,9 @@ char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  // buffer to hold incoming packet,
 byte  ReplyBuffer[128];        // a string to send back
 
 // An EthernetUDP instance to let us send and receive packets over UDP
-EthernetUDP Udp;
+EthernetUDP Udp_fy;
+EthernetUDP Udp_xh;
+EthernetUDP Udp_m;
 
 long Recv_Packet_Count = 0;
 
@@ -67,6 +166,7 @@ int data = 0;
 
 bool Ethernet_Connect_Flag = false;
 
+//-----------------------ESP NOW---------------------------------
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   // Serial.print("\r\nLast Packet Send Status:\t");
@@ -90,6 +190,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 //   Serial.println(send_Data.e);
 //   Serial.println();
 }
+//--------------------------------------------------------
  
 void setup() {
   // Init Serial Monitor
@@ -97,20 +198,31 @@ void setup() {
 
   for(int i=0; i<128; i++)
   {
-    ReplyBuffer[i] = 0x00;
+    // ReplyBuffer[i] = 0x00;
+    Snet_ESP32_Send.DSP_Send_Buff128[i] = 0x00;
   }
-  ReplyBuffer[96] = 0x54;
+  // ReplyBuffer[96] = 0x54;
+  // Snet_ESP32_Send.DSP_Send_Buff128[96] = 0x54;
+  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
+  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_PSWORD = 0x0453;
+  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI = 0x0100;        //@-高字节模式  低字节运行控制及方向
+  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnSPD = 0x000A;         //@-速度为0.1% 即：0.1 * 100 
+  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnPOS = 0x000A;         //@-速度为0.1% 即：0.1 * 100
+
+  // Snet_ESP32_Send.DSP_Send_strECANA_INDEX_CMD_DI2 = 0x0038;        //@-在给出运行方向时给出
 
   pinMode(2, OUTPUT);
 
+  #ifdef ESP32_Servo
   myservo.setPeriodHertz(50);    // standard 50 hz servo
   myservo.attach(servoPin, 500, 2500); // attaches the servo on pin 18 to the servo object
+  #endif
 
   #if 1
   Ethernet.init(5);
 
   // start the Ethernet
-  Ethernet.begin(mac, ip);
+  Ethernet.begin(mac, local_ip);
 
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware) {
@@ -128,11 +240,13 @@ void setup() {
     Ethernet_Connect_Flag = true;
   }
   
+
+  //@-配置UDP发送
   if(Ethernet_Connect_Flag ==  true)
   {
     // start UDP
-    Udp.begin(23302);
-    // Udp.beginMulticast(ip1, 23302);
+    Udp_fy.begin(local_fy_Port);
+    Udp_xh.begin(local_xh_Port);
   }
   #endif
  
@@ -167,7 +281,9 @@ void setup() {
     return;
   }
 
+  #ifdef ESP32_Servo
   myservo.write(180);
+  #endif
 
 }
  
@@ -178,7 +294,9 @@ void loop() {
   count =  count + 1;
   count_temp =  count_temp + 1;
 
+  #ifdef ESP32_Servo
   myservo.write(recv_Data.b);
+  #endif
 
   // if (result == ESP_OK) {
   //   Serial.println("Sent with success");
@@ -202,7 +320,8 @@ void loop() {
   if(Ethernet_Connect_Flag == true)
   {
     // if there's data available, read a packet
-    int packetSize = Udp.parsePacket();
+    int packetSize = Udp_fy.parsePacket();
+    // int packetSize = Udp_m.parsePacket();
     if (packetSize) {
 
       Recv_Packet_Count = Recv_Packet_Count + 1;
@@ -211,7 +330,7 @@ void loop() {
       // Serial.print("Received packet of size ");
       // Serial.println(packetSize);
       // Serial.print("From ");
-      // IPAddress remote = Udp.remoteIP();
+      // IPAddress remote = Udp_fy.remoteIP();
       // for (int i=0; i < 4; i++) {
       //   Serial.print(remote[i], DEC);
       //   if (i < 3) {
@@ -219,19 +338,19 @@ void loop() {
       //   }
       // }
       // Serial.print(", port ");
-      // Serial.println(Udp.remotePort());
+      // Serial.println(Udp_fy.remotePort());
 
       // read the packet into packetBufffer
-      // Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+      // Udp_fy.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
       // Serial.println("Contents:");
       // Serial.println(packetBuffer);
 
       // myservo.write(packetBuffer[0]);
 
       // send a reply to the IP address and port that sent us the packet we received
-  //    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-  //    Udp.write(ReplyBuffer);
-  //    Udp.endPacket();
+  //    Udp_fy.beginPacket(Udp_fy.remoteIP(), Udp_fy.remotePort());
+  //    Udp_fy.write(ReplyBuffer);
+  //    Udp_fy.endPacket();
     }
   }
   #endif
@@ -245,10 +364,17 @@ void loop() {
     if(Ethernet_Connect_Flag == true)
     {
       // send a reply to the IP address and port that sent us the packet we received
-      Udp.beginPacket(ip1, 23602);
-      // Udp.write(ReplyBuffer);  //write str
-      Udp.write(ReplyBuffer,128);  //write byte
-      Udp.endPacket();  
+      Udp_fy.beginPacket(fy_ip, fyPort);
+      // Udp_fy.write(ReplyBuffer);  //write str
+      // Udp_fy.write(ReplyBuffer,128);  //write byte
+      Udp_fy.write(Snet_ESP32_Send.DSP_Send_Buff128,128);  //write byte
+      Udp_fy.endPacket();  
+
+
+      // Udp_xh.beginPacket(xh_ip, xhPort);
+      // // Udp_fy.write(ReplyBuffer);  //write str
+      // Udp_xh.write(ReplyBuffer,128);  //write byte
+      // Udp_xh.endPacket(); 
     }
     #endif
 
