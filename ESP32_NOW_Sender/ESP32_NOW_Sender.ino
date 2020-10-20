@@ -17,6 +17,7 @@
 #include <WiFi.h>
 #include <ESP32Servo.h>
 
+#define ESP32_Servo
 
 #ifdef ESP32_Servo
 Servo myservo;
@@ -115,7 +116,8 @@ _DSP_Send_Snet Snet_ESP32_Send;
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 // uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  
-uint8_t broadcastAddress[] = {0x8C, 0xAA, 0xB5, 0x82, 0xEA, 0x58};    //TTGO_2020 白色
+// uint8_t broadcastAddress[] = {0x8C, 0xAA, 0xB5, 0x82, 0xEA, 0x58};    //TTGO_2020 白色
+uint8_t broadcastAddress[] = {0x10, 0x52, 0x1C, 0x65, 0x42, 0x84};    //TTGO_2020 黑色
 
 // Structure example to send data
 // Must match the receiver structure
@@ -205,7 +207,7 @@ void setup() {
   // Snet_ESP32_Send.DSP_Send_Buff128[96] = 0x54;
   Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_PSWORD = 0x0453;
-  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI = 0x0100;        //@-高字节模式  低字节运行控制及方向
+  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI = 0x0122;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
   Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnSPD = 0x000A;         //@-速度为0.1% 即：0.1 * 100 
   Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnPOS = 0x000A;         //@-速度为0.1% 即：0.1 * 100
 
