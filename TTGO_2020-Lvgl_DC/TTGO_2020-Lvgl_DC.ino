@@ -137,11 +137,13 @@ lv_obj_t* tile_0_1;
 lv_obj_t* tile_0_2;
 lv_obj_t* tile_0_3;
 lv_obj_t* tile_0_4;
+lv_obj_t* tile_0_5;
 lv_obj_t* tile_1_0;
 lv_obj_t* tile_1_1;
 lv_obj_t* tile_1_2;
 lv_obj_t* tile_1_3;
 lv_obj_t* tile_1_4;
+lv_obj_t* tile_1_5;
 
 //@-定时器
 lv_obj_t * lmeter;
@@ -1004,9 +1006,9 @@ void lv_ex_tileview_1(void)
 
 
     // static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {1,0}, {1,1}};
-    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {0,3}, {0,4},{1,0}, {1,1}, {1,2}, {1,3}, {1,4}};
+    static lv_point_t valid_pos[] = {{0,0}, {0, 1}, {0,2}, {0,3}, {0,4}, {0,5}, {1,0}, {1,1}, {1,2}, {1,3}, {1,4}, {1,5}};
     tileview = lv_tileview_create(lv_scr_act(), NULL);
-    lv_tileview_set_valid_positions(tileview, valid_pos, 10);
+    lv_tileview_set_valid_positions(tileview, valid_pos, 12);
     lv_tileview_set_edge_flash(tileview, true);
 
     tile_0_0 = lv_obj_create( tileview, NULL);
@@ -1014,33 +1016,39 @@ void lv_ex_tileview_1(void)
     tile_0_2 = lv_obj_create( tileview, NULL);
     tile_0_3 = lv_obj_create( tileview, NULL);
     tile_0_4 = lv_obj_create( tileview, NULL);
+    tile_0_5 = lv_obj_create( tileview, NULL);
     tile_1_0 = lv_obj_create( tileview, NULL);
     tile_1_1 = lv_obj_create( tileview, NULL);
     tile_1_2 = lv_obj_create( tileview, NULL);
     tile_1_3 = lv_obj_create( tileview, NULL);
     tile_1_4 = lv_obj_create( tileview, NULL);
+    tile_1_5 = lv_obj_create( tileview, NULL);
 
     lv_obj_set_size( tile_0_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_1, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_2, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_3, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_0_4, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_0_5, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_0, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_1, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_2, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_3, LV_HOR_RES,LV_VER_RES);
     lv_obj_set_size( tile_1_4, LV_HOR_RES,LV_VER_RES);
+    lv_obj_set_size( tile_1_5, LV_HOR_RES,LV_VER_RES);
 
     lv_obj_set_pos( tile_0_0, 0,   0);
     lv_obj_set_pos( tile_0_1, 0,   LV_VER_RES);
     lv_obj_set_pos( tile_0_2, 0,   2*LV_VER_RES);
     lv_obj_set_pos( tile_0_3, 0,   3*LV_VER_RES);
     lv_obj_set_pos( tile_0_4, 0,   4*LV_VER_RES);
+    lv_obj_set_pos( tile_0_5, 0,   5*LV_VER_RES);
     lv_obj_set_pos( tile_1_0, LV_HOR_RES,   0);
     lv_obj_set_pos( tile_1_1, LV_HOR_RES,   LV_VER_RES);
     lv_obj_set_pos( tile_1_2, LV_HOR_RES,   2*LV_VER_RES);
     lv_obj_set_pos( tile_1_3, LV_HOR_RES,   3*LV_VER_RES);
     lv_obj_set_pos( tile_1_4, LV_HOR_RES,   4*LV_VER_RES);
+    lv_obj_set_pos( tile_1_5, LV_HOR_RES,   5*LV_VER_RES);
 
     // lv_obj_set_event_cb(tile_1_2, event_handler);
 
@@ -1049,11 +1057,13 @@ void lv_ex_tileview_1(void)
     lv_tileview_add_element(tileview, tile_0_2 );
     lv_tileview_add_element(tileview, tile_0_3 );
     lv_tileview_add_element(tileview, tile_0_4 );
+    lv_tileview_add_element(tileview, tile_0_5 );
     lv_tileview_add_element(tileview, tile_1_0 );
     lv_tileview_add_element(tileview, tile_1_1 );
     lv_tileview_add_element(tileview, tile_1_2 );
     lv_tileview_add_element(tileview, tile_1_3 );
     lv_tileview_add_element(tileview, tile_1_4 );
+    lv_tileview_add_element(tileview, tile_1_5 );
 
     if(Set_Alarm_Run_Flag == false)
     lv_tileview_set_tile_act(tileview, 1, 2, LV_ANIM_OFF);
@@ -1359,6 +1369,12 @@ void lv_ex_tileview_1(void)
 
     lv_chart_refresh(chart); /*Required after direct set*/
 
+    //------------------------------tile_0_5-----------------------------------------------------
+    /* Create a label below the slider */
+    lv_obj_t * tile_0_5_label = lv_label_create(tile_0_5, NULL);
+    lv_obj_add_style(tile_0_5_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(tile_0_5_label, "运行");
+
     //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
     lv_img_set_src(img1, &zhen_alipay);
@@ -1551,6 +1567,12 @@ void lv_ex_tileview_1(void)
     lv_obj_set_size(firmwareUpdata_preload, 190, 190);
     lv_obj_align(firmwareUpdata_preload, NULL, LV_ALIGN_CENTER, 0, 0); 
     lv_obj_set_hidden(firmwareUpdata_preload,true);
+
+    //------------------------------tile_1_5-----------------------------------------------------
+    /* Create a label below the slider */
+    lv_obj_t * tile_1_5_label = lv_label_create(tile_1_5, NULL);
+    lv_obj_add_style(tile_1_5_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(tile_1_5_label, "复位");
 
 }
 
