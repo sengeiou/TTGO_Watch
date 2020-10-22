@@ -72,6 +72,91 @@ LV_IMG_DECLARE(TTGO_Main_Biaoyu);   //@-标语
 LV_IMG_DECLARE(zhen_alipay);
 
 
+typedef union	  /* DSP Data数据结构*/
+{
+	struct DSP_Data_str
+	{
+		short ECANA_INDEX_Iu;		             /* 0 -in 0.1A*/
+		short ECANA_INDEX_Iv;		             /* 1 -in 0.1A*/
+		short ECANA_INDEX_Iw;		             /* 2 -in 0.1A*/
+		short ECANA_INDEX_BAT_Iuvw;		       /* 3 -in 0.1V*/
+		short ECANA_INDEX_Uzk;		           /* 4 -in 0.1V*/
+		short ECANA_INDEX_ID;		             /* 5 */
+		short ECANA_INDEX_IQ;		             /* 6 */
+		short ECANA_INDEX_SPEED;             /* 7 */
+		short ECANA_INDEX_T1_LT;             /* 8 */
+		short ECANA_INDEX_T3_MT;             /* 9 */
+
+		short ECANA_INDEX_AnDRV;	    	     /* 10 */
+		short ECANA_INDEX_AnBRK;		         /* 11 */
+		short ECANA_INDEX_CMD_DI;            /* 12 ******/
+		short ECANA_INDEX_ERROR1;		         /* 13 */
+		short ECANA_INDEX_ERROR2;		         /* 14 */
+		short ECANA_INDEX_ERROR3;		         /* 15 */
+		short ECANA_INDEX_ERROR4;		         /* 16 */
+		short ECANA_INDEX_PSWORD;            /* 17 */
+		short ECANA_INDEX_FLOWNO_453;        /* 18 */
+		short ECANA_INDEX_FLOWNO_CZP;        /* 19 */
+
+		short ECANA_INDEX_UU_A1;		         /* 20 */
+		short ECANA_INDEX_UV_A2;		         /* 21 */
+		short ECANA_INDEX_UW;		             /* 22 */
+		short ECANA_INDEX_IZK;		           /* 23 -in 0.1A*/
+		short ECANA_INDEX_PZK;		           /* 24 -in W*/
+		short ECANA_INDEX_UUV;		           /* 25 -in 0.1V*/
+		short ECANA_INDEX_UVW;		           /* 26 -in 0.1V*/
+		short ECANA_INDEX_UWV;               /* 27 -in 0.1V*/
+		short ECANA_INDEX_AnIZK;             /* 28 *******/
+		short ECANA_INDEX_AnSPD;             /* 29 *******/
+ 
+ 		short ECANA_INDEX_AnSPDRef;		       /* 30  ******/
+		short ECANA_INDEX_FBK_DI;            /* 31 信号反馈通道*/
+		short ECANA_INDEX_CMD_DI2;           /* 32 speaker & ZZQ第二通道 & WC KM Brake******/
+		short ECANA_INDEX_AnZzqCh2;          /* 33 ******/
+		short ECANA_INDEX_I34;		           /* 34 */
+		short ECANA_INDEX_ZC_DICAN;          /* 35 */
+		short ECANA_INDEX_ZC_DOCAN;          /* 36 */
+		short ECANA_INDEX_WC_DICANB;         /* 37 ******/
+		short ECANA_INDEX_WC_DOCANB;         /* 38 ******/
+		short ECANA_INDEX_ZZ_DICANB;         /* 39 ******/
+ 
+ 		short ECANA_INDEX_ZZ_DOCANB;         /* 40 ******/
+		short ECANA_INDEX_POS_ACT1;		       /* 41 */
+		short ECANA_INDEX_POS_ACT2;          /* 42 */
+		short ECANA_INDEX_AnZzqCh;           /* 43 ******/
+		short ECANA_INDEX_ModnNum;		       /* 44 */
+		short ECANA_INDEX_AnPOS;		         /* 45 ******/
+		short ECANA_INDEX_pid_posErr;		     /* 46 */
+		short ECANA_INDEX_IamWho;            /* 47 */
+
+
+		short ECANA_INDEX_Send_Or_Recv;          /* 48 */
+		
+		short ECANA_AfterINDEX_ecanRxOkBit;      /* 49 */
+		short ECANA_AfterINDEX_ecanRxOkCounting; /* 50 */
+		short ECANA_AfterINDEX_pid1_pos_Ref;     /* 51 */
+
+		short ECANA_AfterINDEX_DX1;              /* 52 */		
+		short ECANA_AfterINDEX_DX2;              /* 53 */	
+		short ECANA_AfterINDEX_DX3;              /* 54 */	
+		short ECANA_AfterINDEX_DX4;              /* 55 */	
+		short ECANA_AfterINDEX_DX5;              /* 56 */	
+		short ECANA_AfterINDEX_DX6;              /* 57 */	
+		short ECANA_AfterINDEX_DX7;              /* 58 */	
+		short ECANA_AfterINDEX_DX8;              /* 59 */	
+		short ECANA_AfterINDEX_DX9;              /* 60 */	
+		short ECANA_AfterINDEX_DX10;             /* 61 */																					
+
+		short ECANA_AfterINDEX_FlowNum;          /* 62 */
+		short ECANA_AfterINDEX_End;              /* 63 */
+	   
+	}DSP_Data_str;
+
+   byte DSP_Data_Buff128[128];
+   
+}_DSP_Data_Snet;
+
+
 
 //@-TTGO
 TTGOClass *ttgo;
@@ -105,6 +190,8 @@ lv_obj_t *label;
 lv_obj_t *label1; 
 
 lv_obj_t *label_data;
+lv_obj_t *label_data1;
+lv_obj_t *label_data2;
 
 //@-RTC时间显示
 lv_obj_t *label_time; 
@@ -163,6 +250,9 @@ static lv_obj_t * slider_label;
 static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_light_label;
 
+static void slider_dspAngel_event_cb(lv_obj_t * slider, lv_event_t event);
+static lv_obj_t * slider_dspAngel_label;
+
 lv_obj_t * ta;
 lv_obj_t * pwd_ta;
 lv_obj_t * kb;
@@ -195,6 +285,16 @@ lv_obj_t * weather_humidity_label;
 // lv_obj_t * weather_info_label;
 // lv_obj_t * weatcher_get_btn;
 
+//@-dsp显示控件
+lv_obj_t * btn_dsp_fwd;
+lv_obj_t * label_dsp_fwd;
+lv_obj_t * btn_dsp_rev;
+lv_obj_t * label_dsp_rev;
+lv_obj_t * btn_dsp_run;
+lv_obj_t * label_dsp_run;
+lv_obj_t * btn_dsp_stop;
+lv_obj_t * label_dsp_stop;
+
 bool btn2_flag = true;
 
 
@@ -206,10 +306,17 @@ typedef struct struct_message {
     float c;
     String d;
     bool e;
+
+    bool DSP_Reset;
+    bool DSP_Run;
+    int  DSP_Dir;
+    int  DSP_Speed;
+
 } struct_message;
 
 // Create a struct_message called myData
-struct_message recv_Data;
+// struct_message recv_Data;
+_DSP_Data_Snet recv_Data;
 struct_message send_Data;
 
 uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
@@ -278,6 +385,10 @@ int weather_use_http_last_id = 0;
 bool weather_auto_get_flag = false;
 
 
+//@-DC数据
+float DC_FY_RealAngel = 0;
+
+
 /*
 Method to print the reason by which ESP32
 has been awaken from sleep
@@ -303,7 +414,7 @@ void Print_Wakeup_Reason(){
 // callback function that will be executed when data is received
 //@-wifi now 数据接收函数
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&recv_Data, incomingData, sizeof(recv_Data));
+  memcpy(&recv_Data.DSP_Data_Buff128, incomingData, sizeof(recv_Data.DSP_Data_Buff128));
 //   Serial.print("Bytes received: ");
 //   Serial.println(len);
 //   Serial.print("Char: ");
@@ -687,12 +798,20 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     if (obj == btn10) {
         #ifdef USE_ESP_NOW
         send_Data.b = 0;
+        // if(send_Data.DSP_Dir == 1)
+        // send_Data.DSP_Dir = 2;
+        // else if(send_Data.DSP_Dir == 2)
+        // send_Data.DSP_Dir = 1;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
     else if (obj == btn20) {
         #ifdef USE_ESP_NOW
         send_Data.b = 180;
+        // if(send_Data.DSP_Run == false)
+        // send_Data.DSP_Run = true;
+        // else if(send_Data.DSP_Run == true)
+        // send_Data.DSP_Run = false;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
@@ -701,7 +820,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         // send_Data.b = send_Data.b + 10;
         // if(send_Data.b > 180)
         // send_Data.b = 180;
-        send_Data.e = false;
+        send_Data.DSP_Reset = true;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
@@ -710,7 +829,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         // send_Data.b = send_Data.b - 10;
         // if(send_Data.b < 0)
         // send_Data.b = 0;
-        send_Data.e = true;
+        send_Data.DSP_Reset = false;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
@@ -878,6 +997,29 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     // {
     //     Get_Weather_Info();
     // }
+
+    //@-DSP控制-------------
+    else if (obj == btn_dsp_fwd)
+    {
+        send_Data.DSP_Dir = 1;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+    }
+    else if (obj == btn_dsp_rev)
+    {
+        send_Data.DSP_Dir = 2;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+    }
+    else if (obj == btn_dsp_run)
+    {
+        send_Data.DSP_Run = true;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+    }
+    else if (obj == btn_dsp_stop)
+    {
+        send_Data.DSP_Run = false;
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+    }
+    
     
 }
 
@@ -915,6 +1057,22 @@ static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event)
         //@-更新NVS
         Setup_NVS(1, "NULL", "NULL", 0);
 
+    }
+}
+
+static void slider_dspAngel_event_cb(lv_obj_t * slider, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) {
+        #ifdef USE_ESP_NOW
+        static char buf[20]; /* max 3 bytes for number plus 1 null terminating byte */
+
+        send_Data.DSP_Speed = lv_slider_get_value(slider);
+
+        snprintf(buf, 20, "速度:%u%%", (send_Data.DSP_Speed/100));
+        lv_label_set_text(slider_dspAngel_label, buf);
+
+        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        #endif
     }
 }
 
@@ -1114,13 +1272,21 @@ void lv_ex_tileview_1(void)
 
     label_data = lv_label_create( tile_0_0, NULL);
     lv_obj_add_style(label_data, LV_OBJ_PART_MAIN, &model_style);
+    label_data1 = lv_label_create( tile_0_0, NULL);
+    lv_obj_add_style(label_data1, LV_OBJ_PART_MAIN, &model_style);
+    label_data2 = lv_label_create( tile_0_0, NULL);
+    lv_obj_add_style(label_data2, LV_OBJ_PART_MAIN, &model_style);
     #ifdef USE_ESP_NOW
-    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
+    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP);
+    lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.ECANA_INDEX_ERROR1);
+    lv_label_set_text_fmt(label_data2, "Angle: %.2f", recv_Data.DSP_Data_str.ECANA_INDEX_POS_ACT1);
     #else
     lv_label_set_text(label_data, "启动");
     #endif
 
     lv_obj_align( label_data, NULL, LV_ALIGN_CENTER,0,45);
+    lv_obj_align( label_data1, NULL, LV_ALIGN_CENTER,0,63);
+    lv_obj_align( label_data2, NULL, LV_ALIGN_CENTER,0,81);
     
     //------------------------------tile_0_1-----------------------------------------------------
     btn10 = lv_btn_create(tile_0_1, NULL);
@@ -1572,9 +1738,63 @@ void lv_ex_tileview_1(void)
 
     //------------------------------tile_1_5-----------------------------------------------------
     /* Create a label below the slider */
-    lv_obj_t * tile_1_5_label = lv_label_create(tile_1_5, NULL);
-    lv_obj_add_style(tile_1_5_label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(tile_1_5_label, "复位");
+    btn_dsp_fwd = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_dsp_fwd, 100);
+    lv_obj_set_height(btn_dsp_fwd, 50);
+    lv_obj_align(btn_dsp_fwd, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
+    lv_obj_set_event_cb(btn_dsp_fwd, event_handler);
+
+    label_dsp_fwd = lv_label_create(btn_dsp_fwd, NULL);
+    lv_obj_add_style(label_dsp_fwd, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_dsp_fwd, "正");
+
+
+    btn_dsp_rev = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_dsp_rev, 100);
+    lv_obj_set_height(btn_dsp_rev, 50);
+    lv_obj_align(btn_dsp_rev, btn_dsp_fwd, LV_ALIGN_CENTER, 120, 0);
+    lv_obj_set_event_cb(btn_dsp_rev, event_handler);
+
+    label_dsp_rev = lv_label_create(btn_dsp_rev, NULL);
+    lv_obj_add_style(label_dsp_rev, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_dsp_rev, "反");
+
+
+    btn_dsp_run = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_dsp_run, 100);
+    lv_obj_set_height(btn_dsp_run, 50);
+    lv_obj_align(btn_dsp_run, btn_dsp_fwd, LV_ALIGN_CENTER, 0, 70);
+    lv_obj_set_event_cb(btn_dsp_run, event_handler);
+
+    label_dsp_run = lv_label_create(btn_dsp_run, NULL);
+    lv_obj_add_style(label_dsp_run, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_dsp_run, "运行");
+
+
+    btn_dsp_stop = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_dsp_stop, 100);
+    lv_obj_set_height(btn_dsp_stop, 50);
+    lv_obj_align(btn_dsp_stop, btn_dsp_fwd, LV_ALIGN_CENTER, 120, 70);
+    lv_obj_set_event_cb(btn_dsp_stop, event_handler);
+
+    label_dsp_stop = lv_label_create(btn_dsp_stop, NULL);
+    lv_obj_add_style(label_dsp_stop, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_dsp_stop, "停止");
+
+
+    //@-调整dsp运行速度
+    lv_obj_t * slider_dspAngel = lv_slider_create(tile_1_5, NULL);
+    lv_obj_set_width(slider_dspAngel, LV_DPI * 1);
+    lv_obj_align(slider_dspAngel, NULL, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_set_event_cb(slider_dspAngel, slider_dspAngel_event_cb);
+    lv_slider_set_range(slider_dspAngel, 10, 2000);
+
+    /* Create a label below the slider */
+    slider_dspAngel_label = lv_label_create(tile_1_5, NULL);
+    lv_obj_add_style(slider_dspAngel_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(slider_dspAngel_label, "速度:0.1%");
+    lv_obj_set_auto_realign(slider_dspAngel_label, true);
+    lv_obj_align(slider_dspAngel_label, slider_dspAngel, LV_ALIGN_CENTER, 0, 15);
 
 }
 
@@ -2092,6 +2312,12 @@ void setup()
     //@-静态创建wifi密码输入键盘
     WIFI_makeKeyboard();
 
+    //@-初始值
+    send_Data.DSP_Reset = false;
+    send_Data.DSP_Dir = 1;
+    send_Data.DSP_Run = false;
+    send_Data.DSP_Speed = 10;  //@-实际速度为0.1%
+
     //@-进入lvgl主页面
     lv_ex_tileview_1();
     // lv_ex_keyboard_1();
@@ -2312,7 +2538,15 @@ void loop()
     }
 
     #ifdef USE_ESP_NOW
-    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.b);
+    DC_FY_RealAngel = ((recv_Data.DSP_Data_str.ECANA_INDEX_POS_ACT1 * 0.02) + (recv_Data.DSP_Data_str.ECANA_INDEX_UU_A1 * 0.001));
+
+    sprintf(display_buf, "Value: %d", recv_Data.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP);
+    lv_label_set_text(label_data, display_buf);
+
+    lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.ECANA_INDEX_ERROR1);
+
+    sprintf(display_buf, "Angle: %.2f", DC_FY_RealAngel);
+    lv_label_set_text(label_data2, display_buf);
     #endif
 
     lv_task_handler();
