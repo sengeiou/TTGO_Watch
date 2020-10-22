@@ -698,17 +698,19 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     } 
     else if (obj == btn30) {
         #ifdef USE_ESP_NOW
-        send_Data.b = send_Data.b + 10;
-        if(send_Data.b > 180)
-        send_Data.b = 180;
+        // send_Data.b = send_Data.b + 10;
+        // if(send_Data.b > 180)
+        // send_Data.b = 180;
+        send_Data.e = false;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
     else if (obj == btn40) {
         #ifdef USE_ESP_NOW
-        send_Data.b = send_Data.b - 10;
-        if(send_Data.b < 0)
-        send_Data.b = 0;
+        // send_Data.b = send_Data.b - 10;
+        // if(send_Data.b < 0)
+        // send_Data.b = 0;
+        send_Data.e = true;
         esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 

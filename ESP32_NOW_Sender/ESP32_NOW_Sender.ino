@@ -64,7 +64,7 @@ typedef union	  /* DSP Send数据结构*/
 		short ECANA_INDEX_AnSPD;             /* 29 *******/
  
  		short ECANA_INDEX_AnSPDRef;		       /* 30  ******/
-		short  ECANA_INDEX_FBK_DI;           /* 31 信号反馈通道*/
+		short ECANA_INDEX_FBK_DI;            /* 31 信号反馈通道*/
 		short ECANA_INDEX_CMD_DI2;           /* 32 speaker & ZZQ第二通道 & WC KM Brake******/
 		short ECANA_INDEX_AnZzqCh2;          /* 33 ******/
 		short ECANA_INDEX_I34;		           /* 34 */
@@ -112,6 +112,7 @@ typedef union	  /* DSP Send数据结构*/
 
 //@-DSP数据发送
 _DSP_Send_Snet Snet_ESP32_Send;
+_DSP_Send_Snet Snet_ESP32_Recv;
 
 
 // REPLACE WITH YOUR RECEIVER MAC Address
@@ -134,15 +135,28 @@ struct_message send_Data;
 struct_message recv_Data;
 
 
+byte TestData[128] = {
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x54 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
+0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x04 ,0x00 ,0x31 ,0x00
+};
+
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
 byte mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+  // 0x00, 0xE0, 0x4C, 0xA0, 0x7E, 0x61
 };
 IPAddress fy_ip(172, 25, 9, 20); //FY
-IPAddress xh_ip(172, 25, 9, 30);  //XH
+IPAddress xh_ip(172, 25, 9, 18);  //XH
 IPAddress local_ip(172,25,9,61);
-
 IPAddress ip_m(230, 1, 2, 3); 
 short m_Port = 2300;      // local port to listen on
 
@@ -151,6 +165,7 @@ short local_xh_Port = 23602;      // local port to listen on
 short fyPort = 23200;      // local port to listen on
 short xhPort = 23302;      // local port to listen on
 int count = 0;
+int count1 = 0;
 int count_temp = 0;
 
 // buffers for receiving and sending data
@@ -167,6 +182,8 @@ long Recv_Packet_Count = 0;
 int data = 0;
 
 bool Ethernet_Connect_Flag = false;
+
+int ESP32_Send_Count  = 0;
 
 //-----------------------ESP NOW---------------------------------
 // callback when data is sent
@@ -191,6 +208,18 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 //   Serial.print("Bool: ");
 //   Serial.println(send_Data.e);
 //   Serial.println();
+
+  if(recv_Data.e == false)
+  {
+    Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI = 0x0400;
+    Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI2 = 0x0400;
+  }
+  else if(recv_Data.e == true)
+  {
+    Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI = 0x0200;
+    Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI2 = 0x0000;
+  }
+  
 }
 //--------------------------------------------------------
  
@@ -207,9 +236,11 @@ void setup() {
   // Snet_ESP32_Send.DSP_Send_Buff128[96] = 0x54;
   Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_PSWORD = 0x0453;
-  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI = 0x0122;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
-  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnSPD = 0x000A;         //@-速度为0.1% 即：0.1 * 100 
-  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnPOS = 0x000A;         //@-速度为0.1% 即：0.1 * 100
+  Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_CMD_DI = 0x0200;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
+  // Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnSPD = 0x000A;         //@-速度为0.1% 即：0.1 * 100 
+  // Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_AnPOS = 0x000A;         //@-速度为0.1% 即：0.1 * 100
+
+  Snet_ESP32_Send.DSP_Send_str.ECANA_AfterINDEX_End = 0x0031;
 
   // Snet_ESP32_Send.DSP_Send_strECANA_INDEX_CMD_DI2 = 0x0038;        //@-在给出运行方向时给出
 
@@ -294,6 +325,7 @@ void setup() {
 void loop() {
 
   count =  count + 1;
+  count1 =  count1 + 1;
   count_temp =  count_temp + 1;
 
   #ifdef ESP32_Servo
@@ -324,7 +356,8 @@ void loop() {
     // if there's data available, read a packet
     int packetSize = Udp_fy.parsePacket();
     // int packetSize = Udp_m.parsePacket();
-    if (packetSize) {
+    if (packetSize == 128) 
+    {
 
       Recv_Packet_Count = Recv_Packet_Count + 1;
 
@@ -343,7 +376,8 @@ void loop() {
       // Serial.println(Udp_fy.remotePort());
 
       // read the packet into packetBufffer
-      // Udp_fy.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+      Udp_fy.read(Snet_ESP32_Recv.DSP_Send_Buff128, 128);
+
       // Serial.println("Contents:");
       // Serial.println(packetBuffer);
 
@@ -357,30 +391,42 @@ void loop() {
   }
   #endif
 
-
-  if(count > 10)
+  if(count > 1)
   {
     count = 0;
 
     #if 1
     if(Ethernet_Connect_Flag == true)
     {
+      ESP32_Send_Count = ESP32_Send_Count + 1;
+
+      if(ESP32_Send_Count > 65535)
+      ESP32_Send_Count = 0;
+
+      //@-接收到DSP数据的流水号
+      Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_FLOWNO_453 = Snet_ESP32_Recv.DSP_Send_str.ECANA_INDEX_FLOWNO_453;
+      //@-发送DSP数据流水号
+      Snet_ESP32_Send.DSP_Send_str.ECANA_INDEX_FLOWNO_CZP = ESP32_Send_Count;
+
       // send a reply to the IP address and port that sent us the packet we received
       Udp_fy.beginPacket(fy_ip, fyPort);
       // Udp_fy.write(ReplyBuffer);  //write str
-      // Udp_fy.write(ReplyBuffer,128);  //write byte
+      // Udp_fy.write(TestData,128);  //write byte
       Udp_fy.write(Snet_ESP32_Send.DSP_Send_Buff128,128);  //write byte
       Udp_fy.endPacket();  
 
 
-      // Udp_xh.beginPacket(xh_ip, xhPort);
-      // // Udp_fy.write(ReplyBuffer);  //write str
-      // Udp_xh.write(ReplyBuffer,128);  //write byte
-      // Udp_xh.endPacket(); 
+      Udp_xh.beginPacket(xh_ip, xhPort);
+      // Udp_fy.write(ReplyBuffer);  //write str
+      Udp_xh.write(Snet_ESP32_Send.DSP_Send_Buff128,128);  //write byte
+      Udp_xh.endPacket(); 
     }
     #endif
+  }
 
-
+  if(count1 > 40)
+  {
+    count1 = 0;
     // Set values to send
     strcpy(send_Data.a, "THIS IS A CHAR");
   // send_Data.b = random(1,20);
@@ -397,13 +443,21 @@ void loop() {
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
   }
 
-  if(count_temp > 200)
+
+  if(count_temp > 400)
   {
     count_temp = 0;
 
-    Serial.print("Recv:");
-    Serial.println(Recv_Packet_Count);
+    // Snet_ESP32_Recv.DSP_Send_str.ECANA_INDEX_ERROR1
+    // Snet_ESP32_Recv.DSP_Send_str.ECANA_INDEX_FLOWNO_453
+
+    // Serial.print("Recv:");
+    // Serial.println(Recv_Packet_Count);
+
+    Serial.print("Error:");
+    Serial.println(Snet_ESP32_Recv.DSP_Send_str.ECANA_INDEX_ERROR1);
   }
   
-  delay(5);
+
+  delay(2);   //@-1:500/s  2:250/s
 }
