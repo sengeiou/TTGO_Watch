@@ -1737,7 +1737,6 @@ void lv_ex_tileview_1(void)
     lv_obj_set_hidden(firmwareUpdata_preload,true);
 
     //------------------------------tile_1_5-----------------------------------------------------
-    /* Create a label below the slider */
     btn_dsp_fwd = lv_btn_create(tile_1_5, NULL);
     lv_obj_set_width(btn_dsp_fwd, 100);
     lv_obj_set_height(btn_dsp_fwd, 50);
