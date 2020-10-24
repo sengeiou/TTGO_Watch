@@ -13,7 +13,7 @@ git clone https://github.com/Gianbacchio/ESP8266_Spiram
 /*
 * firmeware version string
 */
-#define __FIRMWARE__            "20201020"
+#define __FIRMWARE__            "20201023"
 
 // #define USE_WIFI
 #define USE_ESP_NOW
