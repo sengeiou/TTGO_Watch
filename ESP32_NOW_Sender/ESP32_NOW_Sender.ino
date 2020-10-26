@@ -145,8 +145,8 @@ _DSP_Data_Snet Snet_ESP32_Recv;
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 // uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  
-uint8_t broadcastAddress[] = {0x8C, 0xAA, 0xB5, 0x82, 0xEA, 0x58};    //TTGO_2020 白色
-// uint8_t broadcastAddress[] = {0x10, 0x52, 0x1C, 0x65, 0x42, 0x84};    //TTGO_2020 黑色
+uint8_t broadcastAddress1[] = {0x8C, 0xAA, 0xB5, 0x82, 0xEA, 0x58};    //TTGO_2020 白色
+uint8_t broadcastAddress2[] = {0x10, 0x52, 0x1C, 0x65, 0x42, 0x84};    //TTGO_2020 黑色
 
 // Structure example to send data
 // Must match the receiver structure
@@ -440,15 +440,27 @@ void setup() {
   // get recv packer info
   esp_now_register_recv_cb(OnDataRecv);
   
-  // Register peer
-  esp_now_peer_info_t peerInfo;
-  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-  peerInfo.channel = 0;  
-  peerInfo.encrypt = false;
+  // Register peer1
+  esp_now_peer_info_t peerInfo1;
+  memcpy(peerInfo1.peer_addr, broadcastAddress1, 6);
+  peerInfo1.channel = 0;  
+  peerInfo1.encrypt = false;
   
   // Add peer        
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
+  if (esp_now_add_peer(&peerInfo1) != ESP_OK){
+    Serial.println("Failed to add peer1");
+    return;
+  }
+
+  // Register peer2
+  esp_now_peer_info_t peerInfo2;
+  memcpy(peerInfo2.peer_addr, broadcastAddress2, 6);
+  peerInfo2.channel = 1;  
+  peerInfo2.encrypt = false;
+  
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo2) != ESP_OK){
+    Serial.println("Failed to add peer2");
     return;
   }
 
@@ -564,17 +576,22 @@ void loop()
   //   // Set values to send
   //   strcpy(send_Data.a, "THIS IS A CHAR");
   // // send_Data.b = random(1,20);
-  //   data = data + 1;
-  //   if(data > 500)
-  //   data = 0;
+    data = data + 1;
+    if(data > 500)
+    data = 0;
   //   send_Data.b = data;
   //   send_Data.c = 1.2;
   //   send_Data.d = "Hello";
   //   send_Data.e = false;
 
+    Snet_ESP32_Recv.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP = data;
+    
+
     //@-转发接收到的DSP数据 Send message via ESP-NOW 
     // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
-    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &Snet_ESP32_Recv.DSP_Data_Buff128, sizeof(Snet_ESP32_Recv.DSP_Data_Buff128));
+    esp_err_t result;
+    result = esp_now_send(broadcastAddress1, (uint8_t *) &Snet_ESP32_Recv.DSP_Data_Buff128, sizeof(Snet_ESP32_Recv.DSP_Data_Buff128));
+    result = esp_now_send(broadcastAddress2, (uint8_t *) &Snet_ESP32_Recv.DSP_Data_Buff128, sizeof(Snet_ESP32_Recv.DSP_Data_Buff128));
   }
 
   //@-串口数据出数据
