@@ -19,6 +19,8 @@
 
 #define ESP32_Servo
 
+#define ESP32_XH
+
 #ifdef ESP32_Servo
 Servo myservo;
 // Recommended PWM GPIO pins on the ESP32 include 2,4,12-19,21-23,25-27,32-33 
@@ -187,16 +189,32 @@ byte mac[] = {
   // 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
   0x00, 0xE0, 0x4C, 0xA0, 0x7E, 0x61
 };
-IPAddress fy_ip(172, 25, 9, 20); //FY
-IPAddress xh_ip(172, 25, 9, 18);  //XH
+
+byte mac2[] = {
+  // 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+  0x00, 0xE0, 0x4C, 0xA0, 0x7E, 0x62
+};
+
+
+IPAddress fy_ip(172, 25, 9, 20);  //FY
+IPAddress fy2_ip(172, 25, 9, 22); //FY2
+IPAddress xh_ip(172, 25, 9, 30);  //XH
+IPAddress xh2_ip(172, 25, 9, 32); //XH2
 IPAddress local_ip(172,25,9,61);
+IPAddress local_ip_test(172,25,9,62);
+
 IPAddress ip_m(230, 1, 2, 3); 
 short m_Port = 2300;      // local port to listen on
 
-short local_fy_Port = 23600;      // local port to listen on
-short local_xh_Port = 23602;      // local port to listen on
-short fyPort = 23200;      // local port to listen on
-short xhPort = 23302;      // local port to listen on
+short local_fy_Port =  23600;       // local port to listen on
+short local_fy2_Port = 23603;       // local port to listen on
+short local_xh_Port =  23602;       // local port to listen on
+short local_xh2_Port = 23604;       // local port to listen on
+short fyPort =  23200;       // local port to listen on
+short fy2Port = 23203;       // local port to listen on
+short xhPort =  23302;       // local port to listen on
+short xh2Port = 23304;       // local port to listen on
+
 int count = 0;
 int count1 = 0;
 int count_temp = 0;
@@ -220,7 +238,7 @@ int ESP32_Send_Count  = 0;
 
 
 bool DSP_Reset_Copy = false;
-int  DSP_Dir_Copy = 1;
+int  DSP_Dir_Copy = 0;
 bool DSP_Run_Copy = false;
 int DSP_Speed_Copy = 0;
 
@@ -340,7 +358,6 @@ void setup() {
   // Init Serial Monitor
   Serial.begin(115200);
 
-
   //@-初始值
   DSP_Reset_Copy = false;
   DSP_Dir_Copy = 1;
@@ -393,7 +410,7 @@ void setup() {
   Ethernet.init(5);
 
   // start the Ethernet
-  Ethernet.begin(mac, local_ip);
+  Ethernet.begin(mac, local_ip);  //@-测试用(mac2, local_ip_test)
 
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware) {
@@ -416,14 +433,20 @@ void setup() {
   if(Ethernet_Connect_Flag ==  true)
   {
     // start UDP
-    Udp_fy.begin(local_fy_Port);
+    // Udp_fy.begin(local_fy_Port);
+    #ifdef ESP32_XH
     Udp_xh.begin(local_xh_Port);
+    #else
+    Udp_xh.begin(local_xh2_Port);
+    #endif
   }
   #endif
  
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
-  // Serial.println(WiFi.macAddress());  //84:0D:8E:0B:B2:54
+  //@-10:52:1C:67:0B:E8 - esp32
+  //@-84:0D:8E:0B:B2:54 - esp32
+  // Serial.println(WiFi.macAddress());    
 
 
   // Init ESP-NOW
@@ -440,6 +463,7 @@ void setup() {
   // get recv packer info
   esp_now_register_recv_cb(OnDataRecv);
   
+
   // Register peer1
   esp_now_peer_info_t peerInfo1;
   memcpy(peerInfo1.peer_addr, broadcastAddress1, 6);
@@ -499,7 +523,7 @@ void loop()
   if(Ethernet_Connect_Flag == true)
   {
     // if there's data available, read a packet
-    int packetSize = Udp_fy.parsePacket();
+    int packetSize = Udp_xh.parsePacket();
     // int packetSize = Udp_m.parsePacket();
     if (packetSize == 128) 
     {
@@ -521,7 +545,7 @@ void loop()
       // Serial.println(Udp_fy.remotePort());
 
       // read the packet into packetBufffer
-      Udp_fy.read(Snet_ESP32_Recv.DSP_Data_Buff128, 128);
+      Udp_xh.read(Snet_ESP32_Recv.DSP_Data_Buff128, 128);
 
       // Serial.println("Contents:");
       // Serial.println(packetBuffer);
@@ -553,11 +577,15 @@ void loop()
       Snet_ESP32_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP = ESP32_Send_Count;
 
       // send a reply to the IP address and port that sent us the packet we received
-      Udp_fy.beginPacket(fy_ip, fyPort);
+      #ifdef ESP32_XH
+      Udp_xh.beginPacket(xh_ip, xhPort);
+      #else
+      Udp_xh.beginPacket(xh2_ip, xh2Port);
+      #endif
       // Udp_fy.write(ReplyBuffer);  //write str
       // Udp_fy.write(TestData,128);  //write byte
-      Udp_fy.write(Snet_ESP32_Send.DSP_Data_Buff128,128);  //write byte
-      Udp_fy.endPacket();  
+      Udp_xh.write(Snet_ESP32_Send.DSP_Data_Buff128,128);  //write byte
+      Udp_xh.endPacket();  
 
       #if xh_send
       Udp_xh.beginPacket(xh_ip, xhPort);

@@ -319,7 +319,12 @@ typedef struct struct_message {
 _DSP_Data_Snet recv_Data;
 struct_message send_Data;
 
-uint8_t broadcastAddress[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32
+uint8_t broadcastAddress1[] = {0x84, 0x0D, 0x8E, 0x0B, 0xB2, 0x54};    //ESP32-主
+uint8_t broadcastAddress2[] = {0x10, 0x52, 0x1C, 0x67, 0x0B, 0xE8};    //ESP32-从
+
+  //@-10:52:1C:67:0B:E8 - esp32
+  //@-84:0D:8E:0B:B2:54 - esp32
+
 #endif
 
 
@@ -802,7 +807,9 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         // send_Data.DSP_Dir = 2;
         // else if(send_Data.DSP_Dir == 2)
         // send_Data.DSP_Dir = 1;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+
+        // esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+        // esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
     else if (obj == btn20) {
@@ -812,26 +819,42 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         // send_Data.DSP_Run = true;
         // else if(send_Data.DSP_Run == true)
         // send_Data.DSP_Run = false;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+
+        // esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+        // esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
     else if (obj == btn30) {
-        #ifdef USE_ESP_NOW
-        // send_Data.b = send_Data.b + 10;
-        // if(send_Data.b > 180)
-        // send_Data.b = 180;
-        send_Data.DSP_Reset = true;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
-        #endif
+        if(event == LV_EVENT_CLICKED)
+        {
+            #ifdef USE_ESP_NOW
+            // send_Data.b = send_Data.b + 10;
+            // if(send_Data.b > 180)
+            // send_Data.b = 180;
+            send_Data.DSP_Reset = true;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+
+            // lv_obj_set_state(btn30,  LV_STATE_DEFAULT);
+            // lv_obj_set_state(tile_0_1,  LV_STATE_DEFAULT);
+            #endif
+        }
     } 
     else if (obj == btn40) {
-        #ifdef USE_ESP_NOW
-        // send_Data.b = send_Data.b - 10;
-        // if(send_Data.b < 0)
-        // send_Data.b = 0;
-        send_Data.DSP_Reset = false;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
-        #endif
+        if(event == LV_EVENT_CLICKED)
+        {
+            #ifdef USE_ESP_NOW
+            // send_Data.b = send_Data.b - 10;
+            // if(send_Data.b < 0)
+            // send_Data.b = 0;
+            send_Data.DSP_Reset = false;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+
+            // lv_obj_set_state(btn40,  LV_STATE_DEFAULT);
+            // lv_obj_set_state(tile_0_1,  LV_STATE_DEFAULT);
+            #endif
+        }
     } 
     else if (obj == btn2) {
 
@@ -859,7 +882,9 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         // Serial.printf("dx\n");
 
         // Send message via ESP-NOW
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        // esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+        // esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+
         #endif
     }
 
@@ -1001,23 +1026,39 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     //@-DSP控制-------------
     else if (obj == btn_dsp_fwd)
     {
-        send_Data.DSP_Dir = 1;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.DSP_Dir = 1;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
     }
     else if (obj == btn_dsp_rev)
     {
-        send_Data.DSP_Dir = 2;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.DSP_Dir = 2;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
     }
     else if (obj == btn_dsp_run)
     {
-        send_Data.DSP_Run = true;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.DSP_Run = true;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
     }
     else if (obj == btn_dsp_stop)
     {
-        send_Data.DSP_Run = false;
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.DSP_Run = false;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
     }
     
     
@@ -1034,7 +1075,8 @@ static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
         snprintf(buf, 20, "角度:%u", send_Data.b);
         lv_label_set_text(slider_label, buf);
 
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+        esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     }
 }
@@ -1071,7 +1113,8 @@ static void slider_dspAngel_event_cb(lv_obj_t * slider, lv_event_t event)
         snprintf(buf, 20, "速度:%u%%", (send_Data.DSP_Speed/100));
         lv_label_set_text(slider_dspAngel_label, buf);
 
-        esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
+        esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+        esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     }
 }
@@ -2179,14 +2222,26 @@ void Setup_ESP_NOW()
     // get recv packer info
     esp_now_register_recv_cb(OnDataRecv);
 
-    // Register peer
-    esp_now_peer_info_t peerInfo;
-    memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-    peerInfo.channel = 0;  
-    peerInfo.encrypt = false;
+    // Register peer1
+    esp_now_peer_info_t peerInfo1;
+    memcpy(peerInfo1.peer_addr, broadcastAddress1, 6);
+    peerInfo1.channel = 0;  
+    peerInfo1.encrypt = false;
 
     // Add peer        
-    if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    if (esp_now_add_peer(&peerInfo1) != ESP_OK){
+    Serial.println("Failed to add peer");
+    return;
+    }
+
+    // Register peer2
+    esp_now_peer_info_t peerInfo2;
+    memcpy(peerInfo2.peer_addr, broadcastAddress2, 6);
+    peerInfo2.channel = 0;  
+    peerInfo2.encrypt = false;
+
+    // Add peer        
+    if (esp_now_add_peer(&peerInfo2) != ESP_OK){
     Serial.println("Failed to add peer");
     return;
     }
