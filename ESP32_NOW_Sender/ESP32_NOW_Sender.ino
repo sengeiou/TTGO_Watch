@@ -156,10 +156,16 @@ typedef struct struct_message {
   String d;
   bool e;
 
-  bool DSP_Reset;
-  bool DSP_Run;
-  int  DSP_Dir;
-  int  DSP_Speed;
+  bool FY_DSP_Reset;
+  bool FY_DSP_Run;
+  int  FY_DSP_Dir;
+  int  FY_DSP_Speed;
+
+  bool XH_DSP_Reset;
+  bool XH_DSP_Run;
+  int  XH_DSP_Dir;
+  int  XH_DSP_Speed;
+
 } struct_message;
 
 //@9-测试用数据收发报文
@@ -226,10 +232,15 @@ bool Ethernet_Connect_Flag = false;
 int ESP32_Send_Count  = 0;
 
 //@21-DSP控制参数
-bool DSP_Reset_Copy = false;
-int  DSP_Dir_Copy = 0;
-bool DSP_Run_Copy = false;
-int DSP_Speed_Copy = 0;
+bool FY_DSP_Reset_Copy = false;
+int  FY_DSP_Dir_Copy = 0;
+bool FY_DSP_Run_Copy = false;
+int FY_DSP_Speed_Copy = 0;
+
+bool XH_DSP_Reset_Copy = false;
+int  XH_DSP_Dir_Copy = 0;
+bool XH_DSP_Run_Copy = false;
+int XH_DSP_Speed_Copy = 0;
 
 
 
@@ -257,11 +268,57 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 //   Serial.println(send_Data.e);
 //   Serial.println();
 
-  //@-Dsp Reset
-  if(DSP_Reset_Copy != recv_Data.DSP_Reset)
+  //@-FY Dsp Reset
+  if(FY_DSP_Reset_Copy != recv_Data.FY_DSP_Reset)
   {
-    DSP_Reset_Copy = recv_Data.DSP_Reset;
-    if(recv_Data.DSP_Reset == true)
+    FY_DSP_Reset_Copy = recv_Data.FY_DSP_Reset;
+    if(recv_Data.FY_DSP_Reset == true)
+    {
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.ResetErr = 1; 
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI2 = 0x0400;
+
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.ResetErr = 1; 
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI2 = 0x0400;
+    }
+    else if(recv_Data.FY_DSP_Reset == false)
+    {
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.ResetErr = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI2 = 0x0000;
+
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.ResetErr = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI2 = 0x0000;
+    }
+  }
+
+  //@-Dsp Reset
+  if(XH_DSP_Reset_Copy != recv_Data.XH_DSP_Reset)
+  {
+    XH_DSP_Reset_Copy = recv_Data.XH_DSP_Reset;
+    if(recv_Data.XH_DSP_Reset == true)
     {
       // Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI = 0x0400;
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 0;
@@ -282,7 +339,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.ResetErr = 1; 
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI2 = 0x0400;
     }
-    else if(recv_Data.DSP_Reset == false)
+    else if(recv_Data.XH_DSP_Reset == false)
     {
       // Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI = 0x0100;
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 0;
@@ -306,10 +363,10 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   }
 
   //@-运行方向-正
-  if(DSP_Dir_Copy != recv_Data.DSP_Dir)
+  if(XH_DSP_Dir_Copy != recv_Data.XH_DSP_Dir)
   {
-    DSP_Dir_Copy = recv_Data.DSP_Dir;
-    if(recv_Data.DSP_Dir == 1)
+    XH_DSP_Dir_Copy = recv_Data.XH_DSP_Dir;
+    if(recv_Data.XH_DSP_Dir == 1)
     {
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;
@@ -323,7 +380,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 0;
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
     }
-    else if(recv_Data.DSP_Dir == 2)
+    else if(recv_Data.XH_DSP_Dir == 2)
     {
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;
@@ -340,10 +397,10 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   }
 
   //@-运行
-  if(DSP_Run_Copy != recv_Data.DSP_Run)
+  if(XH_DSP_Run_Copy != recv_Data.XH_DSP_Run)
   {
-    DSP_Run_Copy = recv_Data.DSP_Run;
-    if(recv_Data.DSP_Run == true)
+    XH_DSP_Run_Copy = recv_Data.XH_DSP_Run;
+    if(recv_Data.XH_DSP_Run == true)
     {
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 1;
@@ -353,7 +410,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 1;
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
     }
-    else if(recv_Data.DSP_Run == false)
+    else if(recv_Data.XH_DSP_Run == false)
     {
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 0;
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 0;
@@ -366,15 +423,15 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   }
 
   //@-速度
-  if(DSP_Speed_Copy != recv_Data.DSP_Speed)
+  if(XH_DSP_Speed_Copy != recv_Data.XH_DSP_Speed)
   {
-    DSP_Speed_Copy = recv_Data.DSP_Speed;
+    XH_DSP_Speed_Copy = recv_Data.XH_DSP_Speed;
 
-    Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnSPD = DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100 
-    Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnPOS = DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100
+    Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnSPD = XH_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100 
+    Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnPOS = XH_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100
 
-    Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100 
-    Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100
+    Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = XH_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100 
+    Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = XH_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100
   }
 
 
@@ -387,21 +444,29 @@ void setup() {
   Serial.begin(115200);
 
   //@-初始值
-  DSP_Reset_Copy = false;
-  DSP_Dir_Copy = 1;
-  DSP_Run_Copy = false;
+  FY_DSP_Reset_Copy = false;
+  FY_DSP_Dir_Copy = 1;
+  FY_DSP_Run_Copy = false;
+
+  XH_DSP_Reset_Copy = false;
+  XH_DSP_Dir_Copy = 1;
+  XH_DSP_Run_Copy = false;
 
   for(int i=0; i<128; i++)
   {
-    // ReplyBuffer[i] = 0x00;
+    Snet_ESP32_fy_Send.DSP_Data_Buff128[i] = 0x00;
+    Snet_ESP32_fy2_Send.DSP_Data_Buff128[i] = 0x00;
     Snet_ESP32_xh_Send.DSP_Data_Buff128[i] = 0x00;
     Snet_ESP32_xh2_Send.DSP_Data_Buff128[i] = 0x00;
   }
-  // ReplyBuffer[96] = 0x54;
-  // Snet_ESP32_xh_Send.DSP_Data_Buff128[96] = 0x54;
+
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
+
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
-
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
 
@@ -423,11 +488,19 @@ void setup() {
 		// UWORD ZHY_Mode:1;		     /* 13 */
 		// UWORD ManBrakeMod:1;		 /* 14 */
 		// UWORD PosMod:1;		         /* 15  sin*/
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_AfterINDEX_End = 0x0031;
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_AfterINDEX_End = 0x0031;
+
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_AfterINDEX_End = 0x0031;
-
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
@@ -468,7 +541,7 @@ void setup() {
   {
     //@-配置UDP接口信息
     Udp_fy.begin(local_fy_Port);
-    Udp_fy2.begin(local_fy_Port);
+    Udp_fy2.begin(local_fy2_Port);
 
     Udp_xh.begin(local_xh_Port);
     Udp_xh2.begin(local_xh2_Port);
@@ -555,9 +628,28 @@ void loop()
   if(Ethernet_Connect_Flag == true)
   {
     // if there's data available, read a packet
+    int fy_packetSize = Udp_fy.parsePacket();
+    int fy2_packetSize = Udp_fy2.parsePacket();
     int xh_packetSize = Udp_xh.parsePacket();
     int xh2_packetSize = Udp_xh2.parsePacket();
     // int packetSize = Udp_m.parsePacket();
+
+    if(fy_packetSize == 128)
+    {
+      fy_Recv_Packet_Count = fy_Recv_Packet_Count + 1;
+
+      // read the packet into packetBufffer
+      Udp_fy.read(Snet_ESP32_fy_Recv.DSP_Data_Buff128, 128);
+    }
+
+    if(fy2_packetSize == 128)
+    {
+      fy2_Recv_Packet_Count = fy2_Recv_Packet_Count + 1;
+
+      // read the packet into packetBufffer
+      Udp_fy2.read(Snet_ESP32_fy2_Recv.DSP_Data_Buff128, 128);
+    }
+
     if (xh_packetSize == 128) 
     {
 
@@ -612,6 +704,17 @@ void loop()
       if(ESP32_Send_Count > 65535)
       ESP32_Send_Count = 0;
 
+      //------------------------------------------FY---------------------------------------------------------------------
+      //@-接收到DSP数据的流水号
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_453 = Snet_ESP32_fy_Recv.DSP_Data_str.ECANA_INDEX_FLOWNO_453;
+      //@-发送DSP数据流水号
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP = ESP32_Send_Count;
+      //------------------------------------------FY2---------------------------------------------------------------------
+      //@-接收到DSP数据的流水号
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_453 = Snet_ESP32_fy2_Recv.DSP_Data_str.ECANA_INDEX_FLOWNO_453;
+      //@-发送DSP数据流水号
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP = ESP32_Send_Count;
+
       //------------------------------------------XH---------------------------------------------------------------------
       //@-接收到DSP数据的流水号
       Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_453 = Snet_ESP32_xh_Recv.DSP_Data_str.ECANA_INDEX_FLOWNO_453;
@@ -622,6 +725,16 @@ void loop()
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_453 = Snet_ESP32_xh2_Recv.DSP_Data_str.ECANA_INDEX_FLOWNO_453;
       //@-发送DSP数据流水号
       Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP = ESP32_Send_Count;
+
+
+      //------------------------------------------FY---------------------------------------------------------------------
+      Udp_fy.beginPacket(fy_ip, fyPort);
+      Udp_fy.write(Snet_ESP32_fy_Send.DSP_Data_Buff128,128);  //write byte
+      Udp_fy.endPacket(); 
+      //------------------------------------------FY2---------------------------------------------------------------------
+      Udp_fy2.beginPacket(fy2_ip, fy2Port);
+      Udp_fy2.write(Snet_ESP32_fy2_Send.DSP_Data_Buff128,128);  //write byte
+      Udp_fy2.endPacket(); 
 
 
       //------------------------------------------XH---------------------------------------------------------------------
