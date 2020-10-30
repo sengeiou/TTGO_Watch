@@ -1964,6 +1964,12 @@ void check_power_irq()
     //@-电源中断触发
     if(irq_power == true)
     {
+        //@-增加DSP控制停止命令
+        send_Data.DSP_Run = false;
+        esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+        esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        delay(100);
+
         //@-清除电源中断
         power->clearIRQ();
 
@@ -2511,7 +2517,6 @@ void loop()
         System_Sleep_Tick = 0;
     }
     
-
     //@-检测闹钟
     check_alarm();
 
