@@ -2083,6 +2083,7 @@ void check_power_irq()
     if(irq_power == true)
     {
         //@-增加DSP控制停止命令
+        send_Data.FY_DSP_Run = false;
         send_Data.XH_DSP_Run = false;
         esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
         esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
