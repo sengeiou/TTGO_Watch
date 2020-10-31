@@ -251,7 +251,10 @@ static void slider_light_event_cb(lv_obj_t * slider, lv_event_t event);
 static lv_obj_t * slider_light_label;
 
 static void slider_dspAngel_event_cb(lv_obj_t * slider, lv_event_t event);
-static lv_obj_t * slider_dspAngel_label;
+static lv_obj_t * slider_fy_dspAngel;
+static lv_obj_t * slider_xh_dspAngel;
+static lv_obj_t * slider_fy_dspAngel_label;
+static lv_obj_t * slider_xh_dspAngel_label;
 
 lv_obj_t * ta;
 lv_obj_t * pwd_ta;
@@ -285,15 +288,25 @@ lv_obj_t * weather_humidity_label;
 // lv_obj_t * weather_info_label;
 // lv_obj_t * weatcher_get_btn;
 
-//@-dsp显示控件
-lv_obj_t * btn_dsp_fwd;
-lv_obj_t * label_dsp_fwd;
-lv_obj_t * btn_dsp_rev;
-lv_obj_t * label_dsp_rev;
-lv_obj_t * btn_dsp_run;
-lv_obj_t * label_dsp_run;
-lv_obj_t * btn_dsp_stop;
-lv_obj_t * label_dsp_stop;
+//@-xh dsp显示控件
+lv_obj_t * btn_xh_dsp_fwd;
+lv_obj_t * label_xh_dsp_fwd;
+lv_obj_t * btn_xh_dsp_rev;
+lv_obj_t * label_xh_dsp_rev;
+lv_obj_t * btn_xh_dsp_run;
+lv_obj_t * label_xh_dsp_run;
+lv_obj_t * btn_xh_dsp_stop;
+lv_obj_t * label_xh_dsp_stop;
+
+//@-fy dsp显示控件
+lv_obj_t * btn_fy_dsp_fwd;
+lv_obj_t * label_fy_dsp_fwd;
+lv_obj_t * btn_fy_dsp_rev;
+lv_obj_t * label_fy_dsp_rev;
+lv_obj_t * btn_fy_dsp_run;
+lv_obj_t * label_fy_dsp_run;
+lv_obj_t * btn_fy_dsp_stop;
+lv_obj_t * label_fy_dsp_stop;
 
 bool btn2_flag = true;
 
@@ -1030,8 +1043,8 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     //     Get_Weather_Info();
     // }
 
-    //@-DSP控制-------------
-    else if (obj == btn_dsp_fwd)
+    //@-XH DSP控制-------------
+    else if (obj == btn_xh_dsp_fwd)
     {
         if(event == LV_EVENT_CLICKED)
         {
@@ -1040,7 +1053,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
-    else if (obj == btn_dsp_rev)
+    else if (obj == btn_xh_dsp_rev)
     {
         if(event == LV_EVENT_CLICKED)
         {
@@ -1049,7 +1062,7 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
-    else if (obj == btn_dsp_run)
+    else if (obj == btn_xh_dsp_run)
     {
         if(event == LV_EVENT_CLICKED)
         {
@@ -1058,11 +1071,49 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
-    else if (obj == btn_dsp_stop)
+    else if (obj == btn_xh_dsp_stop)
     {
         if(event == LV_EVENT_CLICKED)
         {
             send_Data.XH_DSP_Run = false;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+    }
+
+    //@-FY DSP控制-------------
+    else if (obj == btn_fy_dsp_fwd)
+    {
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.FY_DSP_Dir = 1;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+    }
+    else if (obj == btn_fy_dsp_rev)
+    {
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.FY_DSP_Dir = 2;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+    }
+    else if (obj == btn_fy_dsp_run)
+    {
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.FY_DSP_Run = true;
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+    }
+    else if (obj == btn_fy_dsp_stop)
+    {
+        if(event == LV_EVENT_CLICKED)
+        {
+            send_Data.FY_DSP_Run = false;
             esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
@@ -1115,13 +1166,29 @@ static void slider_dspAngel_event_cb(lv_obj_t * slider, lv_event_t event)
         #ifdef USE_ESP_NOW
         static char buf[20]; /* max 3 bytes for number plus 1 null terminating byte */
 
-        send_Data.XH_DSP_Speed = lv_slider_get_value(slider);
 
-        snprintf(buf, 20, "速度:%u%%", (send_Data.XH_DSP_Speed/100));
-        lv_label_set_text(slider_dspAngel_label, buf);
+        if(slider == slider_fy_dspAngel)
+        {
+            send_Data.FY_DSP_Speed = lv_slider_get_value(slider);
 
-        esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
-        esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+            snprintf(buf, 20, "FY速度:%u%%", (send_Data.FY_DSP_Speed/100));
+            lv_label_set_text(slider_fy_dspAngel_label, buf);
+
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+
+        if(slider == slider_xh_dspAngel)
+        {
+            send_Data.XH_DSP_Speed = lv_slider_get_value(slider);
+
+            snprintf(buf, 20, "XH速度:%u%%", (send_Data.XH_DSP_Speed/100));
+            lv_label_set_text(slider_xh_dspAngel_label, buf);
+
+            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+
         #endif
     }
 }
@@ -1588,10 +1655,54 @@ void lv_ex_tileview_1(void)
     lv_chart_refresh(chart); /*Required after direct set*/
 
     //------------------------------tile_0_5-----------------------------------------------------
+    btn_fy_dsp_fwd = lv_btn_create(tile_0_5, NULL);
+    lv_obj_set_width(btn_fy_dsp_fwd, 100);
+    lv_obj_set_height(btn_fy_dsp_fwd, 50);
+    lv_obj_align(btn_fy_dsp_fwd, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
+    lv_obj_set_event_cb(btn_fy_dsp_fwd, event_handler);
+    label_fy_dsp_fwd = lv_label_create(btn_fy_dsp_fwd, NULL);
+    lv_obj_add_style(label_fy_dsp_fwd, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_fy_dsp_fwd, "正");
+
+    btn_fy_dsp_rev = lv_btn_create(tile_0_5, NULL);
+    lv_obj_set_width(btn_fy_dsp_rev, 100);
+    lv_obj_set_height(btn_fy_dsp_rev, 50);
+    lv_obj_align(btn_fy_dsp_rev, btn_fy_dsp_fwd, LV_ALIGN_CENTER, 120, 0);
+    lv_obj_set_event_cb(btn_fy_dsp_rev, event_handler);
+    label_fy_dsp_rev = lv_label_create(btn_fy_dsp_rev, NULL);
+    lv_obj_add_style(label_fy_dsp_rev, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_fy_dsp_rev, "反");
+
+    btn_fy_dsp_run = lv_btn_create(tile_0_5, NULL);
+    lv_obj_set_width(btn_fy_dsp_run, 100);
+    lv_obj_set_height(btn_fy_dsp_run, 50);
+    lv_obj_align(btn_fy_dsp_run, btn_fy_dsp_fwd, LV_ALIGN_CENTER, 0, 70);
+    lv_obj_set_event_cb(btn_fy_dsp_run, event_handler);
+    label_fy_dsp_run = lv_label_create(btn_fy_dsp_run, NULL);
+    lv_obj_add_style(label_fy_dsp_run, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_fy_dsp_run, "运行");
+
+    btn_fy_dsp_stop = lv_btn_create(tile_0_5, NULL);
+    lv_obj_set_width(btn_fy_dsp_stop, 100);
+    lv_obj_set_height(btn_fy_dsp_stop, 50);
+    lv_obj_align(btn_fy_dsp_stop, btn_fy_dsp_fwd, LV_ALIGN_CENTER, 120, 70);
+    lv_obj_set_event_cb(btn_fy_dsp_stop, event_handler);
+    label_fy_dsp_stop = lv_label_create(btn_fy_dsp_stop, NULL);
+    lv_obj_add_style(label_fy_dsp_stop, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_fy_dsp_stop, "停止");
+
+    //@-调整dsp运行速度
+    slider_fy_dspAngel = lv_slider_create(tile_0_5, NULL);
+    lv_obj_set_width(slider_fy_dspAngel, LV_DPI * 1);
+    lv_obj_align(slider_fy_dspAngel, NULL, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_set_event_cb(slider_fy_dspAngel, slider_dspAngel_event_cb);
+    lv_slider_set_range(slider_fy_dspAngel, 10, 2000);
     /* Create a label below the slider */
-    lv_obj_t * tile_0_5_label = lv_label_create(tile_0_5, NULL);
-    lv_obj_add_style(tile_0_5_label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(tile_0_5_label, "运行");
+    slider_fy_dspAngel_label = lv_label_create(tile_0_5, NULL);
+    lv_obj_add_style(slider_fy_dspAngel_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(slider_fy_dspAngel_label, "FY速度:0.1%");
+    lv_obj_set_auto_realign(slider_fy_dspAngel_label, true);
+    lv_obj_align(slider_fy_dspAngel_label, slider_fy_dspAngel, LV_ALIGN_CENTER, 0, 15);
 
     //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
@@ -1787,63 +1898,63 @@ void lv_ex_tileview_1(void)
     lv_obj_set_hidden(firmwareUpdata_preload,true);
 
     //------------------------------tile_1_5-----------------------------------------------------
-    btn_dsp_fwd = lv_btn_create(tile_1_5, NULL);
-    lv_obj_set_width(btn_dsp_fwd, 100);
-    lv_obj_set_height(btn_dsp_fwd, 50);
-    lv_obj_align(btn_dsp_fwd, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
-    lv_obj_set_event_cb(btn_dsp_fwd, event_handler);
+    btn_xh_dsp_fwd = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_xh_dsp_fwd, 100);
+    lv_obj_set_height(btn_xh_dsp_fwd, 50);
+    lv_obj_align(btn_xh_dsp_fwd, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
+    lv_obj_set_event_cb(btn_xh_dsp_fwd, event_handler);
 
-    label_dsp_fwd = lv_label_create(btn_dsp_fwd, NULL);
-    lv_obj_add_style(label_dsp_fwd, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(label_dsp_fwd, "正");
-
-
-    btn_dsp_rev = lv_btn_create(tile_1_5, NULL);
-    lv_obj_set_width(btn_dsp_rev, 100);
-    lv_obj_set_height(btn_dsp_rev, 50);
-    lv_obj_align(btn_dsp_rev, btn_dsp_fwd, LV_ALIGN_CENTER, 120, 0);
-    lv_obj_set_event_cb(btn_dsp_rev, event_handler);
-
-    label_dsp_rev = lv_label_create(btn_dsp_rev, NULL);
-    lv_obj_add_style(label_dsp_rev, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(label_dsp_rev, "反");
+    label_xh_dsp_fwd = lv_label_create(btn_xh_dsp_fwd, NULL);
+    lv_obj_add_style(label_xh_dsp_fwd, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_xh_dsp_fwd, "正");
 
 
-    btn_dsp_run = lv_btn_create(tile_1_5, NULL);
-    lv_obj_set_width(btn_dsp_run, 100);
-    lv_obj_set_height(btn_dsp_run, 50);
-    lv_obj_align(btn_dsp_run, btn_dsp_fwd, LV_ALIGN_CENTER, 0, 70);
-    lv_obj_set_event_cb(btn_dsp_run, event_handler);
+    btn_xh_dsp_rev = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_xh_dsp_rev, 100);
+    lv_obj_set_height(btn_xh_dsp_rev, 50);
+    lv_obj_align(btn_xh_dsp_rev, btn_xh_dsp_fwd, LV_ALIGN_CENTER, 120, 0);
+    lv_obj_set_event_cb(btn_xh_dsp_rev, event_handler);
 
-    label_dsp_run = lv_label_create(btn_dsp_run, NULL);
-    lv_obj_add_style(label_dsp_run, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(label_dsp_run, "运行");
+    label_xh_dsp_rev = lv_label_create(btn_xh_dsp_rev, NULL);
+    lv_obj_add_style(label_xh_dsp_rev, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_xh_dsp_rev, "反");
 
 
-    btn_dsp_stop = lv_btn_create(tile_1_5, NULL);
-    lv_obj_set_width(btn_dsp_stop, 100);
-    lv_obj_set_height(btn_dsp_stop, 50);
-    lv_obj_align(btn_dsp_stop, btn_dsp_fwd, LV_ALIGN_CENTER, 120, 70);
-    lv_obj_set_event_cb(btn_dsp_stop, event_handler);
+    btn_xh_dsp_run = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_xh_dsp_run, 100);
+    lv_obj_set_height(btn_xh_dsp_run, 50);
+    lv_obj_align(btn_xh_dsp_run, btn_xh_dsp_fwd, LV_ALIGN_CENTER, 0, 70);
+    lv_obj_set_event_cb(btn_xh_dsp_run, event_handler);
 
-    label_dsp_stop = lv_label_create(btn_dsp_stop, NULL);
-    lv_obj_add_style(label_dsp_stop, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(label_dsp_stop, "停止");
+    label_xh_dsp_run = lv_label_create(btn_xh_dsp_run, NULL);
+    lv_obj_add_style(label_xh_dsp_run, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_xh_dsp_run, "运行");
+
+
+    btn_xh_dsp_stop = lv_btn_create(tile_1_5, NULL);
+    lv_obj_set_width(btn_xh_dsp_stop, 100);
+    lv_obj_set_height(btn_xh_dsp_stop, 50);
+    lv_obj_align(btn_xh_dsp_stop, btn_xh_dsp_fwd, LV_ALIGN_CENTER, 120, 70);
+    lv_obj_set_event_cb(btn_xh_dsp_stop, event_handler);
+
+    label_xh_dsp_stop = lv_label_create(btn_xh_dsp_stop, NULL);
+    lv_obj_add_style(label_xh_dsp_stop, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_xh_dsp_stop, "停止");
 
 
     //@-调整dsp运行速度
-    lv_obj_t * slider_dspAngel = lv_slider_create(tile_1_5, NULL);
-    lv_obj_set_width(slider_dspAngel, LV_DPI * 1);
-    lv_obj_align(slider_dspAngel, NULL, LV_ALIGN_CENTER, 0, 60);
-    lv_obj_set_event_cb(slider_dspAngel, slider_dspAngel_event_cb);
-    lv_slider_set_range(slider_dspAngel, 10, 2000);
+    slider_xh_dspAngel = lv_slider_create(tile_1_5, NULL);
+    lv_obj_set_width(slider_xh_dspAngel, LV_DPI * 1);
+    lv_obj_align(slider_xh_dspAngel, NULL, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_set_event_cb(slider_xh_dspAngel, slider_dspAngel_event_cb);
+    lv_slider_set_range(slider_xh_dspAngel, 10, 2000);
 
     /* Create a label below the slider */
-    slider_dspAngel_label = lv_label_create(tile_1_5, NULL);
-    lv_obj_add_style(slider_dspAngel_label, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(slider_dspAngel_label, "速度:0.1%");
-    lv_obj_set_auto_realign(slider_dspAngel_label, true);
-    lv_obj_align(slider_dspAngel_label, slider_dspAngel, LV_ALIGN_CENTER, 0, 15);
+    slider_xh_dspAngel_label = lv_label_create(tile_1_5, NULL);
+    lv_obj_add_style(slider_xh_dspAngel_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(slider_xh_dspAngel_label, "XH速度:0.1%");
+    lv_obj_set_auto_realign(slider_xh_dspAngel_label, true);
+    lv_obj_align(slider_xh_dspAngel_label, slider_xh_dspAngel, LV_ALIGN_CENTER, 0, 15);
 
 }
 

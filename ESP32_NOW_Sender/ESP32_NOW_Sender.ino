@@ -314,6 +314,79 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     }
   }
 
+  //@-运行方向-正
+  if(FY_DSP_Dir_Copy != recv_Data.FY_DSP_Dir)
+  {
+    FY_DSP_Dir_Copy = recv_Data.FY_DSP_Dir;
+    if(recv_Data.FY_DSP_Dir == 1)
+    {
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+    }
+    else if(recv_Data.FY_DSP_Dir == 2)
+    {
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Fwd = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Rev = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+    }
+  }
+
+  //@-运行
+  if(FY_DSP_Run_Copy != recv_Data.FY_DSP_Run)
+  {
+    FY_DSP_Run_Copy = recv_Data.FY_DSP_Run;
+    if(recv_Data.FY_DSP_Run == true)
+    {
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 1;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 1;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 0;
+    }
+    else if(recv_Data.FY_DSP_Run == false)
+    {
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 0;
+      Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 1;
+
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Ready = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Run = 0;
+      Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.Exit = 1;
+    }
+  }
+
+  //@-速度
+  if(FY_DSP_Speed_Copy != recv_Data.FY_DSP_Speed)
+  {
+    FY_DSP_Speed_Copy = recv_Data.FY_DSP_Speed;
+
+    Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnSPD = FY_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100 
+    Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnPOS = FY_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100
+
+    Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = FY_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100 
+    Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = FY_DSP_Speed_Copy;         //@-速度为0.1% 即：0.1 * 100
+  }
+  //-----------------------------------------------------------------------------------------
+
   //@-Dsp Reset
   if(XH_DSP_Reset_Copy != recv_Data.XH_DSP_Reset)
   {
@@ -794,5 +867,5 @@ void loop()
   }
   
   //@-系统延时
-  delay(2);   //@-1:500/s  2:250/s
+  delay(1);   //@-1:500/s  2:250/s
 }
