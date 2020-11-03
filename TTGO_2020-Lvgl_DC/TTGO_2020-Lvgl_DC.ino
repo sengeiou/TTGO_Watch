@@ -76,23 +76,29 @@ typedef union	  /* DSP Data数据结构*/
 {
 	struct DSP_Data_str
 	{
-		short ECANA_INDEX_Iu;		             /* 0 -in 0.1A*/
-		short ECANA_INDEX_Iv;		             /* 1 -in 0.1A*/
-		short ECANA_INDEX_Iw;		             /* 2 -in 0.1A*/
-		short ECANA_INDEX_BAT_Iuvw;		       /* 3 -in 0.1V*/
-		short ECANA_INDEX_Uzk;		           /* 4 -in 0.1V*/
-		short ECANA_INDEX_ID;		             /* 5 */
-		short ECANA_INDEX_IQ;		             /* 6 */
-		short ECANA_INDEX_SPEED;             /* 7 */
-		short ECANA_INDEX_T1_LT;             /* 8 */
-		short ECANA_INDEX_T3_MT;             /* 9 */
 
-		short ECANA_INDEX_AnDRV;	    	     /* 10 */
-		short ECANA_INDEX_AnBRK;		         /* 11 */
-		short ECANA_INDEX_CMD_DI;            /* 12 ******/
-		short ECANA_INDEX_ERROR1;		         /* 13 */
-		short ECANA_INDEX_ERROR2;		         /* 14 */
-		short ECANA_INDEX_ERROR3;		         /* 15 */
+        short FY_ECANA_INDEX_FLOWNO_CZP;     /* 0 */
+        short FY_ECANA_INDEX_ERROR1;         /* 1 */
+        short FY_ECANA_INDEX_POS_ACT1;       /* 2 */
+        short FY_ECANA_INDEX_UU_A1;          /* 3 */
+
+        short FY2_ECANA_INDEX_FLOWNO_CZP;    /* 4 */
+        short FY2_ECANA_INDEX_ERROR1;        /* 5 */
+        short FY2_ECANA_INDEX_POS_ACT1;      /* 6 */
+        short FY2_ECANA_INDEX_UU_A1;         /* 7 */
+
+        short XH_ECANA_INDEX_FLOWNO_CZP;     /* 8 */
+        short XH_ECANA_INDEX_ERROR1;         /* 9 */
+        short XH_ECANA_INDEX_POS_ACT1;       /* 10 */
+        short XH_ECANA_INDEX_UU_A1;          /* 11 */
+
+        short XH2_ECANA_INDEX_FLOWNO_CZP;    /* 12 */
+        short XH2_ECANA_INDEX_ERROR1;        /* 13 */
+        short XH2_ECANA_INDEX_POS_ACT1;      /* 14 */
+        short XH2_ECANA_INDEX_UU_A1;         /* 15 */
+
+//---------------------------------------------------------------------------
+
 		short ECANA_INDEX_ERROR4;		         /* 16 */
 		short ECANA_INDEX_PSWORD;            /* 17 */
 		short ECANA_INDEX_FLOWNO_453;        /* 18 */
@@ -297,6 +303,7 @@ lv_obj_t * btn_xh_dsp_run;
 lv_obj_t * label_xh_dsp_run;
 lv_obj_t * btn_xh_dsp_stop;
 lv_obj_t * label_xh_dsp_stop;
+lv_obj_t * XH_Angel_label;
 
 //@-fy dsp显示控件
 lv_obj_t * btn_fy_dsp_fwd;
@@ -307,6 +314,7 @@ lv_obj_t * btn_fy_dsp_run;
 lv_obj_t * label_fy_dsp_run;
 lv_obj_t * btn_fy_dsp_stop;
 lv_obj_t * label_fy_dsp_stop;
+lv_obj_t * FY_Angel_label;
 
 bool btn2_flag = true;
 
@@ -410,6 +418,7 @@ bool weather_auto_get_flag = false;
 
 //@-DC数据
 float DC_FY_RealAngel = 0;
+float DC_XH_RealAngel = 0;
 
 
 /*
@@ -1394,9 +1403,9 @@ void lv_ex_tileview_1(void)
     label_data2 = lv_label_create( tile_0_0, NULL);
     lv_obj_add_style(label_data2, LV_OBJ_PART_MAIN, &model_style);
     #ifdef USE_ESP_NOW
-    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP);
-    lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.ECANA_INDEX_ERROR1);
-    lv_label_set_text_fmt(label_data2, "Angle: %.2f", recv_Data.DSP_Data_str.ECANA_INDEX_POS_ACT1);
+    lv_label_set_text_fmt(label_data, "Value: %d", recv_Data.DSP_Data_str.XH_ECANA_INDEX_FLOWNO_CZP);
+    lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.XH_ECANA_INDEX_ERROR1);
+    lv_label_set_text_fmt(label_data2, "Angle: %.2f", recv_Data.DSP_Data_str.XH_ECANA_INDEX_POS_ACT1);
     #else
     lv_label_set_text(label_data, "启动");
     #endif
@@ -1704,6 +1713,12 @@ void lv_ex_tileview_1(void)
     lv_obj_set_auto_realign(slider_fy_dspAngel_label, true);
     lv_obj_align(slider_fy_dspAngel_label, slider_fy_dspAngel, LV_ALIGN_CENTER, 0, 15);
 
+    //@-FY角度
+    FY_Angel_label = lv_label_create(tile_0_5, NULL);
+    lv_obj_add_style(FY_Angel_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(FY_Angel_label, "FY角度:--");
+    lv_obj_align(FY_Angel_label, slider_fy_dspAngel_label, LV_ALIGN_CENTER, 0, 15);
+
     //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
     lv_img_set_src(img1, &zhen_alipay);
@@ -1955,6 +1970,13 @@ void lv_ex_tileview_1(void)
     lv_label_set_text(slider_xh_dspAngel_label, "XH速度:0.1%");
     lv_obj_set_auto_realign(slider_xh_dspAngel_label, true);
     lv_obj_align(slider_xh_dspAngel_label, slider_xh_dspAngel, LV_ALIGN_CENTER, 0, 15);
+
+    //@-XH角度
+    XH_Angel_label = lv_label_create(tile_1_5, NULL);
+    lv_obj_add_style(XH_Angel_label, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(XH_Angel_label, "XH角度:--");
+    lv_obj_align(XH_Angel_label, slider_xh_dspAngel_label, LV_ALIGN_CENTER, 0, 15);
+
 
 }
 
@@ -2716,15 +2738,24 @@ void loop()
     }
 
     #ifdef USE_ESP_NOW
-    DC_FY_RealAngel = ((recv_Data.DSP_Data_str.ECANA_INDEX_POS_ACT1 * 0.02) + (recv_Data.DSP_Data_str.ECANA_INDEX_UU_A1 * 0.001));
+    DC_FY_RealAngel = ((recv_Data.DSP_Data_str.FY_ECANA_INDEX_POS_ACT1 * 0.02) + (recv_Data.DSP_Data_str.FY_ECANA_INDEX_UU_A1 * 0.001));
+    DC_XH_RealAngel = ((recv_Data.DSP_Data_str.XH_ECANA_INDEX_POS_ACT1 * 0.02) + (recv_Data.DSP_Data_str.XH_ECANA_INDEX_UU_A1 * 0.001));
 
-    sprintf(display_buf, "Value: %d", recv_Data.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP);
+    sprintf(display_buf, "Value: %d", recv_Data.DSP_Data_str.FY_ECANA_INDEX_FLOWNO_CZP);
     lv_label_set_text(label_data, display_buf);
 
-    lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.ECANA_INDEX_ERROR1);
+    lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.FY_ECANA_INDEX_ERROR1);
 
-    sprintf(display_buf, "Angle: %.2f", DC_FY_RealAngel);
+    sprintf(display_buf, "Angle: %.2f", DC_XH_RealAngel);
     lv_label_set_text(label_data2, display_buf);
+
+
+    sprintf(display_buf, "FY角度: %.2f", DC_FY_RealAngel);
+    lv_label_set_text(FY_Angel_label, display_buf);
+
+    sprintf(display_buf, "XH角度: %.2f", DC_XH_RealAngel);
+    lv_label_set_text(XH_Angel_label, display_buf);
+
     #endif
 
     lv_task_handler();

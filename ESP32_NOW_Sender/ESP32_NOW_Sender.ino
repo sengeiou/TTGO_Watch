@@ -132,6 +132,97 @@ typedef union	  /* DSP Data数据结构*/
    
 }_DSP_Data_Snet;
 
+
+typedef union	  /* DSP Data数据结构*/
+{
+	struct DSP_Data_str
+	{
+
+        short FY_ECANA_INDEX_FLOWNO_CZP;     /* 0 */
+        short FY_ECANA_INDEX_ERROR1;         /* 1 */
+        short FY_ECANA_INDEX_POS_ACT1;       /* 2 */
+        short FY_ECANA_INDEX_UU_A1;          /* 3 */
+
+        short FY2_ECANA_INDEX_FLOWNO_CZP;    /* 4 */
+        short FY2_ECANA_INDEX_ERROR1;        /* 5 */
+        short FY2_ECANA_INDEX_POS_ACT1;      /* 6 */
+        short FY2_ECANA_INDEX_UU_A1;         /* 7 */
+
+        short XH_ECANA_INDEX_FLOWNO_CZP;     /* 8 */
+        short XH_ECANA_INDEX_ERROR1;         /* 9 */
+        short XH_ECANA_INDEX_POS_ACT1;       /* 10 */
+        short XH_ECANA_INDEX_UU_A1;          /* 11 */
+
+        short XH2_ECANA_INDEX_FLOWNO_CZP;    /* 12 */
+        short XH2_ECANA_INDEX_ERROR1;        /* 13 */
+        short XH2_ECANA_INDEX_POS_ACT1;      /* 14 */
+        short XH2_ECANA_INDEX_UU_A1;         /* 15 */
+
+//---------------------------------------------------------------------------
+
+		short ECANA_INDEX_ERROR4;		         /* 16 */
+		short ECANA_INDEX_PSWORD;            /* 17 */
+		short ECANA_INDEX_FLOWNO_453;        /* 18 */
+		short ECANA_INDEX_FLOWNO_CZP;        /* 19 */
+
+		short ECANA_INDEX_UU_A1;		         /* 20 */
+		short ECANA_INDEX_UV_A2;		         /* 21 */
+		short ECANA_INDEX_UW;		             /* 22 */
+		short ECANA_INDEX_IZK;		           /* 23 -in 0.1A*/
+		short ECANA_INDEX_PZK;		           /* 24 -in W*/
+		short ECANA_INDEX_UUV;		           /* 25 -in 0.1V*/
+		short ECANA_INDEX_UVW;		           /* 26 -in 0.1V*/
+		short ECANA_INDEX_UWV;               /* 27 -in 0.1V*/
+		short ECANA_INDEX_AnIZK;             /* 28 *******/
+		short ECANA_INDEX_AnSPD;             /* 29 *******/
+ 
+ 		short ECANA_INDEX_AnSPDRef;		       /* 30  ******/
+		short ECANA_INDEX_FBK_DI;            /* 31 信号反馈通道*/
+		short ECANA_INDEX_CMD_DI2;           /* 32 speaker & ZZQ第二通道 & WC KM Brake******/
+		short ECANA_INDEX_AnZzqCh2;          /* 33 ******/
+		short ECANA_INDEX_I34;		           /* 34 */
+		short ECANA_INDEX_ZC_DICAN;          /* 35 */
+		short ECANA_INDEX_ZC_DOCAN;          /* 36 */
+		short ECANA_INDEX_WC_DICANB;         /* 37 ******/
+		short ECANA_INDEX_WC_DOCANB;         /* 38 ******/
+		short ECANA_INDEX_ZZ_DICANB;         /* 39 ******/
+ 
+ 		short ECANA_INDEX_ZZ_DOCANB;         /* 40 ******/
+		short ECANA_INDEX_POS_ACT1;		       /* 41 */
+		short ECANA_INDEX_POS_ACT2;          /* 42 */
+		short ECANA_INDEX_AnZzqCh;           /* 43 ******/
+		short ECANA_INDEX_ModnNum;		       /* 44 */
+		short ECANA_INDEX_AnPOS;		         /* 45 ******/
+		short ECANA_INDEX_pid_posErr;		     /* 46 */
+		short ECANA_INDEX_IamWho;            /* 47 */
+
+
+		short ECANA_INDEX_Send_Or_Recv;          /* 48 */
+		
+		short ECANA_AfterINDEX_ecanRxOkBit;      /* 49 */
+		short ECANA_AfterINDEX_ecanRxOkCounting; /* 50 */
+		short ECANA_AfterINDEX_pid1_pos_Ref;     /* 51 */
+
+		short ECANA_AfterINDEX_DX1;              /* 52 */		
+		short ECANA_AfterINDEX_DX2;              /* 53 */	
+		short ECANA_AfterINDEX_DX3;              /* 54 */	
+		short ECANA_AfterINDEX_DX4;              /* 55 */	
+		short ECANA_AfterINDEX_DX5;              /* 56 */	
+		short ECANA_AfterINDEX_DX6;              /* 57 */	
+		short ECANA_AfterINDEX_DX7;              /* 58 */	
+		short ECANA_AfterINDEX_DX8;              /* 59 */	
+		short ECANA_AfterINDEX_DX9;              /* 60 */	
+		short ECANA_AfterINDEX_DX10;             /* 61 */																					
+
+		short ECANA_AfterINDEX_FlowNum;          /* 62 */
+		short ECANA_AfterINDEX_End;              /* 63 */
+	   
+	}DSP_Data_str;
+
+   byte DSP_Data_Buff128[128];
+   
+}_DSP_Data_Now;
+
 //@5-DSP发送数据
 _DSP_Data_Snet Snet_ESP32_fy_Send;
 _DSP_Data_Snet Snet_ESP32_fy2_Send;
@@ -169,7 +260,7 @@ typedef struct struct_message {
 } struct_message;
 
 //@9-测试用数据收发报文
-struct_message send_Data;
+_DSP_Data_Now  send_Data;
 struct_message recv_Data;
 
 //@10-本地网络MAC地址
@@ -841,14 +932,38 @@ void loop()
   //   send_Data.d = "Hello";
   //   send_Data.e = false;
 
-    Snet_ESP32_xh_Recv.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP = data;
+    // Snet_ESP32_xh_Recv.DSP_Data_str.ECANA_INDEX_FLOWNO_CZP = data;
+
+    send_Data.DSP_Data_str.FY_ECANA_INDEX_FLOWNO_CZP = data;
+    send_Data.DSP_Data_str.FY_ECANA_INDEX_ERROR1     = Snet_ESP32_fy_Recv.DSP_Data_str.ECANA_INDEX_ERROR1;
+    send_Data.DSP_Data_str.FY_ECANA_INDEX_POS_ACT1   = Snet_ESP32_fy_Recv.DSP_Data_str.ECANA_INDEX_POS_ACT1;
+    send_Data.DSP_Data_str.FY_ECANA_INDEX_UU_A1      = Snet_ESP32_fy_Recv.DSP_Data_str.ECANA_INDEX_UU_A1;
+
+    send_Data.DSP_Data_str.FY2_ECANA_INDEX_FLOWNO_CZP = data;
+    send_Data.DSP_Data_str.FY2_ECANA_INDEX_ERROR1     = Snet_ESP32_fy2_Recv.DSP_Data_str.ECANA_INDEX_ERROR1;
+    send_Data.DSP_Data_str.FY2_ECANA_INDEX_POS_ACT1   = Snet_ESP32_fy2_Recv.DSP_Data_str.ECANA_INDEX_POS_ACT1;
+    send_Data.DSP_Data_str.FY2_ECANA_INDEX_UU_A1      = Snet_ESP32_fy2_Recv.DSP_Data_str.ECANA_INDEX_UU_A1;
+
+    send_Data.DSP_Data_str.XH_ECANA_INDEX_FLOWNO_CZP = data;
+    send_Data.DSP_Data_str.XH_ECANA_INDEX_ERROR1     = Snet_ESP32_xh_Recv.DSP_Data_str.ECANA_INDEX_ERROR1;
+    send_Data.DSP_Data_str.XH_ECANA_INDEX_POS_ACT1   = Snet_ESP32_xh_Recv.DSP_Data_str.ECANA_INDEX_POS_ACT1;
+    send_Data.DSP_Data_str.XH_ECANA_INDEX_UU_A1      = Snet_ESP32_xh_Recv.DSP_Data_str.ECANA_INDEX_UU_A1;
+
+    send_Data.DSP_Data_str.XH2_ECANA_INDEX_FLOWNO_CZP = data;
+    send_Data.DSP_Data_str.XH2_ECANA_INDEX_ERROR1     = Snet_ESP32_xh2_Recv.DSP_Data_str.ECANA_INDEX_ERROR1;
+    send_Data.DSP_Data_str.XH2_ECANA_INDEX_POS_ACT1   = Snet_ESP32_xh2_Recv.DSP_Data_str.ECANA_INDEX_POS_ACT1;
+    send_Data.DSP_Data_str.XH2_ECANA_INDEX_UU_A1      = Snet_ESP32_xh2_Recv.DSP_Data_str.ECANA_INDEX_UU_A1;
     
 
     //@-转发接收到的DSP数据 Send message via ESP-NOW 
     // esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &send_Data, sizeof(send_Data));
     esp_err_t result;
-    result = esp_now_send(broadcastAddress1, (uint8_t *) &Snet_ESP32_xh_Recv.DSP_Data_Buff128, sizeof(Snet_ESP32_xh_Recv.DSP_Data_Buff128));
-    result = esp_now_send(broadcastAddress2, (uint8_t *) &Snet_ESP32_xh_Recv.DSP_Data_Buff128, sizeof(Snet_ESP32_xh_Recv.DSP_Data_Buff128));
+    // result = esp_now_send(broadcastAddress1, (uint8_t *) &Snet_ESP32_xh_Recv.DSP_Data_Buff128, sizeof(Snet_ESP32_xh_Recv.DSP_Data_Buff128));
+    // result = esp_now_send(broadcastAddress2, (uint8_t *) &Snet_ESP32_xh_Recv.DSP_Data_Buff128, sizeof(Snet_ESP32_xh_Recv.DSP_Data_Buff128));
+    result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+    result = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+
+
   }
 
   //@-串口数据出数据
