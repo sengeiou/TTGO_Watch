@@ -830,25 +830,11 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     if (obj == btn10) {
         #ifdef USE_ESP_NOW
         send_Data.b = 0;
-        // if(send_Data.XH_DSP_Dir == 1)
-        // send_Data.XH_DSP_Dir = 2;
-        // else if(send_Data.XH_DSP_Dir == 2)
-        // send_Data.XH_DSP_Dir = 1;
-
-        // esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
-        // esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
     else if (obj == btn20) {
         #ifdef USE_ESP_NOW
         send_Data.b = 180;
-        // if(send_Data.XH_DSP_Run == false)
-        // send_Data.XH_DSP_Run = true;
-        // else if(send_Data.XH_DSP_Run == true)
-        // send_Data.XH_DSP_Run = false;
-
-        // esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
-        // esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     } 
     else if (obj == btn30) {
@@ -860,7 +846,6 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             // send_Data.b = 180;
             send_Data.FY_DSP_Reset = true;
             send_Data.XH_DSP_Reset = true;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
 
             // lv_obj_set_state(btn30,  LV_STATE_DEFAULT);
@@ -877,7 +862,6 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
             // send_Data.b = 0;
             send_Data.FY_DSP_Reset = false;
             send_Data.XH_DSP_Reset = false;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
 
             // lv_obj_set_state(btn40,  LV_STATE_DEFAULT);
@@ -1055,19 +1039,31 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
     //@-XH DSP控制-------------
     else if (obj == btn_xh_dsp_fwd)
     {
-        if(event == LV_EVENT_CLICKED)
+        if(event == LV_EVENT_LONG_PRESSED)
         {
             send_Data.XH_DSP_Dir = 1;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+
+        //@-释放按键
+        if(event == LV_EVENT_RELEASED)  //LV_EVENT_CLICKED
+        {
+            send_Data.XH_DSP_Dir = 3;
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
     else if (obj == btn_xh_dsp_rev)
     {
-        if(event == LV_EVENT_CLICKED)
+        if(event == LV_EVENT_LONG_PRESSED)
         {
             send_Data.XH_DSP_Dir = 2;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+
+        //@-释放按键
+        if(event == LV_EVENT_RELEASED)
+        {
+            send_Data.XH_DSP_Dir = 3;
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
@@ -1076,7 +1072,6 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         if(event == LV_EVENT_CLICKED)
         {
             send_Data.XH_DSP_Run = true;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
@@ -1085,7 +1080,6 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         if(event == LV_EVENT_CLICKED)
         {
             send_Data.XH_DSP_Run = false;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
@@ -1096,7 +1090,13 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         if(event == LV_EVENT_CLICKED)
         {
             send_Data.FY_DSP_Dir = 1;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+
+        //@-释放按键
+        if(event == LV_EVENT_RELEASED)
+        {
+            send_Data.FY_DSP_Dir = 3;
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
@@ -1105,7 +1105,12 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         if(event == LV_EVENT_CLICKED)
         {
             send_Data.FY_DSP_Dir = 2;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
+            esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        }
+        //@-释放按键
+        if(event == LV_EVENT_RELEASED)
+        {
+            send_Data.FY_DSP_Dir = 3;
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
@@ -1114,7 +1119,6 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         if(event == LV_EVENT_CLICKED)
         {
             send_Data.FY_DSP_Run = true;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
@@ -1123,7 +1127,6 @@ void event_handler(lv_obj_t *obj, lv_event_t event)
         if(event == LV_EVENT_CLICKED)
         {
             send_Data.FY_DSP_Run = false;
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
     }
@@ -1142,7 +1145,6 @@ static void slider_event_cb(lv_obj_t * slider, lv_event_t event)
         snprintf(buf, 20, "角度:%u", send_Data.b);
         lv_label_set_text(slider_label, buf);
 
-        esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
         esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         #endif
     }
@@ -1183,7 +1185,6 @@ static void slider_dspAngel_event_cb(lv_obj_t * slider, lv_event_t event)
             snprintf(buf, 20, "FY速度:%u%%", (send_Data.FY_DSP_Speed/100));
             lv_label_set_text(slider_fy_dspAngel_label, buf);
 
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
 
@@ -1194,7 +1195,6 @@ static void slider_dspAngel_event_cb(lv_obj_t * slider, lv_event_t event)
             snprintf(buf, 20, "XH速度:%u%%", (send_Data.XH_DSP_Speed/100));
             lv_label_set_text(slider_xh_dspAngel_label, buf);
 
-            esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
             esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         }
 
@@ -2107,7 +2107,6 @@ void check_power_irq()
         //@-增加DSP控制停止命令
         send_Data.FY_DSP_Run = false;
         send_Data.XH_DSP_Run = false;
-        esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &send_Data, sizeof(send_Data));
         esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
         delay(100);
 
@@ -2186,6 +2185,12 @@ void check_touch_pro()
     //@-用户没有操作
     if(System_Sleep_Tick > 10000)
     {
+        //@-增加DSP控制停止命令
+        send_Data.FY_DSP_Run = false;
+        send_Data.XH_DSP_Run = false;
+        esp_err_t result2 = esp_now_send(broadcastAddress2, (uint8_t *) &send_Data, sizeof(send_Data));
+        delay(100);
+
         //@-设置屏幕及触摸功能进入sleep模式
         ttgo->displaySleep();
 
@@ -2514,6 +2519,11 @@ void setup()
     WIFI_makeKeyboard();
 
     //@-DSP控制初始值
+    send_Data.FY_DSP_Speed = false;
+    send_Data.FY_DSP_Dir = 1;
+    send_Data.FY_DSP_Run = false;
+    send_Data.FY_DSP_Speed = 10;  //@-实际速度为0.1%
+
     send_Data.XH_DSP_Speed = false;
     send_Data.XH_DSP_Dir = 1;
     send_Data.XH_DSP_Run = false;
