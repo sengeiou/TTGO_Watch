@@ -646,22 +646,23 @@ void setup() {
 
   for(int i=0; i<128; i++)
   {
-    Snet_ESP32_fy_Send.DSP_Data_Buff128[i] = 0x00;
+    Snet_ESP32_fy_Send.DSP_Data_Buff128[i] =  0x00;
     Snet_ESP32_fy2_Send.DSP_Data_Buff128[i] = 0x00;
-    Snet_ESP32_xh_Send.DSP_Data_Buff128[i] = 0x00;
+    Snet_ESP32_xh_Send.DSP_Data_Buff128[i] =  0x00;
     Snet_ESP32_xh2_Send.DSP_Data_Buff128[i] = 0x00;
   }
 
-  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;   //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnDRV = 556;
   Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
   Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnDRV = 555;
   Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.IzkMod = 1;
 
-
-  Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
+  Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;   //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
+  Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnDRV = 556;
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_Send_Or_Recv = 0x0054;  //@-0x1154实际抓包结果为0x5411-低位在前
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_PSWORD = 0x0453;
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnDRV = 555;
@@ -686,21 +687,21 @@ void setup() {
 		// UWORD ManBrakeMod:1;		 /* 14 */
 		// UWORD PosMod:1;		         /* 15  sin*/
   Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
-  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
-  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;                      //@-速度为0.1% 即：0.1 * 100 
+  Snet_ESP32_fy_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;                      //@-速度为0.1% 即：0.1 * 100
   Snet_ESP32_fy_Send.DSP_Data_str.ECANA_AfterINDEX_End = 0x0031;
-  // Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
-  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
-  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
+  // Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;    //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;                     //@-速度为0.1% 即：0.1 * 100 
+  Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;                     //@-速度为0.1% 即：0.1 * 100
   Snet_ESP32_fy2_Send.DSP_Data_str.ECANA_AfterINDEX_End = 0x0031;
 
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
-  Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
-  Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
+  Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;                      //@-速度为0.1% 即：0.1 * 100 
+  Snet_ESP32_xh_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;                      //@-速度为0.1% 即：0.1 * 100
   Snet_ESP32_xh_Send.DSP_Data_str.ECANA_AfterINDEX_End = 0x0031;
-  // Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;        //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
-  Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;         //@-速度为0.1% 即：0.1 * 100 
-  Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;         //@-速度为0.1% 即：0.1 * 100
+  // Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_CMD_DI.CMD_DI_str.SpdMod = 1;    //@-高字节模式  低字节运行控制及方向 低字节-0x22-Fwd 
+  Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnSPD = 0x0064;                     //@-速度为0.1% 即：0.1 * 100 
+  Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_INDEX_AnPOS = 0x0064;                     //@-速度为0.1% 即：0.1 * 100
   Snet_ESP32_xh2_Send.DSP_Data_str.ECANA_AfterINDEX_End = 0x0031;
 
   //@-配置板载LED指示灯
