@@ -2768,6 +2768,12 @@ void loop()
 
     #endif
 
+    // lv_point_t dx_test = ((lv_tileview_ext_t *)lv_obj_get_ext_attr(tileview))->act_id;
+    // Serial.print("act_id_x:");
+    // Serial.print(dx_test.x);
+    // Serial.println("act_id_y:");
+    // Serial.print(dx_test.y);
+
     lv_task_handler();
 
     delay(5);
