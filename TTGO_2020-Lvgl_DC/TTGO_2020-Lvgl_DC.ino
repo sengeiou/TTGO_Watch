@@ -420,6 +420,11 @@ bool weather_auto_get_flag = false;
 float DC_FY_RealAngel = 0;
 float DC_XH_RealAngel = 0;
 
+//@-tile活动页面检测
+lv_point_t Tile_Act_Id;
+lv_point_t Tile_Act_Id_Copy;
+int Tile_ACT_ID = 0;
+
 
 /*
 Method to print the reason by which ESP32
@@ -2463,6 +2468,9 @@ void setup()
     #ifdef USE_ESP_NOW
     Setup_ESP_NOW();
     #endif
+
+    Tile_Act_Id_Copy.x = 0;
+    Tile_Act_Id_Copy.y = 0;
     
     //@打印wakeup_reason
     // Print_Wakeup_Reason();
@@ -2646,6 +2654,66 @@ void loop()
     //@-系统时钟tick计数
     system_tick = system_tick + 1;
     display_time_bat_info_tick = display_time_bat_info_tick + 1;
+
+    //@-检测当前活动的tile
+    Tile_Act_Id = ((lv_tileview_ext_t *)lv_obj_get_ext_attr(tileview))->act_id;
+    if((Tile_Act_Id_Copy.x != Tile_Act_Id.x) || (Tile_Act_Id_Copy.y != Tile_Act_Id.y))
+    {
+        Tile_Act_Id_Copy = Tile_Act_Id;
+        if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 0))
+        {
+            Tile_ACT_ID = 1;
+        }
+        else if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 1))
+        {
+            Tile_ACT_ID = 2;
+        }
+        else if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 2))
+        {
+            Tile_ACT_ID = 3;
+        }
+        else if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 3))
+        {
+            Tile_ACT_ID = 4;
+        }
+        else if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 4))
+        {
+            Tile_ACT_ID = 5;
+        }
+        else if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 5))
+        {
+            Tile_ACT_ID = 6;
+        }
+
+        if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 0))
+        {
+            Tile_ACT_ID = 7;
+        }
+        else if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 1))
+        {
+            Tile_ACT_ID = 8;
+        }
+        else if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 2))
+        {
+            Tile_ACT_ID = 9;
+        }
+        else if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 3))
+        {
+            Tile_ACT_ID = 10;
+        }
+        else if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 4))
+        {
+            Tile_ACT_ID = 11;
+        }
+        else if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 5))
+        {
+            Tile_ACT_ID = 12;
+        }
+    }
+    
+    // Serial.print("id:");
+    // Serial.println(Tile_ACT_ID);
+
 
     #ifdef USE_MP3
     if (mp3->isRunning()) 
