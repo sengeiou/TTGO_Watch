@@ -2674,7 +2674,7 @@ void loop()
         }
         else if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 3))
         {
-            Tile_ACT_ID = 4;
+            Tile_ACT_ID = 4;  //@-天气界面
         }
         else if((Tile_Act_Id_Copy.x == 0) && (Tile_Act_Id_Copy.y == 4))
         {
@@ -2695,7 +2695,7 @@ void loop()
         }
         else if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 2))
         {
-            Tile_ACT_ID = 9;
+            Tile_ACT_ID = 9;  //@-时间界面
         }
         else if((Tile_Act_Id_Copy.x == 1) && (Tile_Act_Id_Copy.y == 3))
         {
@@ -2743,74 +2743,80 @@ void loop()
     {
         system_tick = 0;
 
-        // PCF_TIMEFORMAT_HM,
-        // PCF_TIMEFORMAT_HMS,
-        //@-显示实时时间
-        sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
-        lv_label_set_text_fmt( label_time, "%s", display_buf); 
-        //@-显示实时时间-秒
-        RTC_Date dt_temp = ttgo->rtc->getDateTime();
-        sprintf(display_buf, "%02d", dt_temp.second);
-        lv_label_set_text_fmt(label_time_second, "%s", display_buf); 
-
-        //@-显示年月日及电量
-        if(display_time_bat_info_tick < 5000)
+        if(Tile_ACT_ID == 9)
         {
-            #ifdef MAIN_BACKPIC_NUM_3
-            lv_obj_set_hidden(img_biaoyu,true); 
-            #endif
+            // PCF_TIMEFORMAT_HM,
+            // PCF_TIMEFORMAT_HMS,
+            //@-显示实时时间
+            sprintf(display_buf, "%s", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_HM));
+            lv_label_set_text_fmt( label_time, "%s", display_buf); 
+            //@-显示实时时间-秒
+            RTC_Date dt_temp = ttgo->rtc->getDateTime();
+            sprintf(display_buf, "%02d", dt_temp.second);
+            lv_label_set_text_fmt(label_time_second, "%s", display_buf); 
 
-            Display_TimeBAT_Info();
-        }
-        else 
-        {
-            lv_label_set_text( label_time_date, " "); 
-            lv_label_set_text( label_batt, " "); 
-
-            #ifdef MAIN_BACKPIC_NUM_3
-            lv_obj_set_hidden(img_biaoyu,false); 
-            #endif
-        }
-        
-        //@-显示WIFI连接状态
-        if(WiFi.status() == WL_CONNECTED)
-        {
-            lv_obj_set_hidden(label_wifi,false); 
-            //@-自动获取天气数据
-            if(weather_auto_get_flag == false)
+            //@-显示年月日及电量
+            if(display_time_bat_info_tick < 5000)
             {
-                weather_auto_get_flag = true;
-                Get_Weather_Info();
+                #ifdef MAIN_BACKPIC_NUM_3
+                lv_obj_set_hidden(img_biaoyu,true); 
+                #endif
+
+                Display_TimeBAT_Info();
             }
+            else 
+            {
+                lv_label_set_text( label_time_date, " "); 
+                lv_label_set_text( label_batt, " "); 
+
+                #ifdef MAIN_BACKPIC_NUM_3
+                lv_obj_set_hidden(img_biaoyu,false); 
+                #endif
+            }
+            
+            //@-显示WIFI连接状态
+            if(WiFi.status() == WL_CONNECTED)
+            {
+                lv_obj_set_hidden(label_wifi,false); 
+                //@-自动获取天气数据
+                if(weather_auto_get_flag == false)
+                {
+                    weather_auto_get_flag = true;
+                    Get_Weather_Info();
+                }
+            }
+            else
+            lv_obj_set_hidden(label_wifi,true); 
+
+            //@-显示闹钟状态
+            if(NVS_Timer_Flag == 1)
+            lv_obj_set_hidden(label_bell,false); 
+            else
+            lv_obj_set_hidden(label_bell,true); 
+
+            //@-显示实时电量
+            if (power->isChargeing() == true)
+            lv_obj_set_hidden(label_charge,false);
+            else
+            lv_obj_set_hidden(label_charge,true);
         }
-        else
-        lv_obj_set_hidden(label_wifi,true); 
 
-        //@-显示闹钟状态
-        if(NVS_Timer_Flag == 1)
-        lv_obj_set_hidden(label_bell,false); 
-        else
-        lv_obj_set_hidden(label_bell,true); 
-
-        //@-显示实时电量
-        if (power->isChargeing() == true)
-        lv_obj_set_hidden(label_charge,false);
-        else
-        lv_obj_set_hidden(label_charge,true);
-
-        if((weather_json_flag == true) && (weather_begin_flag == true))
+        if(Tile_ACT_ID == 4)
         {
-            weather_description.toCharArray(display_buf, (weather_description.length()+1));
-            lv_label_set_text(weather_data_label, display_buf); 
+            if((weather_json_flag == true) && (weather_begin_flag == true))
+            {
+                weather_description.toCharArray(display_buf, (weather_description.length()+1));
+                lv_label_set_text(weather_data_label, display_buf); 
 
-            sprintf(display_buf, "%.2f C", weather_temputer);
-            lv_label_set_text(weather_temputer_label, display_buf); 
-                    
-            sprintf(display_buf, "%d", weather_pressure);
-            lv_label_set_text(weather_pressure_label, display_buf); 
+                sprintf(display_buf, "%.2f C", weather_temputer);
+                lv_label_set_text(weather_temputer_label, display_buf); 
+                        
+                sprintf(display_buf, "%d", weather_pressure);
+                lv_label_set_text(weather_pressure_label, display_buf); 
 
-            sprintf(display_buf, "%d%%", weather_humidity);
-            lv_label_set_text(weather_humidity_label, display_buf); 
+                sprintf(display_buf, "%d%%", weather_humidity);
+                lv_label_set_text(weather_humidity_label, display_buf); 
+        }
         }
 
     }
@@ -2819,20 +2825,28 @@ void loop()
     DC_FY_RealAngel = ((recv_Data.DSP_Data_str.FY_ECANA_INDEX_POS_ACT1 * 0.02) + (recv_Data.DSP_Data_str.FY_ECANA_INDEX_UU_A1 * 0.001));
     DC_XH_RealAngel = ((recv_Data.DSP_Data_str.XH_ECANA_INDEX_POS_ACT1 * 0.02) + (recv_Data.DSP_Data_str.XH_ECANA_INDEX_UU_A1 * 0.001));
 
-    sprintf(display_buf, "Value: %d", recv_Data.DSP_Data_str.FY_ECANA_INDEX_FLOWNO_CZP);
-    lv_label_set_text(label_data, display_buf);
+    if(Tile_ACT_ID == 1)
+    {
+        sprintf(display_buf, "Value: %d", recv_Data.DSP_Data_str.FY_ECANA_INDEX_FLOWNO_CZP);
+        lv_label_set_text(label_data, display_buf);
 
-    lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.FY_ECANA_INDEX_ERROR1);
+        lv_label_set_text_fmt(label_data1, "Error: %x", recv_Data.DSP_Data_str.FY_ECANA_INDEX_ERROR1);
 
-    sprintf(display_buf, "Angle: %.2f", DC_XH_RealAngel);
-    lv_label_set_text(label_data2, display_buf);
+        sprintf(display_buf, "Angle: %.2f", DC_XH_RealAngel);
+        lv_label_set_text(label_data2, display_buf);
+    }
 
+    if(Tile_ACT_ID == 6)
+    {
+        sprintf(display_buf, "FY角度: %.2f", DC_FY_RealAngel);
+        lv_label_set_text(FY_Angel_label, display_buf);
+    }
 
-    sprintf(display_buf, "FY角度: %.2f", DC_FY_RealAngel);
-    lv_label_set_text(FY_Angel_label, display_buf);
-
-    sprintf(display_buf, "XH角度: %.2f", DC_XH_RealAngel);
-    lv_label_set_text(XH_Angel_label, display_buf);
+    if(Tile_ACT_ID == 12)
+    {
+        sprintf(display_buf, "XH角度: %.2f", DC_XH_RealAngel);
+        lv_label_set_text(XH_Angel_label, display_buf);
+    }
 
     #endif
 
