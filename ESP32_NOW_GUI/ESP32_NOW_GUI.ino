@@ -32,7 +32,7 @@ typedef struct struct_message {
   String d;
   bool e;
 
-  bool FY_DSP_Reset;
+  bool FY_DSP_Reset;  
   bool FY_DSP_Run;
   int  FY_DSP_Dir;
   int  FY_DSP_Speed;
