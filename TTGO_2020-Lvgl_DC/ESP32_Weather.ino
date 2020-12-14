@@ -1,4 +1,5 @@
 
+#define ARDUINOJSON_DECODE_UNICODE 1
 
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -53,6 +54,7 @@ HTTPClient http1;
 StaticJsonBuffer<1500> jsonBuffer;
 String App_Html_Add = "https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";  //-当天数据
 String App_Html_Add1 = "https://api.openweathermap.org/data/2.5/forecast?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";     //-5 Day / 3 Hour Forecast
+String App_Html_Add2 = "http://wthrcdn.etouch.cn/weather_mini?citykey=101210101";
 
 // String App_Html_Add = "https://v0.yiketianqi.com/api?version=v9&appid=61739339&appsecret=RnWxRr51";  --中国网站
 
@@ -63,6 +65,8 @@ String App_Html_Add1 = "https://api.openweathermap.org/data/2.5/forecast?q=hangz
 // https://api.openweathermap.org/data/2.5/forecast?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444  -- 5 day weather forecast
 
 // http://api.openweathermap.org/data/2.5/find?q=London&appid=8874f49040c9bad35a788cbdb34f5444  -- 未来5天的天气，但不支持中国城市
+
+
 
 
 
@@ -129,6 +133,7 @@ void GetweatherTask(void *pvParameters)
           { 
                 //@-获得数据
                 String payload;
+
                 if(weather_use_http_id == 0)
                 payload = http.getString();
                 else if(weather_use_http_id == 1)
@@ -147,7 +152,7 @@ void GetweatherTask(void *pvParameters)
                 else
                 weather_json_flag = true;
 
-
+              #if 1
               JsonObject& coord_data = message["coord"];
               int lon = coord_data["lon"];
               Serial.print("lon:");
@@ -196,6 +201,7 @@ void GetweatherTask(void *pvParameters)
               Serial.println(weather_temputer_min);
               Serial.print("temp_max:");
               Serial.println(weather_temputer_max);
+              #endif
           }
           else 
           {
