@@ -23,7 +23,7 @@ const char *password = "blackbug381";
 // const char *password = "dingxiao";
 
 // IPAddress ipServidor(192, 168, 31, 188);   // Declaration of default IP for server 10, 0, 0, 14
-IPAddress ipServidor(238, 100, 23, 201);   // Declaration of default IP for server 10, 0, 0, 14
+IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for server 10, 0, 0, 14
 // IPAddress ipServidor(10, 0, 0, 14);   // Declaration of default IP for server 10, 0, 0, 14
 /* 
  *  The ip address of the client has to be different to the server
@@ -36,6 +36,10 @@ IPAddress Subnet(255, 0, 0, 0);
 
 char buf[20];   // buffer to hold the string to append
 
+int Multicast_Flag = 1;  //0:点播  1:组播
+
+
+// ---------------------------------------------------------------
 void setup() {
 
   unsigned long startingTime = millis();
@@ -66,12 +70,14 @@ void setup() {
   // 点播
   WiFi.mode(WIFI_STA); // ESP-32 as client
   WiFi.config(ipCliente, ipServidor, Subnet);
+  if(Multicast_Flag == 0)
   Udp.begin(localPort);  //点播
 
   //组播
   // https://github.com/espressif/arduino-esp32/issues/4410
   //Init the multicast UDP with One Object : Universe 5
-  // Udp.beginMulticast(ipServidor, 6000);
+  else if(Multicast_Flag == 1)
+  Udp.beginMulticast(ipServidor, 6000);
   //Add another Multicast Listener for Universe 6? No, probably just reinitializes it. Only Universe 6 visible in output.
   // udp.beginMulticast(IPAddress(239, 255, 0, 6), (uint16_t )5568);
 
@@ -105,8 +111,11 @@ void loop() {
 //unsigned long Tiempo_Envio = millis();
 
     //SENDING
-    //点播
+    //点播  also 组播
+    if(Multicast_Flag == 0)
     Udp.beginPacket(IPAddress(10, 0, 0, 14),6000);   //Initiate transmission of data
+    else if(Multicast_Flag == 1)
+    Udp.beginPacket(IPAddress(224, 100, 23, 200),6000);   //Initiate transmission of data
     // 组播
     // Serial.println(Udp.remoteIP());
     // Serial.println(Udp.remotePort());
