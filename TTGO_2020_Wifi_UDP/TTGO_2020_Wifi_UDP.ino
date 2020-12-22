@@ -6,27 +6,33 @@
 #include <WiFiUdp.h>
 
 
+//@-TTGO
+TTGOClass *ttgo;
+
 WiFiUDP Udp;  // Creation of wifi Udp instance
+
 
 char packetBuffer[50];
 
 unsigned int localPort = 6000;
 
-// const char *ssid = "8879";  
-// const char *password = "blackbug381";
+const char *ssid = "8879";  
+const char *password = "blackbug381";
 
-const char *ssid = "DX_JS";  
-const char *password = "dingxiao";
+// const char *ssid = "DX_JS";  
+// const char *password = "dingxiao";
 
-IPAddress ipServidor(192, 168, 31, 188);   // Declaration of default IP for server 10, 0, 0, 14
-// IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for server 10, 0, 0, 14
+// IPAddress ipServidor(192, 168, 31, 188);   // Declaration of default IP for server 10, 0, 0, 14
+IPAddress ipServidor(238, 100, 23, 201);   // Declaration of default IP for server 10, 0, 0, 14
+// IPAddress ipServidor(10, 0, 0, 14);   // Declaration of default IP for server 10, 0, 0, 14
 /* 
  *  The ip address of the client has to be different to the server
  *  other wise it will conflict because the client tries to connect
  *  to it self.
  */
-IPAddress ipCliente(192, 168, 31, 159);   // Different IP than server  TTGO ip 10.0.0.7
-IPAddress Subnet(255, 255, 255, 0);
+IPAddress ipCliente(10, 0, 0, 18);   // Different IP than server  TTGO ip 10.0.0.7
+// IPAddress Subnet(255, 255, 255, 0);
+IPAddress Subnet(255, 0, 0, 0);
 
 char buf[20];   // buffer to hold the string to append
 
@@ -36,31 +42,75 @@ void setup() {
 
   for(int i=0; i<20; i++)
   buf[i] = i;
+  // Serial.println(buf[15]);
 
   Serial.begin(115200);
   WiFi.begin(ssid, password);
+  // if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+  //   Serial.println("WiFi Failed");
+  //   while (1) {
+  //     delay(1000);
+  //   }
+  // }
   while (WiFi.status() != WL_CONNECTED && (millis() - startingTime) < 10000)
   {
     delay(100);
   }
 
+  //This is used to ensure low latency. I've tried it both commented out and not and nothing changes.
+  WiFi.setSleep(false); //Disable modem sleep to ensure low latency wifi.
+
   Serial.println(WiFi.localIP().toString());
   delay(1000);
 
-  // Serial.println(buf[15]);
-
+  // 点播
   WiFi.mode(WIFI_STA); // ESP-32 as client
   WiFi.config(ipCliente, ipServidor, Subnet);
-
   Udp.begin(localPort);  //点播
-  // Udp.beginMulticast(ipServidor,localPort);  //组播
+
+  //组播
+  // https://github.com/espressif/arduino-esp32/issues/4410
+  //Init the multicast UDP with One Object : Universe 5
+  // Udp.beginMulticast(ipServidor, 6000);
+  //Add another Multicast Listener for Universe 6? No, probably just reinitializes it. Only Universe 6 visible in output.
+  // udp.beginMulticast(IPAddress(239, 255, 0, 6), (uint16_t )5568);
+
+  //@-ttgo初始化
+  ttgo = TTGOClass::getWatch();
+  ttgo->begin();
+  ttgo->openBL();
+  //@-ttgo初始化lvgl库
+  ttgo->lvgl_begin();
+  //@-进入lvgl主页面
+  lv_ex_tileview_1();
+}
+
+void lv_ex_tileview_1(void)
+{
+    static lv_style_t model_style;
+    lv_style_init(&model_style);
+    lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
+
+    lv_obj_t *btn_xh_dsp_fwd = lv_btn_create(lv_scr_act(), NULL);
+    lv_obj_set_width(btn_xh_dsp_fwd, 100);
+    lv_obj_set_height(btn_xh_dsp_fwd, 50);
+    lv_obj_align(btn_xh_dsp_fwd, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
+
+    lv_obj_t *label_xh_dsp_fwd = lv_label_create(btn_xh_dsp_fwd, NULL);
+    lv_obj_add_style(label_xh_dsp_fwd, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text(label_xh_dsp_fwd, "OK");
 }
 
 void loop() {
 //unsigned long Tiempo_Envio = millis();
 
-//SENDING
-    Udp.beginPacket(ipServidor,6000);   //Initiate transmission of data
+    //SENDING
+    //点播
+    Udp.beginPacket(IPAddress(10, 0, 0, 14),6000);   //Initiate transmission of data
+    // 组播
+    // Serial.println(Udp.remoteIP());
+    // Serial.println(Udp.remotePort());
+    // Udp.beginMulticastPacket();
     
     // Udp.printf("Millis: ");
     
@@ -78,7 +128,7 @@ void loop() {
     // Serial.print("enviando: ");   // Serial monitor for user 
     // Serial.println(buf);
     
-delay(5); // 
+  delay(5); // 
  
 //RECEPTION
   int packetSize = Udp.parsePacket();   // Size of packet to receive
@@ -93,7 +143,12 @@ delay(5); //
     Serial.print(packetSize);Serial.print(" / ");
     Serial.println(packetBuffer);
   }
-// Serial.println("");
-delay(5);
+
+
+  lv_task_handler();
+  
+  // Serial.println("");
+  delay(5);
+
 }
 
