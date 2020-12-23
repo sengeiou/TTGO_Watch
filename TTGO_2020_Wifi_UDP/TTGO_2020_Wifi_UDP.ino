@@ -2,6 +2,7 @@
 
 //@-ttgo配置
 #include "config.h"
+// C:\Users\DX\AppData\Local\Arduino15\packages\esp32\hardware\esp32\1.0.4\libraries\WiFi\src
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
@@ -16,11 +17,11 @@ char packetBuffer[50];
 
 unsigned int localPort = 6000;
 
-const char *ssid = "8879";  
-const char *password = "blackbug381";
+// const char *ssid = "8879";  
+// const char *password = "blackbug381";
 
-// const char *ssid = "DX_JS";  
-// const char *password = "dingxiao";
+const char *ssid = "DX_JS";  
+const char *password = "dingxiao";
 
 // IPAddress ipServidor(192, 168, 31, 188);   // Declaration of default IP for server 10, 0, 0, 14
 IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for server 10, 0, 0, 14
@@ -37,6 +38,7 @@ IPAddress Subnet(255, 0, 0, 0);
 char buf[20];   // buffer to hold the string to append
 
 int Multicast_Flag = 1;  //0:点播  1:组播
+int send_count = 0;
 
 
 // ---------------------------------------------------------------
@@ -110,34 +112,39 @@ void lv_ex_tileview_1(void)
 void loop() {
 //unsigned long Tiempo_Envio = millis();
 
-    //SENDING
-    //点播  also 组播
-    if(Multicast_Flag == 0)
-    Udp.beginPacket(IPAddress(10, 0, 0, 14),6000);   //Initiate transmission of data
-    else if(Multicast_Flag == 1)
-    Udp.beginPacket(IPAddress(224, 100, 23, 200),6000);   //Initiate transmission of data
-    // 组播
-    // Serial.println(Udp.remoteIP());
-    // Serial.println(Udp.remotePort());
-    // Udp.beginMulticastPacket();
-    
-    // Udp.printf("Millis: ");
-    
+    send_count = send_count + 1;
+    if(send_count >= 20)
+    {
+      send_count = 0;
+      //SENDING
+      //点播  also 组播
+      if(Multicast_Flag == 0)
+      Udp.beginPacket(IPAddress(10, 0, 0, 14),6000);   //Initiate transmission of data
+      else if(Multicast_Flag == 1)
+      Udp.beginPacket(IPAddress(224, 100, 23, 200),6000);   //Initiate transmission of data
+      // 组播
+      // Serial.println(Udp.remoteIP());
+      // Serial.println(Udp.remotePort());
+      // Udp.beginMulticastPacket();
+      
+      // Udp.printf("Millis: ");
+      
 
-    // unsigned long testID = millis();   // time since ESP-32 is running millis() 
-    // sprintf(buf, "%lu", testID);  // appending the millis to create a char
-    // Udp.printf(buf);  // print the char
-    Udp.write((const uint8_t*)buf, 20); //复制数据到发送缓存
-    // Udp.printf("Seconds since boot: %lu", millis()/1000);
-    
-    // Udp.printf("\r\n");   // End segment
-    
-    Udp.endPacket();  // Close communication
-    
-    // Serial.print("enviando: ");   // Serial monitor for user 
-    // Serial.println(buf);
-    
-  delay(5); // 
+      // unsigned long testID = millis();   // time since ESP-32 is running millis() 
+      // sprintf(buf, "%lu", testID);  // appending the millis to create a char
+      // Udp.printf(buf);  // print the char
+      Udp.write((const uint8_t*)buf, 20); //复制数据到发送缓存
+      // Udp.printf("Seconds since boot: %lu", millis()/1000);
+      
+      // Udp.printf("\r\n");   // End segment
+      
+      Udp.endPacket();  // Close communication
+      
+      // Serial.print("enviando: ");   // Serial monitor for user 
+      // Serial.println(buf);
+      
+    // delay(5); // 
+    }
  
 //RECEPTION
   int packetSize = Udp.parsePacket();   // Size of packet to receive
