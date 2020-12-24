@@ -31,9 +31,9 @@ IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for serv
  *  other wise it will conflict because the client tries to connect
  *  to it self.
  */
-IPAddress ipCliente(10, 0, 0, 18);   // Different IP than server  TTGO ip 10.0.0.7
-// IPAddress Subnet(255, 255, 255, 0);
-IPAddress Subnet(255, 0, 0, 0);
+IPAddress ipCliente(192, 168, 31, 159);   // Different IP than server  TTGO ip 10.0.0.7
+IPAddress Subnet(255, 255, 255, 0);
+// IPAddress Subnet(255, 0, 0, 0);
 
 char buf[20];   // buffer to hold the string to append
 
