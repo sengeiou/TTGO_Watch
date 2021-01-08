@@ -17,11 +17,11 @@ char packetBuffer[50];
 
 unsigned int localPort = 6000;
 
-// const char *ssid = "8879";  
-// const char *password = "blackbug381";
+const char *ssid = "8879";  
+const char *password = "blackbug381";
 
-const char *ssid = "DX_JS";  
-const char *password = "dingxiao";
+// const char *ssid = "DX_JS";  
+// const char *password = "dingxiao";
 
 // IPAddress ipServidor(192, 168, 31, 188);   // Declaration of default IP for server 10, 0, 0, 14
 IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for server 10, 0, 0, 14
@@ -31,7 +31,7 @@ IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for serv
  *  other wise it will conflict because the client tries to connect
  *  to it self.
  */
-IPAddress ipCliente(192, 168, 31, 159);   // Different IP than server  TTGO ip 10.0.0.7
+IPAddress ipCliente(10, 0, 0, 18);   // Different IP than server  TTGO ip 10.0.0.7
 IPAddress Subnet(255, 255, 255, 0);
 // IPAddress Subnet(255, 0, 0, 0);
 
