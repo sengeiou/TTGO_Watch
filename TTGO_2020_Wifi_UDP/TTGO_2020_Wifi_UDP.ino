@@ -96,6 +96,7 @@ void setup() {
 void lv_ex_tileview_1(void)
 {
     static lv_style_t model_style;
+    String Temp_str;
     lv_style_init(&model_style);
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
 
@@ -107,6 +108,12 @@ void lv_ex_tileview_1(void)
     lv_obj_t *label_xh_dsp_fwd = lv_label_create(btn_xh_dsp_fwd, NULL);
     lv_obj_add_style(label_xh_dsp_fwd, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_text(label_xh_dsp_fwd, "OK");
+
+    lv_obj_t *label_xh_dsp_fwd1 = lv_label_create(lv_scr_act(), NULL);
+    lv_obj_add_style(label_xh_dsp_fwd1, LV_OBJ_PART_MAIN, &model_style);
+    Temp_str = String(WiFi.localIP().toString());
+    lv_label_set_text(label_xh_dsp_fwd1, Temp_str.c_str());
+    lv_obj_align(label_xh_dsp_fwd1, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 80);
 }
 
 void loop() {
