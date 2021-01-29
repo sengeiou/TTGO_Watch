@@ -1,14 +1,19 @@
 
 
-//@-ttgo配置
-#include "config.h"
+
 // C:\Users\DX\AppData\Local\Arduino15\packages\esp32\hardware\esp32\1.0.4\libraries\WiFi\src
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
 
-//@-TTGO
-TTGOClass *ttgo;
+#include <Adafruit_NeoPixel.h>
+
+#define PIN            21
+// How many NeoPixels are attached to the Arduino?
+#define NUMPIXELS      12
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
 
 WiFiUDP Udp;  // Creation of wifi Udp instance
 
@@ -17,11 +22,11 @@ char packetBuffer[50];
 
 unsigned int localPort = 6000;
 
-// const char *ssid = "8879";  
-// const char *password = "blackbug381";
+const char *ssid = "8879";  
+const char *password = "blackbug381";
 
-const char *ssid = "DX_JS";  
-const char *password = "dingxiao";
+// const char *ssid = "DX_JS";  
+// const char *password = "dingxiao";
 
 // IPAddress ipServidor(192, 168, 31, 188);   // Declaration of default IP for server 10, 0, 0, 14
 IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for server 10, 0, 0, 14
@@ -31,8 +36,8 @@ IPAddress ipServidor(224, 100, 23, 200);   // Declaration of default IP for serv
  *  other wise it will conflict because the client tries to connect
  *  to it self.
  */
-// IPAddress ipCliente(10, 0, 0, 18);   // Different IP than server  TTGO ip 10.0.0.7
-IPAddress ipCliente(192, 168, 31, 159);   // Different IP than server  TTGO ip 10.0.0.7
+IPAddress ipCliente(10, 0, 0, 24);   // Different IP than server  TTGO ip 10.0.0.7
+// IPAddress ipCliente(192, 168, 31, 79);   // Different IP than server  TTGO ip 10.0.0.7
 IPAddress Subnet(255, 255, 255, 0);
 // IPAddress Subnet(255, 0, 0, 0);
 
@@ -41,6 +46,10 @@ char buf[20];   // buffer to hold the string to append
 int Multicast_Flag = 1;  //0:点播  1:组播
 int send_count = 0;
 
+
+int  Color_R;
+int  Color_G;
+int  Color_B;
 
 // ---------------------------------------------------------------
 void setup() {
@@ -52,6 +61,9 @@ void setup() {
   // Serial.println(buf[15]);
 
   Serial.begin(115200);
+
+  pixels.begin(); // This initializes the NeoPixel library. 
+
   WiFi.begin(ssid, password);
   // if (WiFi.waitForConnectResult() != WL_CONNECTED) {
   //   Serial.println("WiFi Failed");
@@ -84,52 +96,24 @@ void setup() {
   //Add another Multicast Listener for Universe 6? No, probably just reinitializes it. Only Universe 6 visible in output.
   // udp.beginMulticast(IPAddress(239, 255, 0, 6), (uint16_t )5568);
 
-  //@-ttgo初始化
-  ttgo = TTGOClass::getWatch();
-  ttgo->begin();
-  ttgo->openBL();
-  //@-ttgo初始化lvgl库
-  ttgo->lvgl_begin();
-  //@-进入lvgl主页面
-  lv_ex_tileview_1();
+
 }
 
-void lv_ex_tileview_1(void)
-{
-    static lv_style_t model_style;
-    String Temp_str;
-    lv_style_init(&model_style);
-    lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-
-    lv_obj_t *btn_xh_dsp_fwd = lv_btn_create(lv_scr_act(), NULL);
-    lv_obj_set_width(btn_xh_dsp_fwd, 100);
-    lv_obj_set_height(btn_xh_dsp_fwd, 50);
-    lv_obj_align(btn_xh_dsp_fwd, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
-
-    lv_obj_t *label_xh_dsp_fwd = lv_label_create(btn_xh_dsp_fwd, NULL);
-    lv_obj_add_style(label_xh_dsp_fwd, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text(label_xh_dsp_fwd, "OK");
-
-    lv_obj_t *label_xh_dsp_fwd1 = lv_label_create(lv_scr_act(), NULL);
-    lv_obj_add_style(label_xh_dsp_fwd1, LV_OBJ_PART_MAIN, &model_style);
-    Temp_str = String(WiFi.localIP().toString());
-    lv_label_set_text(label_xh_dsp_fwd1, Temp_str.c_str());
-    lv_obj_align(label_xh_dsp_fwd1, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 80);
-}
 
 void loop() {
 //unsigned long Tiempo_Envio = millis();
 
     send_count = send_count + 1;
-    if(send_count >= 20)
+    if(send_count >= 10)
     {
       send_count = 0;
       //SENDING
       //点播  also 组播
       if(Multicast_Flag == 0)
-      Udp.beginPacket(IPAddress(10, 0, 0, 14),6000);   //Initiate transmission of data
+      Udp.beginPacket(IPAddress(192, 168, 31, 188),6000);   //Initiate transmission of data
       else if(Multicast_Flag == 1)
       Udp.beginPacket(IPAddress(224, 100, 23, 200),6000);   //Initiate transmission of data
+      //  Udp.beginMulticastPacket();   //Initiate transmission of data
       // 组播
       // Serial.println(Udp.remoteIP());
       // Serial.println(Udp.remotePort());
@@ -159,20 +143,33 @@ void loop() {
   if (packetSize) {       // If we received a package
     
     int len = Udp.read(packetBuffer, 50);
+
+    Color_R = packetBuffer[40];
+    Color_G = packetBuffer[41];
+    Color_B = packetBuffer[42];
     
-    if (len > 0) packetBuffer[len-1] = 0;
-    Serial.print("RECIBIDO(IP/Port/Size/Datos): ");
-    Serial.print(Udp.remoteIP());Serial.print(" / ");
-    Serial.print(Udp.remotePort()); Serial.print(" / ");
-    Serial.print(packetSize);Serial.print(" / ");
-    Serial.println(packetBuffer);
+    // if (len > 0) packetBuffer[len-1] = 0;
+    // Serial.print("RECIBIDO(IP/Port/Size/Datos): ");
+    // Serial.print(Udp.remoteIP());Serial.print(" / ");
+    // Serial.print(Udp.remotePort()); Serial.print(" / ");
+    // Serial.print(packetSize);Serial.print(" / ");
+    // Serial.println(packetBuffer);
+    // Serial.println(packetBuffer[46]);
   }
 
+  //@-显示颜色
+  colorWipe(pixels.Color(Color_R, Color_G, Color_B), 1);    // Green
 
-  lv_task_handler();
-  
   // Serial.println("");
   delay(5);
 
 }
 
+
+void colorWipe(uint32_t color, int wait) {
+  for(int i=0; i<pixels.numPixels(); i++) { // For each pixel in pixels...
+    pixels.setPixelColor(i, color);         //  Set pixel's color (in RAM)
+    pixels.show();                          //  Update pixels to match
+    delay(wait);                           //  Pause for a moment
+  }
+}
