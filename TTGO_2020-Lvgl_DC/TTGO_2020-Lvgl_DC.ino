@@ -2362,7 +2362,7 @@ void Setup_ESP_NOW()
 
     // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
-    // Serial.println(WiFi.macAddress());  //84:0D:8E:0B:B2:54
+    // Serial.println(WiFi.macAddress());  //84:0D:8E:0B:B2:54 
 
 
     // Init ESP-NOW
