@@ -67,9 +67,9 @@ LV_FONT_DECLARE(myLED_Font);
 //@-配置用户图片数据
 // LV_IMG_DECLARE(me);
 LV_IMG_DECLARE(TTGO_Main);
-// LV_IMG_DECLARE(rich);
+LV_IMG_DECLARE(rich);
 LV_IMG_DECLARE(TTGO_Main_Biaoyu);   //@-标语
-LV_IMG_DECLARE(zhen_alipay);
+// LV_IMG_DECLARE(zhen_alipay);
 
 
 typedef union	  /* DSP Data数据结构*/
@@ -1726,7 +1726,7 @@ void lv_ex_tileview_1(void)
 
     //------------------------------tile_1_0-----------------------------------------------------
     lv_obj_t * img1 = lv_img_create(tile_1_0, NULL);
-    lv_img_set_src(img1, &zhen_alipay);
+    lv_img_set_src(img1, &rich);
     lv_obj_align(img1, NULL, LV_ALIGN_CENTER, 0, 0);
 
     //------------------------------tile_1_1-----------------------------------------------------
