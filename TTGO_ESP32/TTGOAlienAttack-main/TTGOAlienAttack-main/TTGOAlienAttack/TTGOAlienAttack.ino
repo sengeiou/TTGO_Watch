@@ -96,11 +96,11 @@ void loop() {
          if(aniFrame==25)
           aniFrame=0; 
         }
-     tft.fillScreen(TFT_BLACK);
-     tft.setTextColor(TFT_WHITE,0x7820);
-     tft.fillRect(0,0,135,17,0x7820);
-     tft.drawString("SCORE:",2,1,2);
-     tft.drawString("TIME:",70,1,2);
+      tft.fillScreen(TFT_BLACK);
+      tft.setTextColor(TFT_WHITE,0x7820);
+      tft.fillRect(0,0,135,17,0x7820);
+      tft.drawString("SCORE:",2,1,2);
+      tft.drawString("TIME:",70,1,2);
       tft.drawLine(0,17,135,17,0x6577);
       tft.drawLine(0,18,0,240,0x6577);
       tft.drawLine(134,18,134,240,0x6577);
