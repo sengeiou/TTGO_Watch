@@ -362,18 +362,18 @@ int display_time_bat_info_tick = 0;
 
 
 //@-NVS数据
-String NVS_WIFI_SSID;            //@-默认WIFIssid
-String NVS_WIFI_PASS;            //@-默认WIFI密码
-bool   NVS_WIFI_AUTO;            //@-自动连接WIFI方式
-String NVS_OTA_ADD_HOST;         //@-OTA服务器地址
-String NVS_OTA_ADD_PATH;         //@-OTA更新路径
-int NVS_Backlight_Value;         //@-TTGO背光数值
-String NVS_Weather_Pick_Today;   //@-最新一次天气获取的日期---年-月-日  
-String NVS_Weather_Info;         //@-最新一次天气数据--温度-最高温度-最低温度-气压-湿度-天气情况
-int    NVS_Weather_Pick_Flag;    //@-今天的天气数据是否已获取标志
-String NVS_Timer_Info;           //@-计时器数据-小时-分钟-日期-星期
-int    NVS_Timer_Flag;           //@-是否有定时器标志
-bool Frist_NVS_Setup_Flag = false;  //@-NVS首次配置标志
+String NVS_WIFI_SSID;                 //@-默认WIFIssid
+String NVS_WIFI_PASS;                 //@-默认WIFI密码
+bool   NVS_WIFI_AUTO;                 //@-自动连接WIFI方式
+String NVS_OTA_ADD_HOST;              //@-OTA服务器地址
+String NVS_OTA_ADD_PATH;              //@-OTA更新路径
+int    NVS_Backlight_Value;           //@-TTGO背光数值
+String NVS_Weather_Pick_Today;        //@-最新一次天气获取的日期---年-月-日  
+String NVS_Weather_Info;              //@-最新一次天气数据--温度-最高温度-最低温度-气压-湿度-天气情况
+int    NVS_Weather_Pick_Flag;         //@-今天的天气数据是否已获取标志
+String NVS_Timer_Info;                //@-计时器数据-小时-分钟-日期-星期
+int    NVS_Timer_Flag;                //@-是否有定时器标志
+bool   Frist_NVS_Setup_Flag = false;  //@-NVS首次配置标志
 
 
 //@-定时器0~99min
@@ -403,17 +403,17 @@ bool firmware_begin_flag = false;
 //@-天气任务运行标志
 TaskHandle_t ntWeatherTaskHandler;
 int Getweather_tick = 0;
-bool weather_begin_flag = false; 
-bool weather_json_flag = false;
+bool   weather_begin_flag = false; 
+bool   weather_json_flag = false;
 String weather_description;
-float weather_temputer = 0;
-float weather_temputer_min;
-float weather_temputer_max;
-int weather_pressure;
-int weather_humidity;
-int weather_use_http_id = 0;
-int weather_use_http_last_id = 0;
-bool weather_auto_get_flag = false;
+float  weather_temputer = 0;
+float  weather_temputer_min;
+float  weather_temputer_max;
+int    weather_pressure;
+int    weather_humidity;
+int    weather_use_http_id = 0;
+int    weather_use_http_last_id = 0;
+bool   weather_auto_get_flag = false;
 
 
 //@-DC数据
