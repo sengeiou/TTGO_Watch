@@ -15,10 +15,12 @@
 
 #include "camera_pins.h"
 
-const char* ssid = "DX_TEST";
+// const char* ssid = "DX_TEST";
+// const char* password = "dingxiao";
+const char* ssid = "DX_JS";
 const char* password = "dingxiao";
 
-const char* websockets_server_host = "192.168.4.1";
+const char* websockets_server_host = "192.168.31.188";
 const uint16_t websockets_server_port = 8888;
 
 using namespace websockets;
