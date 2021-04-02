@@ -303,11 +303,10 @@ TFT_eSPI_Button key[6];
 #include "Touch.h"
 
 //-------------------------------- SETUP --------------------------------------------------------------
-
 void setup()
 {
 
-  // Use serial port
+  //@1-初始化串口（ Use serial port）
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println("");
@@ -338,21 +337,21 @@ void setup()
 
   // --------------- Init Display -------------------------
 
-  // Initialise the TFT screen
+  //@2-初始化TFT屏幕 （Initialise the TFT screen）
   tft.init();
 
-  // Set the rotation before we calibrate
+  //@3-配置TFT旋转方向（ Set the rotation before we calibrate）
   // tft.setRotation(1);
   tft.setRotation(3);
 
-  // Clear the screen
+  //@4-清除显示（ Clear the screen）
   tft.fillScreen(TFT_BLACK);
 
+  //@5-获取唤醒原因
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  // -------------- Start filesystem ----------------------
-
+  //@6-开始文件系统 -------------- Start filesystem ----------------------
   if (!FILESYSTEM.begin())
   {
     Serial.println("[ERROR]: SPIFFS initialisation failed!");
@@ -362,13 +361,11 @@ void setup()
   }
   Serial.println("[INFO]: SPIFFS initialised.");
 
-  // Check for free space
-
+  //@7-检测文件系统剩余空间（ Check for free space）
   Serial.print("[INFO]: Free Space: ");
   Serial.println(SPIFFS.totalBytes() - SPIFFS.usedBytes());
 
-  //------------------ Load Wifi Config ----------------------------------------------
-
+  //@8-加载WIFI配置------------------ Load Wifi Config ----------------------------------------------
   Serial.println("[INFO]: Loading Wifi Config");
   if (!loadMainConfig())
   {
@@ -379,13 +376,11 @@ void setup()
     Serial.println("[INFO]: WiFi Credentials Loaded");
   }
 
-  // ----------------- Load webserver ---------------------
-
+  //@9-加载Web服务 ----------------- Load webserver ---------------------
   handlerSetup();
 
-  // ------------------- Splash screen ------------------
-
-  // If we are woken up we do not need the splash screen
+  //@10-显示欢迎界面 ------------------- Splash screen ------------------
+  //@-11判断是否是屏幕中断唤醒（ If we are woken up we do not need the splash screen）
   if (wakeup_reason > 0)
   {
     // But we do draw something to indicate we are waking up
@@ -394,7 +389,6 @@ void setup()
   }
   else
   {
-
     // Draw a splash screen
     drawBmp("/logos/freetouchdeck_logo.bmp", 0, 0);
     tft.setCursor(1, 3);
@@ -405,7 +399,7 @@ void setup()
     Serial.printf("[INFO]: Loading version %s\n", versionnumber);
   }
 
-// Calibrate the touch screen and retrieve the scaling factors
+//@12-配置触摸配置数据 Calibrate the touch screen and retrieve the scaling factors
 #ifndef USECAPTOUCH
   // touch_calibrate();
   //@-设置touch参数
@@ -413,7 +407,7 @@ void setup()
   tft.setTouch(calData);
 #endif
 
-  // Let's first check if all the files we need exist
+  //@13-检测所有文件是否都存在（ Let's first check if all the files we need exist）
   if (!checkfile("/config/general.json"))
   {
     Serial.println("[ERROR]: /config/general.json not found!");
@@ -463,7 +457,7 @@ void setup()
       yield(); // Stop!
   }
 
-  // After checking the config files exist, actually load them
+  //@14-加载general配置（ After checking the config files exist, actually load them）
   if(!loadConfig("general")){
     Serial.println("[WARNING]: general.json seems to be corrupted!");
     Serial.println("[WARNING]: To reset to default type 'reset general'.");
@@ -471,8 +465,7 @@ void setup()
     pageNum = 10;
   }
 
-    // Setup PWM channel for Piezo speaker
-
+ //@15-使用PWM控制蜂鸣器（ Setup PWM channel for Piezo speaker）
 #ifdef speakerPin
   ledcSetup(2, 500, 8);
 
@@ -498,6 +491,7 @@ if(generalconfig.beep){
 
 #endif
 
+  //@16-加载所有配置项
   if(!loadConfig("homescreen")){
     Serial.println("[WARNING]: homescreen.json seems to be corrupted!");
     Serial.println("[WARNING]: To reset to default type 'reset homescreen'.");
@@ -537,20 +531,19 @@ if(generalconfig.beep){
   Serial.println("[INFO]: All configs loaded");
 
   
-
+  //@17-复制相关通用图标
   strcpy(generallogo.homebutton, "/logos/home.bmp");
   strcpy(generallogo.configurator, "/logos/wifi.bmp");
   Serial.println("[INFO]: General logos loaded.");
 
-  // Setup the Font used for plain text
+  //@18-配置显示字体（ Setup the Font used for plain text）
   tft.setFreeFont(LABEL_FONT);
 
-  //------------------BLE Initialization ------------------------------------------------------------------------
-
+  //@19-BLE初始化------------------BLE Initialization ------------------------------------------------------------------------
   Serial.println("[INFO]: Starting BLE");
   bleKeyboard.begin();
 
-  // ---------------- Printing version numbers -----------------------------------------------
+  //@20-打印BLE及相关库版本信息 ---------------- Printing version numbers -----------------------------------------------
   Serial.print("[INFO]: BLE Keyboard version: ");
   Serial.println(BLE_KEYBOARD_VERSION);
   Serial.print("[INFO]: ArduinoJson version: ");
@@ -558,15 +551,15 @@ if(generalconfig.beep){
   Serial.print("[INFO]: TFT_eSPI version: ");
   Serial.println(TFT_ESPI_VERSION);
 
-  // ---------------- Start the first keypad -------------
-
+  //@21-配置第一主界面背景色 ---------------- Start the first keypad -------------
   // Draw background
   tft.fillScreen(generalconfig.backgroundColour);
 
-  // Draw keypad
+  //@22-显示第一主界面 Draw keypad
   Serial.println("[INFO]: Drawing keypad");
   drawKeypad();
 
+  //@23-如果配置屏幕中断唤醒引脚，配置其唤醒功能
 #ifdef touchInterruptPin
   if (generalconfig.sleepenable)
   {
@@ -582,12 +575,10 @@ if(generalconfig.beep){
 }
 
 //--------------------- LOOP ---------------------------------------------------------------------
-
 void loop(void)
 {
   
-  // Check if there is data available on the serial input that needs to be handled.
-  
+  //@1-检测串口是否有数据（ Check if there is data available on the serial input that needs to be handled.）
   if (Serial.available())
   {
 
@@ -769,6 +760,7 @@ void loop(void)
       drawKeypad();
     }
   }
+  
   else
   {
 
