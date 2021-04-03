@@ -17,14 +17,37 @@
 
 // const char* ssid = "DX_TEST";
 // const char* password = "dingxiao";
-const char* ssid = "DX_JS";
-const char* password = "dingxiao";
+// const char* ssid = "DX_JS";
+// const char* password = "dingxiao";
 
-const char* websockets_server_host = "192.168.31.188";
+const char* ssid = "8879";
+const char* password = "blackbug381";
+
+const char* websockets_server_host = "10.0.0.12";
 const uint16_t websockets_server_port = 8888;
 
 using namespace websockets;
 WebsocketsClient client;
+
+
+void onMessageCallback(WebsocketsMessage message) {
+    Serial.print("Got Message: ");
+    Serial.println(message.data());
+}
+
+void onEventsCallback(WebsocketsEvent event, String data) {
+    if(event == WebsocketsEvent::ConnectionOpened) {
+        Serial.println("Connnection Opened");
+    } else if(event == WebsocketsEvent::ConnectionClosed) {
+        Serial.println("Connnection Closed");
+        delay(2000);
+        esp_restart(); //testing the restart command more than anything else
+    } else if(event == WebsocketsEvent::GotPing) {
+        Serial.println("Got a Ping!");
+    } else if(event == WebsocketsEvent::GotPong) {
+        Serial.println("Got a Pong!");
+    }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -85,6 +108,11 @@ void setup() {
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
 
+
+  // Setup Callbacks
+  client.onMessage(onMessageCallback);
+  client.onEvent(onEventsCallback);
+
   while(!client.connect(websockets_server_host, websockets_server_port, "/")){
     delay(500);
     Serial.print(".");
@@ -109,6 +137,9 @@ void loop() {
     return;
   }
 
+
   client.sendBinary((const char*) fb->buf, fb->len);
+  client.poll();
+
   esp_camera_fb_return(fb);
 }
