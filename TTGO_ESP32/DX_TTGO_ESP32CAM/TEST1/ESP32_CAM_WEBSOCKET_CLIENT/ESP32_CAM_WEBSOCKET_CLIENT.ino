@@ -17,14 +17,14 @@
 
 // const char* ssid = "DX_TEST";
 // const char* password = "dingxiao";
-// const char* ssid = "DX_JS";
-// const char* password = "dingxiao";
+const char* ssid = "DX_JS";
+const char* password = "dingxiao";
+// const char* ssid = "8879";
+// const char* password = "blackbug381";
 
-const char* ssid = "8879";
-const char* password = "blackbug381";
-
-const char* websockets_server_host = "10.0.0.12";
-const uint16_t websockets_server_port = 8888;
+// const char* websockets_server_host = "10.0.0.12";
+const char* websockets_server_host = "192.168.31.188";
+const uint16_t websockets_server_port = 8886;
 
 using namespace websockets;
 WebsocketsClient client;
