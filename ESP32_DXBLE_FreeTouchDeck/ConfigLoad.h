@@ -21,6 +21,8 @@ bool loadMainConfig()
 
   DeserializationError error = deserializeJson(doc, configfile);
 
+
+  //@-size_t strlcpy(char *dst, const char *src, size_t size) -dx
   strlcpy(wificonfig.ssid, doc["ssid"] | "FAILED", sizeof(wificonfig.ssid));
   strlcpy(wificonfig.password, doc["password"] | "FAILED", sizeof(wificonfig.password));
   strlcpy(wificonfig.wifimode, doc["wifimode"] | "FAILED", sizeof(wificonfig.wifimode));

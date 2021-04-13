@@ -22,7 +22,7 @@
 const char* ssid = "8879";
 const char* password = "blackbug381";
 
-const char* websockets_server_host = "10.0.0.12";
+const char* websockets_server_host = "10.0.0.15";
 // const char* websockets_server_host = "192.168.31.188";
 const uint16_t websockets_server_port = 8888;
 
