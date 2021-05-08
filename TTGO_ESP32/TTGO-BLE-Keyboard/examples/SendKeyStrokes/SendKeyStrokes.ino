@@ -25,8 +25,6 @@ void setup() {
   tft.setSwapBytes(true);
   tft.setTextFont(2);
 
-
-
   //@-配置按键
   pinMode(0,INPUT_PULLUP);
   pinMode(35,INPUT_PULLUP);
