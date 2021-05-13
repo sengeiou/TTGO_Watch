@@ -69,10 +69,47 @@
    A connect hander associated with the server starts a background task that performs notification
    every couple of seconds.
 */
+
+#include <Wire.h>
+#include <U8g2lib.h>
+
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+
+#include "dx_lcd_map.h"
+
+
+//@-按键
+// #define Button1_Pin            32
+// #define Button2_Pin            33
+#define Button3_Pin            27
+#define Button4_Pin            26
+//@-光感和测距供用同一I2C总线
+#define VL53L0X_BH1750_SCL_Pin 22
+#define VL53L0X_BH1750_SDA_Pin 21
+//@-OLED的I2C总线
+#define OLED_SCL_Pin           5
+#define OLED_SDA_Pin           18
+//@-系统功能Pin
+#define Power_Ctl_Pin          2
+#define LED1_Pin               17   //设备告警指示LED
+#define LED2_Pin               32   //充电控制指示LED
+#define BAT_Pin                36
+#define Tone_Pin               23
+#define Check_DX1_Pin          14
+#define Check_DX2_Pin          12
+
+// See the following for generating UUIDs:
+// https://www.uuidgenerator.net/
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+
+//@-创建显示设备
+U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ OLED_SCL_Pin, /* data=*/ OLED_SDA_Pin, /* reset=*/ U8X8_PIN_NONE);   // Adafruit Feather M0 Basic Proto + FeatherWing OLED
+// U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ OLED_SCL_Pin, /* data=*/ OLED_SDA_Pin, /* reset=*/ U8X8_PIN_NONE);
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pCharacteristic = NULL;
@@ -82,11 +119,7 @@ uint32_t value = 0;
 uint8_t txValue = 0;
 char  BLE_Msg[256];                      //BLE发送发送缓存区
 
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
 
-#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
 
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -116,8 +149,8 @@ class MyCallbacks: public BLECharacteristicCallbacks {
           }
       }
 
-      if(rxValue[0] == 0x01)
-      Serial.println("ok");
+      // if(rxValue[0] == 0x01)
+      // Serial.println("ok");
 
      }
 };
@@ -125,7 +158,30 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
 
 void setup() {
+
   Serial.begin(115200);
+
+  //@-接管电源控制
+  pinMode(Power_Ctl_Pin, OUTPUT);
+  digitalWrite(Power_Ctl_Pin, HIGH); 
+
+  //@-用户LED
+  pinMode(LED1_Pin, OUTPUT);
+  pinMode(LED2_Pin, OUTPUT);
+
+  //@-鸣音器控制-PWM_Channel PWM_Ferquency PWM_Resoution
+  ledcSetup(0, 700, 8);
+  ledcAttachPin(Tone_Pin, 0);
+  ledcWrite(0, 0);
+
+  //@-配置键盘上拉输入Pin
+  pinMode(Check_DX1_Pin, INPUT|PULLUP);
+  pinMode(Check_DX2_Pin, INPUT|PULLUP);
+  // pinMode(Button1_Pin, INPUT|PULLUP);
+  // pinMode(Button2_Pin, INPUT|PULLUP);
+  pinMode(Button3_Pin, INPUT|PULLUP);
+  pinMode(Button4_Pin, INPUT|PULLUP);
+
 
   // Create the BLE Device
   BLEDevice::init("ESP32");
@@ -161,9 +217,22 @@ void setup() {
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
+
+  //@5-初始化显示
+  u8g2.begin();
+  u8g2.enableUTF8Print();    // enable UTF8 support for the Arduino print() function
+//  u8g2.setFont(u8g2_font_10x20_tn ); 
+  u8g2.setFontDirection(0);
+
+  u8g2.clearBuffer();
+
+
 }
 
 void loop() {
+
+    char temp[20];
+
     // notify changed value
     if (deviceConnected) {
         // pCharacteristic->setValue((uint8_t*)&value, 4);
@@ -185,4 +254,23 @@ void loop() {
     //     // do stuff here on connecting
     //     oldDeviceConnected = deviceConnected;
     // }
+
+    // // u8g2.clearBuffer();
+    // u8g2.setFont( u8g2_font_6x13_t_hebrew ); //9PX
+    // u8g2.setCursor(10, 30);
+    // u8g2.print("dingxiao");
+    // u8g2.sendBuffer();
+
+
+    u8g2.clearBuffer();
+    //@-设置字体
+    u8g2.setFont( u8g2_font_t0_16b_tr ); //12px
+    u8g2.drawXBMP(0 , 3 , 41 , 23 , col_qidian);
+    u8g2.setCursor(60, 30);
+    // sprintf(temp, "%.0f", BLE_Msg[0]); 
+    sprintf(temp, "%d", BLE_Msg[0]); 
+    u8g2.print(String(temp));
+    // u8g2.print("dingxiao");
+    u8g2.sendBuffer();
+
 }
