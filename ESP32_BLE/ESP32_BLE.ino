@@ -82,8 +82,8 @@
 
 
 //@-按键
-// #define Button1_Pin            32
-// #define Button2_Pin            33
+#define Button1_Pin            32
+#define Button2_Pin            33
 #define Button3_Pin            27
 #define Button4_Pin            26
 //@-光感和测距供用同一I2C总线
@@ -117,9 +117,25 @@ bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint32_t value = 0;
 uint8_t txValue = 0;
-char  BLE_Msg[256];                      //BLE发送发送缓存区
+char  BLE_Msg[256];                      //BLE接收缓存区
+char  BLE_SendMsg[256];                  //BLE发送缓存区
 
-
+//@-键盘相关
+int Power_Button_State = 0;     //@-电源键状态
+int Power_PressOFF_Tick = 0;       //@-电源键长按状态
+bool Power_Press_Close_Flag = false; //@-电源键启动关机功能标志
+int USB_Button_State = 1;       //@-充电状态
+int USB_Button_State_Copy = 1;  //@-充电状态Copy
+bool USB_Button_State_Change = false;  //@-充电状态改变
+int  USB_Button_State_Change_ShowTick = 500; //@-充电状态改变展示时间tick
+int None_Button_Press_Tick = 0; //@-没有按键按下     
+int Button1_State = 0;          //@-按键1状态
+int Button2_State = 0;          //@-按键2状态
+int Button3_State = 0;          //@-按键3状态
+int Button4_State = 0;          //@-按键4状态
+int Button4_Press_Tick = 0;     //@-按键4长按状态监测
+bool Button4_LongPress_Lock = false;  //@-按键4长按锁标志
+bool Key_Flag = false;
 
 
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -177,8 +193,8 @@ void setup() {
   //@-配置键盘上拉输入Pin
   pinMode(Check_DX1_Pin, INPUT|PULLUP);
   pinMode(Check_DX2_Pin, INPUT|PULLUP);
-  // pinMode(Button1_Pin, INPUT|PULLUP);
-  // pinMode(Button2_Pin, INPUT|PULLUP);
+  pinMode(Button1_Pin, INPUT|PULLUP);
+  pinMode(Button2_Pin, INPUT|PULLUP);
   pinMode(Button3_Pin, INPUT|PULLUP);
   pinMode(Button4_Pin, INPUT|PULLUP);
 
@@ -226,20 +242,88 @@ void setup() {
 
   u8g2.clearBuffer();
 
+}
+
+          // //@-告警方式选择
+          // if(Alarm_Pro_Index == 0)
+          // {
+          //     digitalWrite(LED_Pin, HIGH); 
+          //     ledcWrite(0, 30); 
+          //     delay(80);
+          //     digitalWrite(LED_Pin, LOW); 
+          //     ledcWrite(0, 0); 
+          // }
+          // else if(Alarm_Pro_Index == 1)
+          // {
+          //     digitalWrite(LED_Pin, HIGH); 
+          //     delay(80);
+          //     digitalWrite(LED_Pin, LOW); 
+          // }
+
+//@-键盘扫描
+void Button_Check()
+{
+    String Temp3 = "None";
+
+//    touchRead(T0)
+
+    Power_Button_State = digitalRead(Check_DX1_Pin);
+    USB_Button_State = digitalRead(Check_DX2_Pin);
+    Button1_State = digitalRead(Button1_Pin);
+    Button2_State = digitalRead(Button2_Pin);
+    Button3_State = digitalRead(Button3_Pin);
+    Button4_State = digitalRead(Button4_Pin);
+
+
+    if((Button1_State == LOW) && (Key_Flag == false))
+    {
+        Key_Flag = true;
+        BLE_SendMsg[1] = 1;
+        Serial.println("Button1\n");
+    }
+    else if((Button2_State == LOW) && (Key_Flag == false))
+    {
+        Key_Flag = true;
+        BLE_SendMsg[1] = 2;
+        Serial.println("Button2\n");
+    }
+    else if((Button3_State == LOW) && (Key_Flag == false))
+    {
+        Key_Flag = true;
+        BLE_SendMsg[1] = 3;
+        Serial.println("Button3\n");
+    }
+    else if((Button4_State == LOW) && (Key_Flag == false))
+    {
+        Key_Flag = true;
+        BLE_SendMsg[1] = 4;
+        Serial.println("Button4\n");
+    }
+
+    //@-所有功能按键均没有按下
+    if((Button1_State == HIGH)&&(Button2_State == HIGH)&&(Button3_State == HIGH)&&(Button4_State == HIGH))
+    {
+        Key_Flag = false;
+        BLE_SendMsg[1] = 0;
+    }
 
 }
+
 
 void loop() {
 
     char temp[20];
 
+    Button_Check();
+
     // notify changed value
     if (deviceConnected) {
         // pCharacteristic->setValue((uint8_t*)&value, 4);
-        pCharacteristic->setValue((uint8_t*)&txValue, 1);
+        pCharacteristic->setValue((uint8_t*)&BLE_SendMsg, 256);
         pCharacteristic->notify();
         // Serial.println(value);
-        txValue++;
+        // txValue++;
+        BLE_SendMsg[0] = BLE_SendMsg[0] + 1;
         delay(100); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
     }
     // // disconnecting
@@ -265,7 +349,8 @@ void loop() {
     u8g2.clearBuffer();
     //@-设置字体
     u8g2.setFont( u8g2_font_t0_16b_tr ); //12px
-    u8g2.drawXBMP(0 , 3 , 41 , 23 , col_qidian);
+    // u8g2.drawXBMP(0 , 3 , 41 , 23 , col_qidian);
+    u8g2.drawXBMP(0 , 3 , 20 , 20 , col_logo23);
     u8g2.setCursor(60, 30);
     // sprintf(temp, "%.0f", BLE_Msg[0]); 
     sprintf(temp, "%d", BLE_Msg[0]); 
