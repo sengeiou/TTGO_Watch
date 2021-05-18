@@ -71,8 +71,8 @@ void setup()
 //刷新背景
   // epd_drv.EPD_Update_Full(12000, S1D13541_LD_IMG_1BPP, gImage_InitPage);
 //写入ID
-  sprintf(buff_dx,"丁霄 dingxiao =%d",good);
-  epd_drv_dx.EPD_SetFount(FONT16);
+  sprintf(buff_dx,"世界人民大团结万岁 dingxiao =%d",good);
+  epd_drv_dx.EPD_SetFount(FONT12);
   epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    //显示设备序列号
   
   epd_drv_dx.EPD4INC_HVEN();
