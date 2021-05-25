@@ -18,11 +18,18 @@
 
 
 //20210520-该版本EPD无光感传感器
+// #define XDOT  240
+// #define YDOT  400
 
 #define ESP32
 
-#define KEY2 26
-#define KEY1 27  
+#define Button0_PIN   0  
+#define Button1_PIN  27  
+#define Button2_PIN  26
+#define BAT_EN_PIN   23
+#define BAT_V_PIN    35
+#define BAT_AD_Solution 12
+
 
 
 
@@ -60,6 +67,13 @@ int wifi_connect_flag = 0;  //@-0:没有连接  1:连接成功  2:连接超时
 I2C_BM8563_DateTypeDef dx_dateStruct;
 I2C_BM8563_TimeTypeDef dx_timeStruct;
 
+int Button0_State = 0;          //@-按键0状态
+int Button1_State = 0;          //@-按键1状态
+int Button2_State = 0;          //@-按键2状态
+bool Key_Flag = false;
+
+float BAT_V = 0;
+
 
 void setup()
 {
@@ -67,8 +81,17 @@ void setup()
 
   // chipid=ESP.getEfuseMac();
 
-  pinMode(KEY1, INPUT); // 
-  pinMode(KEY2, INPUT); // 
+  //@-注册按键
+  pinMode(Button0_PIN, INPUT|PULLUP);
+  pinMode(Button1_PIN, INPUT|PULLUP);
+  pinMode(Button2_PIN, INPUT|PULLUP);
+
+  //@-AD采样检测
+  pinMode(BAT_EN_PIN, OUTPUT);
+  digitalWrite(BAT_EN_PIN, HIGH);
+  analogReadResolution(BAT_AD_Solution);
+  pinMode(BAT_V_PIN,INPUT);
+
 
   SPIFFS.begin();
   Serial.println("\nSPIFFS on ");  
@@ -200,11 +223,15 @@ void printLocalTime(){
   // tm_wday	int	days since Sunday	0-6
 
   Serial.println("----------dx--------------");
+  Serial.println(timeinfo.tm_year);
+  Serial.println(timeinfo.tm_mon);
+  Serial.println(timeinfo.tm_mday);
+  Serial.println(timeinfo.tm_wday);
   Serial.println(timeinfo.tm_hour);
   Serial.println(timeinfo.tm_min);
   Serial.println(timeinfo.tm_sec);
 
-  SetRTC(timeinfo.tm_year, timeinfo.tm_mon, timeinfo.tm_mday, timeinfo.tm_wday, 
+  SetRTC((timeinfo.tm_year+1900), (timeinfo.tm_mon+1), timeinfo.tm_mday, timeinfo.tm_wday, 
          timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
@@ -247,8 +274,45 @@ void  ReadRTC(void)
                );
 }
 
+//@-键盘扫描
+void Button_Check()
+{
+  //@-读取键盘值
+  Button0_State = digitalRead(Button0_PIN);
+  Button1_State = digitalRead(Button1_PIN);
+  Button2_State = digitalRead(Button2_PIN);
+
+  if((Button0_State == LOW) && (Key_Flag == false))
+  {
+    Key_Flag = true;
+    Serial.println("Button0\n");
+  }
+  else if((Button1_State == LOW) && (Key_Flag == false))
+  {
+    Key_Flag = true;
+    Serial.println("Button1\n");
+  }
+  else if((Button2_State == LOW) && (Key_Flag == false))
+  {
+    Key_Flag = true;
+    Serial.println("Button2\n");
+  }
+
+  //@-所有功能按键均没有按下
+  if((Button0_State == HIGH)&&(Button1_State == HIGH)&&(Button2_State == HIGH))
+  {
+    Key_Flag = false;
+  }
+}
+
 void loop()
 {
+  //@-键盘扫描
+  Button_Check();
+
+  //@-读取AD
+  BAT_V = analogRead(BAT_V_PIN)/560.1;
+
   dis_tick = dis_tick + 1;
   if(dis_tick >= 10)
   {
@@ -256,7 +320,7 @@ void loop()
 
     good = good + 1;
 
-    sht30.get();  //获得数据
+    sht30.get();  //获得温湿度数据
     delay(5);
     ReadRTC();
 
@@ -268,10 +332,18 @@ void loop()
     epd_drv_dx.s1d135xx_set_epd_power(1);
     delay(2);
 
+
+    //@-局部刷新
     user_area_dx.top = 180;
     user_area_dx.left = 35;
     user_area_dx.width = 200;
     user_area_dx.height = 50;
+
+    //@-全部刷新
+    // user_area_dx.top = 0;
+    // user_area_dx.left = 0;
+    // user_area_dx.width = 200;
+    // user_area_dx.height = 400;
 
     epd_drv_dx.EPD_SetFount(FONT16);
     sprintf(buff_dx,"温度:%0.1f  湿度:%0.1f", sht30.cTemp, sht30.humidity);
@@ -282,15 +354,15 @@ void loop()
     epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    
 
 
-    sprintf(buff_dx,"时间:%2d:%2d:%2d", dx_timeStruct.hours, dx_timeStruct.minutes, dx_timeStruct.seconds);
+    sprintf(buff_dx,"时间:%2d:%2d:%2d V:%0.1f", dx_timeStruct.hours, dx_timeStruct.minutes, dx_timeStruct.seconds, BAT_V);
     epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
 
 
     // epd_drv.DrawTime(10,30, timeStruct.hours, timeStruct.minutes, FONT48_NUM, 1);
-
     epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
 
-    // epd_drv_dx.EPD_UpdateUser(1, UPDATE_FULL, NULL);
+    //   epd_drv_dx.EPD_UpdateUser(1, UPDATE_FULL, NULL);
+
     
     // Serial.println("\n Epd UPDATE_PARTIAL_AREA updat  Over");
     delay(300);
