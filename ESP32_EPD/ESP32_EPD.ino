@@ -251,15 +251,16 @@ void EPD_ShowMain()
 
 
   //@-测试数据-------------
-  // user_area_dx.top = 0;
-  // user_area_dx.left = 0;   
-  // user_area_dx.width = 226;
-  // user_area_dx.height = 357;
+  user_area_dx.top = 10;
+  // user_area_dx.left = 100;   
+  user_area_dx.left = 100; 
+  user_area_dx.width = 62;
+  user_area_dx.height = 80;
 
   // S1D13541_LD_IMG_1BPP  ---->  单色
   // S1D13541_LD_IMG_2BPP  ---->  4灰
-  // S1D13541_LD_IMG_4BPP  ---->  16灰
-  // epd_drv_dx.User_Img_Tran(226,357,gImage_DX_EPD_Test,S1D13541_LD_IMG_4BPP,&user_area_dx,1);
+  // S1D13541_LD_IMG_4BPP  ---->  16灰  -->jpg照片
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_EPD_Logo_41W53H,S1D13541_LD_IMG_4BPP,&user_area_dx,1);
 
   //刷新背景
   // epd_drv.EPD_Update_Full(12000, S1D13541_LD_IMG_1BPP, gImage_InitPage);
