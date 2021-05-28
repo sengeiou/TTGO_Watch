@@ -28,7 +28,7 @@ void EPD4INC::EPD_SetFount( FONT font_index)
     case 5: Epd_Font.Fontname_En = "/fonten32.bin";       Epd_Font.Fontname_Cn = "\0";              f = SPIFFS.open(Epd_Font.Fontname_En, "r");   Epd_Font.cn_px = 32; Epd_Font.cn_py = 32; Epd_Font.en_px = 32; Epd_Font.en_py = 32; Epd_Font.part_dx = 1; Epd_Font.Font_Index = 5; break;
     case 6: Epd_Font.Fontname_En = "/fontnum16.bin";      Epd_Font.Fontname_Cn = "\0";              f = SPIFFS.open(Epd_Font.Fontname_En, "r");   Epd_Font.cn_px = 8; Epd_Font.cn_py = 16;   Epd_Font.en_px = 8; Epd_Font.en_py = 16; Epd_Font.part_dx = 1; Epd_Font.Font_Index = 6; break;
     case 7: Epd_Font.Fontname_En = "/fontnum32.bin";      Epd_Font.Fontname_Cn = "\0";              f = SPIFFS.open(Epd_Font.Fontname_En, "r");   Epd_Font.cn_px = 16; Epd_Font.cn_py = 32;   Epd_Font.en_px = 16; Epd_Font.en_py = 32; Epd_Font.part_dx = 1; Epd_Font.Font_Index = 7; break;
-    case 8: Epd_Font.Fontname_En = "/fontnum48.bin";      Epd_Font.Fontname_Cn = "\0";              f = SPIFFS.open(Epd_Font.Fontname_En, "r");   Epd_Font.cn_px = 24; Epd_Font.cn_py = 48;   Epd_Font.en_px = 24; Epd_Font.en_py = 48; Epd_Font.part_dx = 1; Epd_Font.Font_Index = 8; break;
+    case 8: Epd_Font.Fontname_En = "/dx_fontnum48.bin";      Epd_Font.Fontname_Cn = "\0";              f = SPIFFS.open(Epd_Font.Fontname_En, "r");   Epd_Font.cn_px = 24; Epd_Font.cn_py = 48;   Epd_Font.en_px = 24; Epd_Font.en_py = 48; Epd_Font.part_dx = 1; Epd_Font.Font_Index = 8; break;
     case 9: Epd_Font.Fontname_En = "/fontnum64.bin";      Epd_Font.Fontname_Cn = "\0";              f = SPIFFS.open(Epd_Font.Fontname_En, "r");   Epd_Font.cn_px = 32; Epd_Font.cn_py = 64;   Epd_Font.en_px = 32; Epd_Font.en_py = 64; Epd_Font.part_dx = 1; Epd_Font.Font_Index = 9; break;
 
 
