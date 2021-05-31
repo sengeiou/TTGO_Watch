@@ -60,7 +60,8 @@ int wifi_connect_flag = 0;  //@-0:没有连接  1:连接成功  2:连接超时
 //@-网络授时
 // const char* ntpServer = "pool.ntp.org";   ----->ok
 // const char* ntpServer = "cn.pool.ntp.org";  ---->OK
-const char* ntpServer = "cn.ntp.org.cn";
+// const char* ntpServer = "cn.ntp.org.cn";
+const char* ntpServer = "time.pool.aliyun.com";
 
 //@-设置时区参数
 const long  gmtOffset_sec = 7 * 3600;
