@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <I2C_BM8563.h>
 #include <WEMOS_SHT3X.h>
+#include <ArduinoJson.h>
 
 
 #include "EPD_Http.h"
@@ -91,6 +92,27 @@ RTC_DATA_ATTR int bootCount = 0;
 //@-管脚mask
 uint64_t mask;
 
+//------------------------------------------------------------------
+//Your Domain name with URL path or IP address with path
+// String serverName = "http://wufazhuce.com/one/3200";
+// String serverName = "https://v2.jinrishici.com/info";
+// String serverName = "http://sentence.iciba.com/index.php?c=dailysentence&m=getdetail&title=2021-05-31";
+// String serverName = "http://c.m.163.com/nc/article/headline/T1348647853363/0-40.html";   //获取40条头条
+// String serverName = "http://c.m.163.com/nc/article/headline/T1348647853363/0-10.html";   //获取10条头条
+// String serverName = "http://arduinojson.org/example.json";
+// String serverName = "https://v1.hitokoto.cn/";
+// String serverName = "http://sentence.iciba.com/index.php?c=dailysentence&m=getdetail&title=2021-05-31";  //@-每日一句
+// String serverName = "http://v.juhe.cn/toutiao/index? &type=top &page=1 &page_size=2 &key=71afabc411187aef339731d24ac43b97";
+
+String serverName = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=5";  //新浪综合新闻5条
+
+//@-新闻数据结构体
+typedef struct {
+  char news_title[256];
+  char news_author_name[128];
+} NewsData_t;
+NewsData_t NewsData[5];
+
 
 //@-配置
 void setup()
@@ -134,6 +156,9 @@ void setup()
   //@-配置wifi连接
   WIFI_Connect();
 
+  //@-获取json数据
+  WIFI_Get_JsonInfo();
+
   //@-配置I2C总线
   Wire.begin(21, 22);
 
@@ -164,9 +189,106 @@ void setup()
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_0,0);
   esp_sleep_enable_ext1_wakeup(mask,ESP_EXT1_WAKEUP_ALL_LOW);
   //@-配置定时器唤醒
-  esp_sleep_enable_timer_wakeup(30 * uS_TO_S_FACTOR);
+  esp_sleep_enable_timer_wakeup(50 * uS_TO_S_FACTOR);
   Serial.println("----------Sleep Now-----------");
   esp_deep_sleep_start();
+}
+
+//@-获取信息网站JSON数据
+void WIFI_Get_JsonInfo()
+{
+  if(WiFi.status()== WL_CONNECTED)
+  {
+    HTTPClient http;
+
+    String serverPath = serverName + "?temperature=24.37";
+
+    // Your Domain name with URL path or IP address with path
+    http.begin(serverName.c_str());
+
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
+
+    //@-成功连接网站
+    if (httpResponseCode>0) 
+    {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+      String payload = http.getString();
+
+      //@1-从html页面中获取信息
+      // String word3 = getValue(payload, '\n', 77);
+      // Serial.println(word3);
+
+      //@2-打印获得的数据长度
+      Serial.println(payload.length());
+      // Serial.println(payload);
+
+      //@3-从网站提供的API接口中获取信息，并将数据json化
+      DynamicJsonDocument doc(3072);
+      // Deserialize the JSON document
+      DeserializationError error = deserializeJson(doc, payload);
+      if (error) 
+      {
+        Serial.println("JSON parsing failed!");
+      } 
+      else 
+      {
+        // get the JsonObject in the JsonDocument
+        JsonObject root = doc.as<JsonObject>();
+
+        // strcpy(Hitokoto.hitokoto, doc["T1348647853363"]["0"]["title"]);
+        // strcpy(Hitokoto.from, doc["T1348647853363"]["0"]["source"]);
+
+        // Serial.println(doc["sensor"].as<char*>());
+
+        // Serial.println(root["result"]["data"]["count"].as<char*>());
+
+
+        char temp[256];
+        strcpy(temp, root["result"]["data"]["list"][0]["title"]);
+        sprintf(NewsData[0].news_title, "1.%s", temp);
+        strcpy(temp, root["result"]["data"]["list"][1]["title"]);
+        sprintf(NewsData[1].news_title, "2.%s", temp);
+        strcpy(temp, root["result"]["data"]["list"][2]["title"]);
+        sprintf(NewsData[2].news_title, "3.%s", temp);
+        strcpy(temp, root["result"]["data"]["list"][3]["title"]);
+        sprintf(NewsData[3].news_title, "4.%s", temp);
+        strcpy(temp, root["result"]["data"]["list"][4]["title"]);
+        sprintf(NewsData[4].news_title, "5.%s", temp);
+
+        // strcpy(NewsData[0].news_title, root["result"]["data"]["list"][0]["title"]);
+        // strcpy(NewsData[0].news_author_name, root["result"]["data"]["list"][0]["source"]);
+        // strcpy(NewsData[1].news_title, root["result"]["data"]["list"][1]["title"]);
+        // strcpy(NewsData[1].news_author_name, root["result"]["data"]["list"][1]["source"]);
+        // strcpy(NewsData[2].news_title, root["result"]["data"]["list"][2]["title"]);
+        // strcpy(NewsData[2].news_author_name, root["result"]["data"]["list"][2]["source"]);
+        // strcpy(NewsData[3].news_title, root["result"]["data"]["list"][3]["title"]);
+        // strcpy(NewsData[3].news_author_name, root["result"]["data"]["list"][3]["source"]);
+        // strcpy(NewsData[4].news_title, root["result"]["data"]["list"][4]["title"]);
+        // strcpy(NewsData[4].news_author_name, root["result"]["data"]["list"][4]["source"]);
+      }
+
+        Serial.println(NewsData[0].news_title);
+        Serial.printf("出处：");
+        Serial.println(NewsData[0].news_author_name);
+      // Serial.println(payload);
+    }
+    else 
+    {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+      // Free resources
+      http.end();
+  }
+  else 
+  {
+    //disconnect WiFi as it's no longer needed
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    Serial.println("WiFi Disconnected");
+  }
 }
 
 //@-非全局刷新
@@ -185,7 +307,7 @@ void EPD_ShowArea()
   user_area_dx.top = 180;
   user_area_dx.left = 35;
   user_area_dx.width = 200;
-  user_area_dx.height = 82;
+  user_area_dx.height = 150;
 
   //@-全部刷新
   // user_area_dx.top = 0;
@@ -205,6 +327,16 @@ void EPD_ShowArea()
   // sprintf(buff_dx,"%2d:%2d V:%0.2f", dx_timeStruct.hours, dx_timeStruct.minutes, BAT_V);
   epd_drv_dx.DrawTime(35, 200, dx_timeStruct.hours, dx_timeStruct.minutes, FONT48_NUM, 1);
   // epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
+
+
+  //@-显示json数据-12font能显示20个字
+  epd_drv_dx.EPD_SetFount(FONT16);
+  // sprintf(buff_dx,"1-%c", Hitokoto.hitokoto);
+  epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
 
 
   // epd_drv.DrawTime(10,30, timeStruct.hours, timeStruct.minutes, FONT48_NUM, 1);
@@ -283,6 +415,16 @@ void EPD_ShowMain()
   epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
 
 
+  //@-显示json数据-12font能显示20个字
+  // epd_drv_dx.EPD_SetFount(FONT16);
+  // sprintf(buff_dx,"1-%c", Hitokoto.hitokoto);
+  epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
+
+
   epd_drv_dx.EPD4INC_HVEN();
   delay(10);
   epd_drv_dx.EPD_UpdateUser(1, UPDATE_FULL, NULL);
@@ -306,7 +448,7 @@ void WIFI_Connect()
     delay(500);
     Serial.print(".");
     wifi_connect_tick = wifi_connect_tick + 1;
-    if(wifi_connect_tick > 10)
+    if(wifi_connect_tick > 8)
     {
       wifi_connect_tick = 0;
       wifi_connect_flag = 2;  //wifi连接超时
@@ -328,9 +470,9 @@ void WIFI_Connect()
     printLocalTime();
   }
 
-  //disconnect WiFi as it's no longer needed
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  // //disconnect WiFi as it's no longer needed
+  // WiFi.disconnect(true);
+  // WiFi.mode(WIFI_OFF);
 }
 
 //@-打印实时时间
