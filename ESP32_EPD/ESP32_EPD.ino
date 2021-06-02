@@ -92,7 +92,7 @@ RTC_DATA_ATTR int bootCount = 0;
 //@-管脚mask
 uint64_t mask;
 
-//------------------------------------------------------------------
+//---------------------------JSON---------------------------------------
 //Your Domain name with URL path or IP address with path
 // String serverName = "http://wufazhuce.com/one/3200";
 // String serverName = "https://v2.jinrishici.com/info";
@@ -104,14 +104,68 @@ uint64_t mask;
 // String serverName = "http://sentence.iciba.com/index.php?c=dailysentence&m=getdetail&title=2021-05-31";  //@-每日一句
 // String serverName = "http://v.juhe.cn/toutiao/index? &type=top &page=1 &page_size=2 &key=71afabc411187aef339731d24ac43b97";
 
-String serverName = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=5";  //新浪综合新闻5条
+String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=3";  //@-新浪综合新闻5条
+String serverName_covid = "https://lab.isaaclin.cn/nCoV/api/overall";
+String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
+
 
 //@-新闻数据结构体
 typedef struct {
   char news_title[256];
-  char news_author_name[128];
+  // char news_author_name[64];
 } NewsData_t;
-NewsData_t NewsData[5];
+NewsData_t NewsData[3];
+
+//@-Covid-19数据结构体
+typedef struct {
+  int currentConfirmedCount;  //@-国内当前确诊数
+  int currentConfirmedIncr;   //@-国内当前新增确诊数
+  long confirmedCount;        //@-国内总确诊数
+  int  confirmedIncr;         //@-国内新增总确诊数
+  int suspectedCount;         //@-国内疑似数
+  int suspectedIncr;          //@-国内新增疑似数
+  long curedCount;            //@-国内治愈数
+  int  curedIncr;             //@-国内新增治愈术
+  int deadCount;              //@-国内死亡数
+  int deadIncr;               //@-国内新增死亡数
+  int seriousCount;           //@-国内重症数
+  int seriousIncr;            //@-国内新增重症数
+
+  long g_currentConfirmedCount; //@-全球当前确诊数
+  long g_currentConfirmedIncr;  //@-全球当前新增确诊数
+  long g_confirmedCount;        //@-全球总确诊数
+  long g_confirmedIncr;         //@-全球新增总确诊数
+  long g_curedCount;            //@-全球治愈数
+  long g_curedIncr;             //@-全球新增治愈术
+  long g_deadCount;             //@-全球死亡数
+  long g_deadIncr;              //@-全球新增死亡数
+
+} Covid19Data_t;
+Covid19Data_t Covid19Data;
+
+//@-聚合天气数据
+typedef struct {
+  char weather_city[32];                //@-温度信息城市
+  char weather_temperature[72];         //@-全天天气温度范围
+  char weather_info[48];                //@-全天天气情况
+  char weather_info_id[16];             //@-全天天气情况图标id
+  char weather_humidity[16];            //@-当前天气湿度
+  char weather_direct[48];              //@-当前风向
+  char weather_power[32];               //@-当前风力
+  char weather_aqi[32];                 //@-当前AQI指数
+
+  char weather_futureDay1_temperature[72];        //@-未来1天天气温度范围
+  char weather_futureDay1_info[48];               //@-未来1天天气情况
+
+  char weather_futureDay2_temperature[72];        //@-未来2天天气温度范围
+  char weather_futureDay2_info[48];               //@-未来2天天气情况
+
+  char weather_futureDay3_temperature[72];        //@-未来3天天气温度范围
+  char weather_futureDay3_info[48];               //@-未来3天天气情况
+  
+} Juhe_WeatherData_t;
+Juhe_WeatherData_t Juhe_WeatherData;
+
 
 
 //@-配置
@@ -153,12 +207,6 @@ void setup()
   SPIFFS.begin();
   Serial.println("\nSPIFFS on ");  
 
-  //@-配置wifi连接
-  WIFI_Connect();
-
-  //@-获取json数据
-  WIFI_Get_JsonInfo();
-
   //@-配置I2C总线
   Wire.begin(21, 22);
 
@@ -168,8 +216,34 @@ void setup()
   delay(5);
   ReadRTC();
 
+  //@-配置wifi连接-每5min检测wifi连接-并获取json数据
+  if((dx_timeStruct.minutes == 5)||(dx_timeStruct.minutes == 15)||(dx_timeStruct.minutes == 20)||
+     (dx_timeStruct.minutes == 25)||(dx_timeStruct.minutes == 30)||(dx_timeStruct.minutes == 35)||
+     (dx_timeStruct.minutes == 40)||(dx_timeStruct.minutes == 45)||(dx_timeStruct.minutes == 50)||
+     (dx_timeStruct.minutes == 55)||(dx_timeStruct.minutes == 0) ||(bootCount == 1))
+  {
+    //@-连接wifi
+    WIFI_Connect();
+
+    //@-每5min获取Sina综合新闻json数据
+    WIFI_Get_JsonInfo(serverName_sinaNews, 1);
+
+    //@-每1hour获取Covid数据
+    if(dx_timeStruct.minutes == 0)
+    WIFI_Get_JsonInfo(serverName_covid, 2);
+
+    //@-工作时间每天2次获取天气数据
+    if(((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))
+    WIFI_Get_JsonInfo(serverName_weather, 3);
+
+  }
+
   //@-读取AD
   BAT_V = analogRead(BAT_V_PIN)/560.1;
+
+  //@-读取RTC数据
+  delay(2);
+  ReadRTC();
   
   //@-显示内容
   if((wakeup_reason == 0))
@@ -195,23 +269,28 @@ void setup()
 }
 
 //@-获取信息网站JSON数据
-void WIFI_Get_JsonInfo()
+void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
 {
+  char temp[256];
+
+  //@-判断WIFI连接状态
   if(WiFi.status()== WL_CONNECTED)
   {
+    //@-创建HTTP链接
     HTTPClient http;
 
-    String serverPath = serverName + "?temperature=24.37";
+    // String serverPath = serverName + "?temperature=24.37";
 
-    // Your Domain name with URL path or IP address with path
+    //@-获得指定网站的JSON数据
     http.begin(serverName.c_str());
 
-    // Send HTTP GET request
+    //@-发送HTTP Get
     int httpResponseCode = http.GET();
 
     //@-成功连接网站
     if (httpResponseCode>0) 
     {
+      //@-获得GET返回值
       Serial.print("HTTP Response code: ");
       Serial.println(httpResponseCode);
       String payload = http.getString();
@@ -226,7 +305,9 @@ void WIFI_Get_JsonInfo()
 
       //@3-从网站提供的API接口中获取信息，并将数据json化
       DynamicJsonDocument doc(3072);
-      // Deserialize the JSON document
+      // StaticJsonDocument<2048> doc;
+
+      //@-序列化JSON数据
       DeserializationError error = deserializeJson(doc, payload);
       if (error) 
       {
@@ -237,54 +318,93 @@ void WIFI_Get_JsonInfo()
         // get the JsonObject in the JsonDocument
         JsonObject root = doc.as<JsonObject>();
 
-        // strcpy(Hitokoto.hitokoto, doc["T1348647853363"]["0"]["title"]);
-        // strcpy(Hitokoto.from, doc["T1348647853363"]["0"]["source"]);
+        //@-Sina综合新闻数据
+        if(Data_Mode == 1)
+        {
+          strcpy(temp, root["result"]["data"]["list"][0]["title"]);
+          sprintf(NewsData[0].news_title, "1.%s", temp);
+          strcpy(temp, root["result"]["data"]["list"][1]["title"]);
+          sprintf(NewsData[1].news_title, "2.%s", temp);
+          strcpy(temp, root["result"]["data"]["list"][2]["title"]);
+          sprintf(NewsData[2].news_title, "3.%s", temp);
+        }
+        //@-Covid-19数据
+        else if(Data_Mode == 2)
+        {
+          Covid19Data.currentConfirmedCount = root["results"][0]["currentConfirmedCount"];
+          Covid19Data.currentConfirmedIncr = root["results"][0]["currentConfirmedIncr"];
+          Covid19Data.confirmedCount = root["results"][0]["confirmedCount"];
+          Covid19Data.confirmedIncr = root["results"][0]["confirmedIncr"];
+          Covid19Data.suspectedCount = root["results"][0]["suspectedCount"];
+          Covid19Data.suspectedIncr = root["results"][0]["suspectedIncr"];
+          Covid19Data.curedCount = root["results"][0]["curedCount"];
+          Covid19Data.curedIncr = root["results"][0]["curedIncr"];
+          Covid19Data.deadCount = root["results"][0]["deadCount"];
+          Covid19Data.deadIncr = root["results"][0]["deadIncr"];
+          Covid19Data.seriousCount = root["results"][0]["seriousCount"];
+          Covid19Data.seriousIncr = root["results"][0]["seriousIncr"];
 
-        // Serial.println(doc["sensor"].as<char*>());
+          Covid19Data.g_currentConfirmedCount = root["results"][0]["globalStatistics"]["currentConfirmedCount"];
+          Covid19Data.g_currentConfirmedIncr = root["results"][0]["globalStatistics"]["currentConfirmedIncr"];
+          Covid19Data.g_confirmedCount = root["results"][0]["globalStatistics"]["confirmedCount"];
+          Covid19Data.g_confirmedIncr = root["results"][0]["globalStatistics"]["confirmedIncr"];
+          Covid19Data.g_curedCount = root["results"][0]["globalStatistics"]["curedCount"];
+          Covid19Data.g_curedIncr = root["results"][0]["globalStatistics"]["curedIncr"];
+          Covid19Data.g_deadCount = root["results"][0]["globalStatistics"]["deadCount"];
+          Covid19Data.g_deadIncr = root["results"][0]["globalStatistics"]["deadIncr"];
+        }
+        //@-天气数据
+        else if(Data_Mode == 3)
+        {
+          strcpy(temp, root["result"]["city"]);
+          sprintf(Juhe_WeatherData.weather_city, "%s", temp);
+          strcpy(temp, root["result"]["future"][0]["temperature"]);
+          sprintf(Juhe_WeatherData.weather_temperature, "%s", temp);
+          strcpy(temp, root["result"]["future"][0]["weather"]);
+          sprintf(Juhe_WeatherData.weather_info, "%s", temp);
+          strcpy(temp, root["result"]["realtime"]["wid"]);
+          sprintf(Juhe_WeatherData.weather_info_id, "%s", temp);
+          strcpy(temp, root["result"]["realtime"]["humidity"]);
+          sprintf(Juhe_WeatherData.weather_humidity, "%s", temp);
+          strcpy(temp, root["result"]["realtime"]["direct"]);
+          sprintf(Juhe_WeatherData.weather_direct, "%s", temp);
+          strcpy(temp, root["result"]["realtime"]["power"]);
+          sprintf(Juhe_WeatherData.weather_power, "%s", temp);
+          strcpy(temp, root["result"]["realtime"]["aqi"]);
+          sprintf(Juhe_WeatherData.weather_aqi, "%s", temp);
 
-        // Serial.println(root["result"]["data"]["count"].as<char*>());
+          strcpy(temp, root["result"]["future"][1]["temperature"]);
+          sprintf(Juhe_WeatherData.weather_futureDay1_temperature, "%s", temp);
+          strcpy(temp, root["result"]["future"][1]["weather"]);
+          sprintf(Juhe_WeatherData.weather_futureDay1_info, "%s", temp);
 
+          strcpy(temp, root["result"]["future"][2]["temperature"]);
+          sprintf(Juhe_WeatherData.weather_futureDay2_temperature, "%s", temp);
+          strcpy(temp, root["result"]["future"][2]["weather"]);
+          sprintf(Juhe_WeatherData.weather_futureDay2_info, "%s", temp);
 
-        char temp[256];
-        strcpy(temp, root["result"]["data"]["list"][0]["title"]);
-        sprintf(NewsData[0].news_title, "1.%s", temp);
-        strcpy(temp, root["result"]["data"]["list"][1]["title"]);
-        sprintf(NewsData[1].news_title, "2.%s", temp);
-        strcpy(temp, root["result"]["data"]["list"][2]["title"]);
-        sprintf(NewsData[2].news_title, "3.%s", temp);
-        strcpy(temp, root["result"]["data"]["list"][3]["title"]);
-        sprintf(NewsData[3].news_title, "4.%s", temp);
-        strcpy(temp, root["result"]["data"]["list"][4]["title"]);
-        sprintf(NewsData[4].news_title, "5.%s", temp);
+          strcpy(temp, root["result"]["future"][3]["temperature"]);
+          sprintf(Juhe_WeatherData.weather_futureDay3_temperature, "%s", temp);
+          strcpy(temp, root["result"]["future"][3]["weather"]);
+          sprintf(Juhe_WeatherData.weather_futureDay3_info, "%s", temp);
 
-        // strcpy(NewsData[0].news_title, root["result"]["data"]["list"][0]["title"]);
-        // strcpy(NewsData[0].news_author_name, root["result"]["data"]["list"][0]["source"]);
-        // strcpy(NewsData[1].news_title, root["result"]["data"]["list"][1]["title"]);
-        // strcpy(NewsData[1].news_author_name, root["result"]["data"]["list"][1]["source"]);
-        // strcpy(NewsData[2].news_title, root["result"]["data"]["list"][2]["title"]);
-        // strcpy(NewsData[2].news_author_name, root["result"]["data"]["list"][2]["source"]);
-        // strcpy(NewsData[3].news_title, root["result"]["data"]["list"][3]["title"]);
-        // strcpy(NewsData[3].news_author_name, root["result"]["data"]["list"][3]["source"]);
-        // strcpy(NewsData[4].news_title, root["result"]["data"]["list"][4]["title"]);
-        // strcpy(NewsData[4].news_author_name, root["result"]["data"]["list"][4]["source"]);
+          // Serial.print(Juhe_WeatherData.weather_city);
+          // Serial.print(Juhe_WeatherData.weather_futureDay3_info); 
+          // Serial.println(Juhe_WeatherData.weather_futureDay3_temperature);
+        }
       }
-
-        Serial.println(NewsData[0].news_title);
-        Serial.printf("出处：");
-        Serial.println(NewsData[0].news_author_name);
-      // Serial.println(payload);
     }
     else 
     {
       Serial.print("Error code: ");
       Serial.println(httpResponseCode);
     }
-      // Free resources
+      //@-释放http资源
       http.end();
   }
   else 
   {
-    //disconnect WiFi as it's no longer needed
+    //@-断开wifi链接
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
     Serial.println("WiFi Disconnected");
@@ -305,8 +425,8 @@ void EPD_ShowArea()
 
   //@-局部刷新
   user_area_dx.top = 180;
-  user_area_dx.left = 35;
-  user_area_dx.width = 200;
+  user_area_dx.left = 0;
+  user_area_dx.width = 239;
   user_area_dx.height = 150;
 
   //@-全部刷新
@@ -335,8 +455,8 @@ void EPD_ShowArea()
   epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
 
 
   // epd_drv.DrawTime(10,30, timeStruct.hours, timeStruct.minutes, FONT48_NUM, 1);
@@ -421,8 +541,8 @@ void EPD_ShowMain()
   epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
 
 
   epd_drv_dx.EPD4INC_HVEN();
@@ -462,8 +582,10 @@ void WIFI_Connect()
     Serial.println("WiFi connected.");
   }
 
-  //@-wifi连接成功
-  if(wifi_connect_flag == 1)
+
+  //@-wifi连接成功-每天23:01-23:03进行网络对时
+  if((wifi_connect_flag == 1) && (dx_timeStruct.hours == 23) && 
+    ((dx_timeStruct.minutes == 5)||(dx_timeStruct.minutes == 15)||(dx_timeStruct.minutes == 20)))
   {
     // Init and get the time
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
