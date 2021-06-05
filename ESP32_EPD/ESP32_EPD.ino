@@ -253,8 +253,8 @@ void setup()
   EPD_ShowArea();
 
   //保证屏幕RST引脚高电平
-  rtc_gpio_pullup_en(GPIO_NUM_4);
-  rtc_gpio_pulldown_dis(GPIO_NUM_4);   
+  // rtc_gpio_pullup_en(GPIO_NUM_4);
+  // rtc_gpio_pulldown_dis(GPIO_NUM_4);   
 
   //@-唤醒设置 
   mask|=  1ull << Button2_PIN;
@@ -316,17 +316,20 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
       else 
       {
         // get the JsonObject in the JsonDocument
-        JsonObject root = doc.as<JsonObject>();
+        JsonObject root = doc.as<JsonObject>(); 
 
         //@-Sina综合新闻数据
         if(Data_Mode == 1)
         {
           strcpy(temp, root["result"]["data"]["list"][0]["title"]);
-          sprintf(NewsData[0].news_title, "1.%s", temp);
+          sprintf(NewsData[0].news_title, "1.%s     ", temp);
+          // Serial.println(strlen(NewsData[0].news_title));
           strcpy(temp, root["result"]["data"]["list"][1]["title"]);
-          sprintf(NewsData[1].news_title, "2.%s", temp);
+          sprintf(NewsData[1].news_title, "2.%s     ", temp);
+          // Serial.println(strlen(NewsData[1].news_title));
           strcpy(temp, root["result"]["data"]["list"][2]["title"]);
-          sprintf(NewsData[2].news_title, "3.%s", temp);
+          sprintf(NewsData[2].news_title, "3.%s     ", temp);
+          // Serial.println(strlen(NewsData[2].news_title));
         }
         //@-Covid-19数据
         else if(Data_Mode == 2)
