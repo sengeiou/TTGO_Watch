@@ -11,7 +11,7 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 // #include "ico_6464.h"    ----dx
-#include "EPD_Http.h" 
+// #include "EPD_Http.h"    ----20210606
 //
 //
 //uint8_t IIC_Device_Dected(uint8_t *device_id);

@@ -9,7 +9,7 @@ RTC_DATA_ATTR     I2C_BM8563_TimeTypeDef timeStruct;
 //SHTSensor sht;
  
 
-extern RTC_DATA_ATTR EPD_Device_Struct epd_rtc_data;;
+// extern RTC_DATA_ATTR EPD_Device_Struct epd_rtc_data;  ----20210606-dx
 char buff[128];
  
 const char softver[]="V2.05";
@@ -336,7 +336,7 @@ uint16_t EPD4IN_Device::DrawFullScreen(void)
   user_area.height = 64;
 //天气图标
   uint8_t  testicostr[512];
-  SearchWeatherIco(testicostr,epd_rtc_data.Weather_TypeCode);
+  // SearchWeatherIco(testicostr,epd_rtc_data.Weather_TypeCode);   ----20210606-dx
   epd_drv.User_Img_Tran(64,64,testicostr,S1D13541_LD_IMG_1BPP,&user_area,1);
  //城市和实时温度
   user_area.top = 22;
@@ -344,18 +344,18 @@ uint16_t EPD4IN_Device::DrawFullScreen(void)
   user_area.width = 32;
   user_area.height = 16;
   memset(buff,0,128);
-  sprintf(buff,"%s %s℃",epd_rtc_data.Weather_City,epd_rtc_data.Weather_Tmp_Real);
-  epd_drv.EPD_SetFount(FONT16);
-  epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    //城市名称
+  // sprintf(buff,"%s %s℃",epd_rtc_data.Weather_City,epd_rtc_data.Weather_Tmp_Real);  ----20210606-dx
+  // epd_drv.EPD_SetFount(FONT16);
+  // epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    //城市名称
 //天气  温度范围
   user_area.top = 104;
   user_area.left = 148;
   user_area.width = 32;
   user_area.height = 16;
   memset(buff,0,128);
-  sprintf(buff,"%s%s-%s℃",epd_rtc_data.Weather_Type,epd_rtc_data.Weather_Tmp_Low,epd_rtc_data.Weather_Tmp_High);
-  epd_drv.EPD_SetFount(FONT16);
-  epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    //   
+  // sprintf(buff,"%s%s-%s℃",epd_rtc_data.Weather_Type,epd_rtc_data.Weather_Tmp_Low,epd_rtc_data.Weather_Tmp_High);  ----20210606-dx
+  // epd_drv.EPD_SetFount(FONT16);
+  // epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    //   
  
 //年月日 日期显示
   user_area.top = 0;
@@ -377,15 +377,15 @@ uint16_t EPD4IN_Device::DrawFullScreen(void)
 
 //阴历和节假日
   user_area.top = 100;
-  if(epd_rtc_data.Calendar_holiday[0]==NULL)
-    user_area.left = 40; 
-  else
-     user_area.left = 12; 
+  // if(epd_rtc_data.Calendar_holiday[0]==NULL)   ----20210606-dx
+  //   user_area.left = 40; 
+  // else
+  //    user_area.left = 12; 
   
   memset(buff,0,128);
-  sprintf(buff,"%s %s",epd_rtc_data.Calendar_lunar,epd_rtc_data.Calendar_holiday);
-  epd_drv.EPD_SetFount(FONT16);
-  epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    //RTC显示
+  // sprintf(buff,"%s %s",epd_rtc_data.Calendar_lunar,epd_rtc_data.Calendar_holiday);   ----20210606-dx
+  // epd_drv.EPD_SetFount(FONT16);
+  // epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    //RTC显示
 //电池电压
   user_area.top = 0;
   user_area.left = 212;   
@@ -412,28 +412,28 @@ uint16_t EPD4IN_Device::DrawFullScreen(void)
   user_area.top = 144;
   user_area.left = 100;   
   memset(buff,0,128);
-  sprintf(buff,"Todo",epd_rtc_data.Todo_Uptime);
-  epd_drv.EPD_SetFount(FONT16);
-  epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    // 
+  // sprintf(buff,"Todo",epd_rtc_data.Todo_Uptime);    ----20210606-dx
+  // epd_drv.EPD_SetFount(FONT16);
+  // epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    // 
   //TODO  更新时间
   user_area.top = 148;
   user_area.left = 150;   
   memset(buff,0,128);
-  sprintf(buff,"%s更新",epd_rtc_data.Todo_Uptime);
-  epd_drv.EPD_SetFount(FONT12);
-  epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    // 
+  // sprintf(buff,"%s更新",epd_rtc_data.Todo_Uptime);    ----20210606-dx
+  // epd_drv.EPD_SetFount(FONT12);
+  // epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    // 
   //todo 内容
   user_area.top = 162;
   user_area.left =0; 
     epd_drv.EPD_SetFount(FONT16);
-  for(int todoindx=0;todoindx<epd_rtc_data.Todo_count;todoindx++)
-  {
-       memset(buff,0,128);
-       sprintf(buff,"->%s",epd_rtc_data.Todo_New_List[todoindx]);
-       epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    // 
-       user_area.top +=17;
+  // for(int todoindx=0;todoindx<epd_rtc_data.Todo_count;todoindx++)   ----20210606-dx
+  // {
+  //      memset(buff,0,128);
+  //      sprintf(buff,"->%s",epd_rtc_data.Todo_New_List[todoindx]);
+  //      epd_drv.DrawUTF( user_area.left , user_area.top, buff, 1);    // 
+  //      user_area.top +=17;
          
-  }
+  // }
 
 
   

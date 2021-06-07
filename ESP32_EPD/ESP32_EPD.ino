@@ -6,10 +6,13 @@
 #include <Wire.h>
 #include <I2C_BM8563.h>
 #include <WEMOS_SHT3X.h>
-#include <ArduinoJson.h>
+#include <ESPAsyncWebServer.h>
+#include <WebSocketsServer.h>
+
+#include <HTTPClient.h>
 
 
-#include "EPD_Http.h"
+// #include "EPD_Http.h"     ----20210606-dx
 #include "EPD4IN_Device.h"
 #include "EPD4IN_driver.h"
 #include "driver/rtc_io.h"
@@ -166,7 +169,26 @@ typedef struct {
 } Juhe_WeatherData_t;
 Juhe_WeatherData_t Juhe_WeatherData;
 
+AsyncWebServer server_dx(80);
+// Stores LED state
+String ledState;
 
+// Replaces placeholder with LED state value
+String processor(const String& var){
+  Serial.println(var);
+  ledState = "ON";
+  // if(var == "STATE"){
+  //   if(digitalRead(ledPin)){
+  //     ledState = "ON";
+  //   }
+  //   else{
+  //     ledState = "OFF";
+  //   }
+  //   Serial.print(ledState);
+    // return ledState;
+  // }
+  return String();
+}
 
 //@-配置
 void setup()
@@ -204,8 +226,10 @@ void setup()
   pinMode(BAT_V_PIN,INPUT);
 
   //@-文件系统启动
-  SPIFFS.begin();
-  Serial.println("\nSPIFFS on ");  
+  if(!SPIFFS.begin(true)){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
 
   //@-配置I2C总线
   Wire.begin(21, 22);
@@ -224,6 +248,24 @@ void setup()
   {
     //@-连接wifi
     WIFI_Connect();
+
+    // if(WiFi.status()== WL_CONNECTED)
+    // {
+    //     // Print ESP32 Local IP Address
+    //     Serial.println(WiFi.localIP());
+
+    //     // Route for root / web page
+    //     server_dx.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    //       request->send(SPIFFS, "/index.html", String(), false, processor);
+    //     });
+        
+    //     // Route to load style.css file
+    //     server_dx.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    //       request->send(SPIFFS, "/style.css", "text/css");
+    //     });
+          // // Start server_dx
+          // server_dx.begin();
+    // }
 
     //@-每5min获取Sina综合新闻json数据
     WIFI_Get_JsonInfo(serverName_sinaNews, 1);
@@ -253,8 +295,9 @@ void setup()
   EPD_ShowArea();
 
   //保证屏幕RST引脚高电平
-  // rtc_gpio_pullup_en(GPIO_NUM_4);
-  // rtc_gpio_pulldown_dis(GPIO_NUM_4);   
+  rtc_gpio_pullup_en(GPIO_NUM_4);
+  delay(2);
+  rtc_gpio_pulldown_dis(GPIO_NUM_4);   
 
   //@-唤醒设置 
   mask|=  1ull << Button2_PIN;
@@ -721,52 +764,6 @@ void loop()
     sht30.get();  //获得温湿度数据
     delay(5);
     ReadRTC();
-
-    Serial.println("----------DrawTimeUpdata-----------");
-    epd_drv_dx.EPD4INC_Port_Reinit();      //SPI初始化
-    epd_drv_dx.EPD4INC_HVEN();
-    delay(2); 
-    epd_drv_dx.EPD_CLK_EX();               //其中时钟
-    epd_drv_dx.s1d135xx_set_epd_power(1);
-    delay(2);
-
-
-    //@-局部刷新
-    user_area_dx.top = 180;
-    user_area_dx.left = 35;
-    user_area_dx.width = 200;
-    user_area_dx.height = 50;
-
-    //@-全部刷新
-    // user_area_dx.top = 0;
-    // user_area_dx.left = 0;
-    // user_area_dx.width = 200;
-    // user_area_dx.height = 400;
-
-    epd_drv_dx.EPD_SetFount(FONT16);
-    sprintf(buff_dx,"温度:%0.1f  湿度:%0.1f", sht30.cTemp, sht30.humidity);
-    // if(wifi_connect_flag == 1)
-    // sprintf(buff_dx,"WIFI连接成功 =%d",good);
-    // else if(wifi_connect_flag != 1)
-    // sprintf(buff_dx,"WIFI没有连接 =%d",good);
-    epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    
-
-
-    sprintf(buff_dx,"时间:%2d:%2d:%2d V:%0.1f", dx_timeStruct.hours, dx_timeStruct.minutes, dx_timeStruct.seconds, BAT_V);
-    epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
-
-
-    // epd_drv.DrawTime(10,30, timeStruct.hours, timeStruct.minutes, FONT48_NUM, 1);
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
-
-    //   epd_drv_dx.EPD_UpdateUser(1, UPDATE_FULL, NULL);
-
-    
-    // Serial.println("\n Epd UPDATE_PARTIAL_AREA updat  Over");
-    delay(300);
-    epd_drv_dx.EPD4INC_HVDISEN();
-    epd_drv_dx.s1d135xx_set_power_state(PL_EPDC_SLEEP);
-    epd_drv_dx.EPD_CLK_STOP();
   }
   
   delay(10);
