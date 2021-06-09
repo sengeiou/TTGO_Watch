@@ -305,6 +305,8 @@ class EPD4INC {
     void DrawUTF(int16_t x, int16_t y, String code, unsigned char isinv);
     void DrawUTF(int16_t x, int16_t y, unsigned char *code, unsigned char isinv);
     void DrawTime(int16_t x, int16_t y, uint16_t hour, uint16_t minute, FONT font_index, unsigned char isinv);
+    void DrawNum_DX(int16_t x, int16_t y, uint16_t num, unsigned char isinv);//@20210609-DX-增加驱动显示
+
 
     ////////////////////////////
     int EPD_Set_Rota(uint8_t turnrota);

@@ -304,7 +304,18 @@ void EPD4INC::DrawTime(int16_t x, int16_t y, uint16_t hour, uint16_t minute, FON
   EPD_SetFount( font_back);     //恢复字体
 }
 
+//@-20210609-DX-增加数字显示
+void EPD4INC::DrawNum_DX(int16_t x, int16_t y, uint16_t num, unsigned char isinv)
+{ 
+  unsigned char buf[4];  //
 
+  buf[0] = 0;
+  buf[1] = num / 10;
+  buf[2] = 0;
+  buf[3] = num % 10;
+
+  DrawUnicodeStr( x, y, 4, buf, isinv);
+}
 
 //private
 int EPD4INC:: epson_epdc_clear_init()
@@ -1362,7 +1373,8 @@ void EPD4INC::Buf_InverSePixel(int16_t x, int16_t y)
 }
 
 //注意X和Y反转 ，适应屏幕需求
-void EPD4INC::Buf_DrawLine(int ystart, int xstart, int yend, int xend)
+// void EPD4INC::Buf_DrawLine(int ystart, int xstart, int yend, int xend)
+void EPD4INC::Buf_DrawLine(int xstart, int ystart, int xend, int yend)
 {
   int dx = abs(xend - xstart); int dy = abs(yend - ystart);
   if (dx >= dy)

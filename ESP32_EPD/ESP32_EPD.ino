@@ -110,7 +110,7 @@ uint64_t mask;
 String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=3";  //@-新浪综合新闻5条
 String serverName_covid = "https://lab.isaaclin.cn/nCoV/api/overall";
 String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
-
+String serverName_huangli = "http://v.juhe.cn/calendar/day?key=9774f2f31c8349cbab916eaf11d849db"; //date=2021-6-9
 
 //@-新闻数据结构体
 typedef struct {
@@ -169,14 +169,31 @@ typedef struct {
 } Juhe_WeatherData_t;
 Juhe_WeatherData_t Juhe_WeatherData;
 
+//@-聚合黄历数据数据
+typedef struct {
+  char lunarYear[32];                //@-农历年信息 
+  char lunar[40];                    //@-农历日信息 
+} Juhe_HuangliData_t;
+Juhe_HuangliData_t Juhe_HuangliData;
+
+
+//@-WEB服务器
 AsyncWebServer server_dx(80);
-// Stores LED state
-String ledState;
+
+
+//@-GUI界面配置---
+//---------------------------------------------
+int Title_Box_X = 120;
+int Title_Box_High = 130;
+
+
+
+
 
 // Replaces placeholder with LED state value
 String processor(const String& var){
   Serial.println(var);
-  ledState = "ON";
+  // ledState = "ON";
   // if(var == "STATE"){
   //   if(digitalRead(ledPin)){
   //     ledState = "ON";
@@ -193,6 +210,8 @@ String processor(const String& var){
 //@-配置
 void setup()
 {
+  char temp_str[256];
+
   //@-初始化串口
   Serial.begin(115200);
 
@@ -267,16 +286,25 @@ void setup()
           // server_dx.begin();
     // }
 
-    //@-每5min获取Sina综合新闻json数据
-    WIFI_Get_JsonInfo(serverName_sinaNews, 1);
+    // //@-每5min获取Sina综合新闻json数据
+    // WIFI_Get_JsonInfo(serverName_sinaNews, 1);
 
-    //@-每1hour获取Covid数据
-    if(dx_timeStruct.minutes == 0)
-    WIFI_Get_JsonInfo(serverName_covid, 2);
+    // //@-每1hour获取Covid数据
+    // if(dx_timeStruct.minutes == 0)
+    // WIFI_Get_JsonInfo(serverName_covid, 2);
 
     //@-工作时间每天2次获取天气数据
-    if(((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))
-    WIFI_Get_JsonInfo(serverName_weather, 3);
+    // if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
+    // WIFI_Get_JsonInfo(serverName_weather, 3);
+
+    //@-获得黄历数据
+    if(((dx_timeStruct.hours == 1)&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
+    {
+      sprintf(temp_str, "&date=%d-%d-%d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
+      String huangliData = serverName_huangli + String(temp_str);
+      // Serial.println(huangliData);
+      // WIFI_Get_JsonInfo(huangliData, 4);
+    }
 
   }
 
@@ -291,8 +319,8 @@ void setup()
   if((wakeup_reason == 0))
   EPD_ShowMain();
 
-  else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
-  EPD_ShowArea();
+  // else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
+  // EPD_ShowArea();
 
   //保证屏幕RST引脚高电平
   rtc_gpio_pullup_en(GPIO_NUM_4);
@@ -315,6 +343,8 @@ void setup()
 void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
 {
   char temp[256];
+  int httpResponseCode;
+  int http_payload_size;
 
   //@-判断WIFI连接状态
   if(WiFi.status()== WL_CONNECTED)
@@ -328,7 +358,7 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
     http.begin(serverName.c_str());
 
     //@-发送HTTP Get
-    int httpResponseCode = http.GET();
+    httpResponseCode = http.GET();
 
     //@-成功连接网站
     if (httpResponseCode>0) 
@@ -343,100 +373,113 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
       // Serial.println(word3);
 
       //@2-打印获得的数据长度
-      Serial.println(payload.length());
+      http_payload_size = payload.length();
+      Serial.print("HTTP payload Size:");
+      Serial.println(http_payload_size);
       // Serial.println(payload);
 
-      //@3-从网站提供的API接口中获取信息，并将数据json化
-      DynamicJsonDocument doc(3072);
-      // StaticJsonDocument<2048> doc;
-
-      //@-序列化JSON数据
-      DeserializationError error = deserializeJson(doc, payload);
-      if (error) 
+      if(http_payload_size > 100)
       {
-        Serial.println("JSON parsing failed!");
-      } 
-      else 
-      {
-        // get the JsonObject in the JsonDocument
-        JsonObject root = doc.as<JsonObject>(); 
+        //@3-从网站提供的API接口中获取信息，并将数据json化
+        DynamicJsonDocument doc(3072);
+        // StaticJsonDocument<2048> doc;
 
-        //@-Sina综合新闻数据
-        if(Data_Mode == 1)
+        //@-序列化JSON数据
+        DeserializationError error = deserializeJson(doc, payload);
+        if (error) 
         {
-          strcpy(temp, root["result"]["data"]["list"][0]["title"]);
-          sprintf(NewsData[0].news_title, "1.%s     ", temp);
-          // Serial.println(strlen(NewsData[0].news_title));
-          strcpy(temp, root["result"]["data"]["list"][1]["title"]);
-          sprintf(NewsData[1].news_title, "2.%s     ", temp);
-          // Serial.println(strlen(NewsData[1].news_title));
-          strcpy(temp, root["result"]["data"]["list"][2]["title"]);
-          sprintf(NewsData[2].news_title, "3.%s     ", temp);
-          // Serial.println(strlen(NewsData[2].news_title));
-        }
-        //@-Covid-19数据
-        else if(Data_Mode == 2)
+          Serial.println("JSON parsing failed!");
+        } 
+        else 
         {
-          Covid19Data.currentConfirmedCount = root["results"][0]["currentConfirmedCount"];
-          Covid19Data.currentConfirmedIncr = root["results"][0]["currentConfirmedIncr"];
-          Covid19Data.confirmedCount = root["results"][0]["confirmedCount"];
-          Covid19Data.confirmedIncr = root["results"][0]["confirmedIncr"];
-          Covid19Data.suspectedCount = root["results"][0]["suspectedCount"];
-          Covid19Data.suspectedIncr = root["results"][0]["suspectedIncr"];
-          Covid19Data.curedCount = root["results"][0]["curedCount"];
-          Covid19Data.curedIncr = root["results"][0]["curedIncr"];
-          Covid19Data.deadCount = root["results"][0]["deadCount"];
-          Covid19Data.deadIncr = root["results"][0]["deadIncr"];
-          Covid19Data.seriousCount = root["results"][0]["seriousCount"];
-          Covid19Data.seriousIncr = root["results"][0]["seriousIncr"];
+          // get the JsonObject in the JsonDocument
+          JsonObject root = doc.as<JsonObject>(); 
 
-          Covid19Data.g_currentConfirmedCount = root["results"][0]["globalStatistics"]["currentConfirmedCount"];
-          Covid19Data.g_currentConfirmedIncr = root["results"][0]["globalStatistics"]["currentConfirmedIncr"];
-          Covid19Data.g_confirmedCount = root["results"][0]["globalStatistics"]["confirmedCount"];
-          Covid19Data.g_confirmedIncr = root["results"][0]["globalStatistics"]["confirmedIncr"];
-          Covid19Data.g_curedCount = root["results"][0]["globalStatistics"]["curedCount"];
-          Covid19Data.g_curedIncr = root["results"][0]["globalStatistics"]["curedIncr"];
-          Covid19Data.g_deadCount = root["results"][0]["globalStatistics"]["deadCount"];
-          Covid19Data.g_deadIncr = root["results"][0]["globalStatistics"]["deadIncr"];
-        }
-        //@-天气数据
-        else if(Data_Mode == 3)
-        {
-          strcpy(temp, root["result"]["city"]);
-          sprintf(Juhe_WeatherData.weather_city, "%s", temp);
-          strcpy(temp, root["result"]["future"][0]["temperature"]);
-          sprintf(Juhe_WeatherData.weather_temperature, "%s", temp);
-          strcpy(temp, root["result"]["future"][0]["weather"]);
-          sprintf(Juhe_WeatherData.weather_info, "%s", temp);
-          strcpy(temp, root["result"]["realtime"]["wid"]);
-          sprintf(Juhe_WeatherData.weather_info_id, "%s", temp);
-          strcpy(temp, root["result"]["realtime"]["humidity"]);
-          sprintf(Juhe_WeatherData.weather_humidity, "%s", temp);
-          strcpy(temp, root["result"]["realtime"]["direct"]);
-          sprintf(Juhe_WeatherData.weather_direct, "%s", temp);
-          strcpy(temp, root["result"]["realtime"]["power"]);
-          sprintf(Juhe_WeatherData.weather_power, "%s", temp);
-          strcpy(temp, root["result"]["realtime"]["aqi"]);
-          sprintf(Juhe_WeatherData.weather_aqi, "%s", temp);
+          //@-Sina综合新闻数据
+          if(Data_Mode == 1)
+          {
+            strcpy(temp, root["result"]["data"]["list"][0]["title"]);
+            sprintf(NewsData[0].news_title, "1.%s     ", temp);
+            // Serial.println(strlen(NewsData[0].news_title));
+            strcpy(temp, root["result"]["data"]["list"][1]["title"]);
+            sprintf(NewsData[1].news_title, "2.%s     ", temp);
+            // Serial.println(strlen(NewsData[1].news_title));
+            strcpy(temp, root["result"]["data"]["list"][2]["title"]);
+            sprintf(NewsData[2].news_title, "3.%s     ", temp);
+            // Serial.println(strlen(NewsData[2].news_title));
+          }
+          //@-Covid-19数据
+          else if(Data_Mode == 2)
+          {
+            Covid19Data.currentConfirmedCount = root["results"][0]["currentConfirmedCount"];
+            Covid19Data.currentConfirmedIncr = root["results"][0]["currentConfirmedIncr"];
+            Covid19Data.confirmedCount = root["results"][0]["confirmedCount"];
+            Covid19Data.confirmedIncr = root["results"][0]["confirmedIncr"];
+            Covid19Data.suspectedCount = root["results"][0]["suspectedCount"];
+            Covid19Data.suspectedIncr = root["results"][0]["suspectedIncr"];
+            Covid19Data.curedCount = root["results"][0]["curedCount"];
+            Covid19Data.curedIncr = root["results"][0]["curedIncr"];
+            Covid19Data.deadCount = root["results"][0]["deadCount"];
+            Covid19Data.deadIncr = root["results"][0]["deadIncr"];
+            Covid19Data.seriousCount = root["results"][0]["seriousCount"];
+            Covid19Data.seriousIncr = root["results"][0]["seriousIncr"];
 
-          strcpy(temp, root["result"]["future"][1]["temperature"]);
-          sprintf(Juhe_WeatherData.weather_futureDay1_temperature, "%s", temp);
-          strcpy(temp, root["result"]["future"][1]["weather"]);
-          sprintf(Juhe_WeatherData.weather_futureDay1_info, "%s", temp);
+            Covid19Data.g_currentConfirmedCount = root["results"][0]["globalStatistics"]["currentConfirmedCount"];
+            Covid19Data.g_currentConfirmedIncr = root["results"][0]["globalStatistics"]["currentConfirmedIncr"];
+            Covid19Data.g_confirmedCount = root["results"][0]["globalStatistics"]["confirmedCount"];
+            Covid19Data.g_confirmedIncr = root["results"][0]["globalStatistics"]["confirmedIncr"];
+            Covid19Data.g_curedCount = root["results"][0]["globalStatistics"]["curedCount"];
+            Covid19Data.g_curedIncr = root["results"][0]["globalStatistics"]["curedIncr"];
+            Covid19Data.g_deadCount = root["results"][0]["globalStatistics"]["deadCount"];
+            Covid19Data.g_deadIncr = root["results"][0]["globalStatistics"]["deadIncr"];
+          }
+          //@-天气数据
+          else if(Data_Mode == 3)
+          {
+            strcpy(temp, root["result"]["city"]);
+            sprintf(Juhe_WeatherData.weather_city, "%s", temp);
+            strcpy(temp, root["result"]["future"][0]["temperature"]);
+            sprintf(Juhe_WeatherData.weather_temperature, "%s", temp);
+            strcpy(temp, root["result"]["future"][0]["weather"]);
+            sprintf(Juhe_WeatherData.weather_info, "%s", temp);
+            strcpy(temp, root["result"]["realtime"]["wid"]);
+            sprintf(Juhe_WeatherData.weather_info_id, "%s", temp);
+            strcpy(temp, root["result"]["realtime"]["humidity"]);
+            sprintf(Juhe_WeatherData.weather_humidity, "%s", temp);
+            strcpy(temp, root["result"]["realtime"]["direct"]);
+            sprintf(Juhe_WeatherData.weather_direct, "%s", temp);
+            strcpy(temp, root["result"]["realtime"]["power"]);
+            sprintf(Juhe_WeatherData.weather_power, "%s", temp);
+            strcpy(temp, root["result"]["realtime"]["aqi"]);
+            sprintf(Juhe_WeatherData.weather_aqi, "%s", temp);
 
-          strcpy(temp, root["result"]["future"][2]["temperature"]);
-          sprintf(Juhe_WeatherData.weather_futureDay2_temperature, "%s", temp);
-          strcpy(temp, root["result"]["future"][2]["weather"]);
-          sprintf(Juhe_WeatherData.weather_futureDay2_info, "%s", temp);
+            strcpy(temp, root["result"]["future"][1]["temperature"]);
+            sprintf(Juhe_WeatherData.weather_futureDay1_temperature, "%s", temp);
+            strcpy(temp, root["result"]["future"][1]["weather"]);
+            sprintf(Juhe_WeatherData.weather_futureDay1_info, "%s", temp);
 
-          strcpy(temp, root["result"]["future"][3]["temperature"]);
-          sprintf(Juhe_WeatherData.weather_futureDay3_temperature, "%s", temp);
-          strcpy(temp, root["result"]["future"][3]["weather"]);
-          sprintf(Juhe_WeatherData.weather_futureDay3_info, "%s", temp);
+            strcpy(temp, root["result"]["future"][2]["temperature"]);
+            sprintf(Juhe_WeatherData.weather_futureDay2_temperature, "%s", temp);
+            strcpy(temp, root["result"]["future"][2]["weather"]);
+            sprintf(Juhe_WeatherData.weather_futureDay2_info, "%s", temp);
 
-          // Serial.print(Juhe_WeatherData.weather_city);
-          // Serial.print(Juhe_WeatherData.weather_futureDay3_info); 
-          // Serial.println(Juhe_WeatherData.weather_futureDay3_temperature);
+            strcpy(temp, root["result"]["future"][3]["temperature"]);
+            sprintf(Juhe_WeatherData.weather_futureDay3_temperature, "%s", temp);
+            strcpy(temp, root["result"]["future"][3]["weather"]);
+            sprintf(Juhe_WeatherData.weather_futureDay3_info, "%s", temp);
+
+            // Serial.print(Juhe_WeatherData.weather_city);
+            // Serial.print(Juhe_WeatherData.weather_futureDay3_info); 
+            // Serial.println(Juhe_WeatherData.weather_aqi);
+          }
+          //@-黄历信息
+          else if(Data_Mode == 4)
+          {
+            strcpy(temp, root["result"]["data"]["lunarYear"]);
+            sprintf(Juhe_HuangliData.lunarYear, "%s", temp);
+            strcpy(temp, root["result"]["data"]["lunar"]);
+            sprintf(Juhe_HuangliData.lunar, "%s", temp);
+          }
         }
       }
     }
@@ -540,55 +583,120 @@ void EPD_ShowMain()
 
   //通过BUF处理图层
   epd_drv_dx.Buf_Clear();
-  // epd_drv_dx.Buf_DrawLine(140,0,140,240);
-  // epd_drv_dx.Buf_DrawLine(0,140,140,140); 
-  
+  //@-绘制头部区域分割线
+  epd_drv_dx.Buf_DrawLine(0,Title_Box_High,239,Title_Box_High);   //@-横线 
+  epd_drv_dx.Buf_DrawLine(Title_Box_X,0,Title_Box_X,Title_Box_High);   //@-竖线
+
   epd_drv_dx.EPD4INC_HVEN();
   delay(2);
 
+  //@-全部显示缓存更新
   epd_drv_dx.Buf_UpdateFull(1);
 
-
-  //@-测试数据-------------
-  user_area_dx.top = 0;
-  // user_area_dx.left = 100;   
-  user_area_dx.left = 0; 
-  user_area_dx.width = 240;
-  user_area_dx.height = 127;
-
-  // S1D13541_LD_IMG_1BPP  ---->  单色
-  // S1D13541_LD_IMG_2BPP  ---->  4灰
-  // S1D13541_LD_IMG_4BPP  ---->  16灰  -->jpg照片
-  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_EPD_Logo_41W53H,S1D13541_LD_IMG_1BPP,&user_area_dx,1);
-
-  //刷新背景
-  // epd_drv.EPD_Update_Full(12000, S1D13541_LD_IMG_1BPP, gImage_InitPage);
-  //写入ID
-  // sprintf(buff_dx,"世界人民大团结万岁 =%d",good);
-  // epd_drv_dx.EPD_SetFount(FONT16);
-  // epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    //显示设备序列号
-
-  //@-设置显示数据刷新区域
-  user_area_dx.top = 180;
-  user_area_dx.left = 35;
-  user_area_dx.width = 200;
-  user_area_dx.height = 50;
-  
+  //@-显示日期-年-月
   epd_drv_dx.EPD_SetFount(FONT16);
-  sprintf(buff_dx,"温度:%0.1f  湿度:%0.1f", sht30.cTemp, sht30.humidity);
-  epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    
-  sprintf(buff_dx,"时间:%2d:%2d V:%0.1f", dx_timeStruct.hours, dx_timeStruct.minutes, BAT_V);
-  epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
+  sprintf(buff_dx,"%d年 %2d月", dx_dateStruct.year, dx_dateStruct.month);
+  epd_drv_dx.DrawUTF( 15 , 3, buff_dx, 1); 
+  //@-显示日期
+  epd_drv_dx.EPD_SetFount(FONT48_NUM);
+  epd_drv_dx.DrawNum_DX( 20 , 17, dx_dateStruct.date, 1); 
+  //@-显示星期
+  epd_drv_dx.EPD_SetFount(FONT16);
+  switch(dx_dateStruct.weekDay)
+  {
+    case 1: sprintf(buff_dx,"周一"); break;
+    case 2: sprintf(buff_dx,"周二"); break;
+    case 3: sprintf(buff_dx,"周三"); break;
+    case 4: sprintf(buff_dx,"周四"); break;
+    case 5: sprintf(buff_dx,"周五"); break;
+    case 6: sprintf(buff_dx,"周六"); break;
+    case 7: sprintf(buff_dx,"周日"); break;
+    default: break;
+  }
+  epd_drv_dx.DrawUTF( 70, 45, buff_dx, 1); 
+  //@-显示黄历
+  epd_drv_dx.EPD_SetFount(FONT16);
+  // sprintf(buff_dx,"%s", Juhe_HuangliData.lunarYear);
+  sprintf(buff_dx,"辛丑年");
+  epd_drv_dx.DrawUTF( 35 , 65, buff_dx, 1); 
+  // sprintf(buff_dx,"%s", Juhe_HuangliData.lunar);
+  sprintf(buff_dx,"四月二九");
+  epd_drv_dx.DrawUTF( 25 , 81, buff_dx, 1); 
+
+  //@-地点-图标
+  user_area_dx.left = 125;    //x
+  user_area_dx.top = 1;       //y
+  user_area_dx.width = 16;
+  user_area_dx.height = 16;
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_location, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  //@-地点-城市名
+  epd_drv_dx.EPD_SetFount(FONT16);
+  // sprintf(buff_dx,"%s", Juhe_HuangliData.lunarYear);
+  sprintf(buff_dx,"杭州");
+  epd_drv_dx.DrawUTF( 142 , 3, buff_dx, 1); 
+  //@-AQI-图标
+  user_area_dx.left = 200;    //x
+  user_area_dx.top = 1;       //y
+  user_area_dx.width = 16;
+  user_area_dx.height = 16;
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_aqi, S1D13541_LD_IMG_4BPP,&user_area_dx,1);
+  //@-AQI值
+  epd_drv_dx.EPD_SetFount(FONT16);
+  // sprintf(buff_dx,"%s", Juhe_WeatherData.weather_aqi);
+  sprintf(buff_dx,"28");
+  epd_drv_dx.DrawUTF( 218 , 3, buff_dx, 1); 
+
+  //@-显示时间
+  epd_drv_dx.DrawTime(121, 17, dx_timeStruct.hours, dx_timeStruct.minutes, FONT48_NUM, 1);
 
 
-  //@-显示json数据-12font能显示20个字
+
+
+
+
+
+
+
+  // //@-测试数据-------------
+  // user_area_dx.top = 0;
+  // // user_area_dx.left = 100;   
+  // user_area_dx.left = 0; 
+  // user_area_dx.width = 240;
+  // user_area_dx.height = 127;
+
+  // // S1D13541_LD_IMG_1BPP  ---->  单色
+  // // S1D13541_LD_IMG_2BPP  ---->  4灰
+  // // S1D13541_LD_IMG_4BPP  ---->  16灰  -->jpg照片
+  // epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_EPD_Logo_41W53H,S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+
+  // //刷新背景
+  // // epd_drv.EPD_Update_Full(12000, S1D13541_LD_IMG_1BPP, gImage_InitPage);
+  // //写入ID
+  // // sprintf(buff_dx,"世界人民大团结万岁 =%d",good);
+  // // epd_drv_dx.EPD_SetFount(FONT16);
+  // // epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    //显示设备序列号
+
+  // //@-设置显示数据刷新区域
+  // user_area_dx.top = 180;
+  // user_area_dx.left = 35;
+  // user_area_dx.width = 200;
+  // user_area_dx.height = 50;
+  
   // epd_drv_dx.EPD_SetFount(FONT16);
-  // sprintf(buff_dx,"1-%c", Hitokoto.hitokoto);
-  epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
+  // sprintf(buff_dx,"温度:%0.1f  湿度:%0.1f", sht30.cTemp, sht30.humidity);
+  // epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    
+  // sprintf(buff_dx,"时间:%2d:%2d V:%0.1f", dx_timeStruct.hours, dx_timeStruct.minutes, BAT_V);
+  // epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
+
+
+  // //@-显示json数据-12font能显示20个字
+  // // epd_drv_dx.EPD_SetFount(FONT16);
+  // // sprintf(buff_dx,"1-%c", Hitokoto.hitokoto);
+  // epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
+  // // epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
+  // // epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
 
 
   epd_drv_dx.EPD4INC_HVEN();
