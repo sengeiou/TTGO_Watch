@@ -37,6 +37,13 @@
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
 
+//@-GUI界面配置---
+//---------------------------------------------
+#define Area1_Box_X      120
+#define Area1_Box_High   105
+#define Area2_Box_X      60
+#define Area2_Box_High   Area1_Box_High + 50
+
 
 
 
@@ -181,10 +188,8 @@ Juhe_HuangliData_t Juhe_HuangliData;
 AsyncWebServer server_dx(80);
 
 
-//@-GUI界面配置---
-//---------------------------------------------
-int Title_Box_X = 120;
-int Title_Box_High = 130;
+//@-天气id对应图标
+const uint8_t* weather_index_img_id_dx = gImage_weather_00;
 
 
 
@@ -286,24 +291,24 @@ void setup()
           // server_dx.begin();
     // }
 
-    // //@-每5min获取Sina综合新闻json数据
-    // WIFI_Get_JsonInfo(serverName_sinaNews, 1);
+    //@-每5min获取Sina综合新闻json数据
+    WIFI_Get_JsonInfo(serverName_sinaNews, 1);
 
-    // //@-每1hour获取Covid数据
-    // if(dx_timeStruct.minutes == 0)
-    // WIFI_Get_JsonInfo(serverName_covid, 2);
+    //@-每1hour获取Covid数据
+    if(dx_timeStruct.minutes == 0)
+    WIFI_Get_JsonInfo(serverName_covid, 2);
 
     //@-工作时间每天2次获取天气数据
-    // if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
-    // WIFI_Get_JsonInfo(serverName_weather, 3);
+    if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
+    WIFI_Get_JsonInfo(serverName_weather, 3);
 
     //@-获得黄历数据
     if(((dx_timeStruct.hours == 1)&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
     {
       sprintf(temp_str, "&date=%d-%d-%d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
       String huangliData = serverName_huangli + String(temp_str);
-      // Serial.println(huangliData);
-      // WIFI_Get_JsonInfo(huangliData, 4);
+      Serial.println(huangliData);
+      WIFI_Get_JsonInfo(huangliData, 4);
     }
 
   }
@@ -320,7 +325,7 @@ void setup()
   EPD_ShowMain();
 
   // else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
-  // EPD_ShowArea();
+  EPD_ShowArea();
 
   //保证屏幕RST引脚高电平
   rtc_gpio_pullup_en(GPIO_NUM_4);
@@ -438,7 +443,7 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
           {
             strcpy(temp, root["result"]["city"]);
             sprintf(Juhe_WeatherData.weather_city, "%s", temp);
-            strcpy(temp, root["result"]["future"][0]["temperature"]);
+            strcpy(temp, root["result"]["realtime"]["temperature"]);
             sprintf(Juhe_WeatherData.weather_temperature, "%s", temp);
             strcpy(temp, root["result"]["future"][0]["weather"]);
             sprintf(Juhe_WeatherData.weather_info, "%s", temp);
@@ -503,6 +508,8 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
 //@-非全局刷新
 void EPD_ShowArea()
 {
+  int temp_data = 0; 
+
   Serial.println("----------DrawTimeUpdata-----------");
   epd_drv_dx.EPD4INC_Port_Reinit();      //SPI初始化
   epd_drv_dx.EPD4INC_HVEN();
@@ -512,11 +519,52 @@ void EPD_ShowArea()
   delay(2);
 
 
+ //@1---------------------------------------------------------------------------------
+  //@-显示日期-年-月
+  epd_drv_dx.EPD_SetFount(FONT16);
+  sprintf(buff_dx,"%d年 %2d月", dx_dateStruct.year, dx_dateStruct.month);
+  epd_drv_dx.DrawUTF( 15 , 3, buff_dx, 1); 
+  //@-显示日期
+  epd_drv_dx.EPD_SetFount(FONT48_NUM);
+  epd_drv_dx.DrawNum_DX( 20 , 17, dx_dateStruct.date, 1); 
+  //@-显示星期
+  epd_drv_dx.EPD_SetFount(FONT16);
+  switch(dx_dateStruct.weekDay)
+  {
+    case 1: sprintf(buff_dx,"周一"); break;
+    case 2: sprintf(buff_dx,"周二"); break;
+    case 3: sprintf(buff_dx,"周三"); break;
+    case 4: sprintf(buff_dx,"周四"); break;
+    case 5: sprintf(buff_dx,"周五"); break;
+    case 6: sprintf(buff_dx,"周六"); break;
+    case 7: sprintf(buff_dx,"周日"); break;
+    default: break;
+  }
+  epd_drv_dx.DrawUTF( 70, 45, buff_dx, 1); 
+
+  //@-电量-图标
+  user_area_dx.left = 205;    //x
+  user_area_dx.top = 1;       //y
+  user_area_dx.width = 16;
+  user_area_dx.height = 16;
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_battery, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  //@-电量
+  temp_data = ((BAT_V-3.1)/0.012);
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"%2d", temp_data);
+  epd_drv_dx.DrawUTF( 223 , 3, buff_dx, 1); 
+
+  //@-显示时间
+  epd_drv_dx.DrawTime(121, 17, dx_timeStruct.hours, dx_timeStruct.minutes, FONT48_NUM, 1);
+
+  //@2---------------------------------------------------------------------------------
+
+
   //@-局部刷新
-  user_area_dx.top = 180;
-  user_area_dx.left = 0;
+  user_area_dx.left = 0;   //x
+  user_area_dx.top = 0;  //y
   user_area_dx.width = 239;
-  user_area_dx.height = 150;
+  user_area_dx.height = 105;
 
   //@-全部刷新
   // user_area_dx.top = 0;
@@ -524,46 +572,77 @@ void EPD_ShowArea()
   // user_area_dx.width = 200;
   // user_area_dx.height = 400;
 
-  epd_drv_dx.EPD_SetFount(FONT16);
-  sprintf(buff_dx,"温度:%0.1f  湿度:%0.1f", sht30.cTemp, sht30.humidity);
-  // if(wifi_connect_flag == 1)
-  // sprintf(buff_dx,"WIFI连接成功 =%d",good);
-  // else if(wifi_connect_flag != 1)
-  // sprintf(buff_dx,"WIFI没有连接 =%d",good);
-  epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    
 
-  // epd_drv_dx.EPD_SetFount(FONT16_NUM);
-  // sprintf(buff_dx,"%2d:%2d V:%0.2f", dx_timeStruct.hours, dx_timeStruct.minutes, BAT_V);
-  epd_drv_dx.DrawTime(35, 200, dx_timeStruct.hours, dx_timeStruct.minutes, FONT48_NUM, 1);
-  // epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
+  // //@-显示json数据-12font能显示20个字
+  // epd_drv_dx.EPD_SetFount(FONT16);
+  // // sprintf(buff_dx,"1-%c", Hitokoto.hitokoto);
+  // epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
+  // // epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
+  // // epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
 
 
-  //@-显示json数据-12font能显示20个字
-  epd_drv_dx.EPD_SetFount(FONT16);
-  // sprintf(buff_dx,"1-%c", Hitokoto.hitokoto);
-  epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
-
-
-  // epd_drv.DrawTime(10,30, timeStruct.hours, timeStruct.minutes, FONT48_NUM, 1);
   epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
 
   //   epd_drv_dx.EPD_UpdateUser(1, UPDATE_FULL, NULL);
 
-  
-  // Serial.println("\n Epd UPDATE_PARTIAL_AREA updat  Over");
   delay(300);
   epd_drv_dx.EPD4INC_HVDISEN();
   epd_drv_dx.s1d135xx_set_power_state(PL_EPDC_SLEEP);
   epd_drv_dx.EPD_CLK_STOP();
 }
 
+//@-天气id图标
+void weather_info_id_show(int id)
+{
+  switch(id)
+  {
+    case 0: weather_index_img_id_dx = gImage_weather_00; break;
+    case 1: weather_index_img_id_dx = gImage_weather_01; break;
+    case 2: weather_index_img_id_dx = gImage_weather_02; break;
+    case 3: weather_index_img_id_dx = gImage_weather_03; break;
+    case 4: weather_index_img_id_dx = gImage_weather_04; break;
+    case 5: weather_index_img_id_dx = gImage_weather_05; break;
+    case 6: weather_index_img_id_dx = gImage_weather_06; break;
+    case 7: weather_index_img_id_dx = gImage_weather_07; break;
+    case 8: weather_index_img_id_dx = gImage_weather_08; break;
+    case 9: weather_index_img_id_dx = gImage_weather_09; break;
+
+    case 10: weather_index_img_id_dx = gImage_weather_10; break;
+    case 11: weather_index_img_id_dx = gImage_weather_11; break;
+    case 12: weather_index_img_id_dx = gImage_weather_12; break;
+    case 13: weather_index_img_id_dx = gImage_weather_13; break;
+    case 14: weather_index_img_id_dx = gImage_weather_14; break;
+    case 15: weather_index_img_id_dx = gImage_weather_15; break;
+    case 16: weather_index_img_id_dx = gImage_weather_16; break;
+    case 17: weather_index_img_id_dx = gImage_weather_17; break;
+    case 18: weather_index_img_id_dx = gImage_weather_18; break;
+    case 19: weather_index_img_id_dx = gImage_weather_19; break;
+
+    case 20: weather_index_img_id_dx = gImage_weather_20; break;
+    case 21: weather_index_img_id_dx = gImage_weather_21; break;
+    case 22: weather_index_img_id_dx = gImage_weather_22; break;
+    case 23: weather_index_img_id_dx = gImage_weather_23; break;
+    case 24: weather_index_img_id_dx = gImage_weather_24; break;
+    case 25: weather_index_img_id_dx = gImage_weather_25; break;
+    case 26: weather_index_img_id_dx = gImage_weather_26; break;
+    case 27: weather_index_img_id_dx = gImage_weather_27; break;
+    case 28: weather_index_img_id_dx = gImage_weather_28; break;
+    case 29: weather_index_img_id_dx = gImage_weather_29; break;
+
+    case 30: weather_index_img_id_dx = gImage_weather_30; break;
+    case 31: weather_index_img_id_dx = gImage_weather_31; break;
+    case 53: weather_index_img_id_dx = gImage_weather_53; break;
+    default: weather_index_img_id_dx = gImage_weather_00; break;
+  }
+}
+
 //@-全刷新显示
 void EPD_ShowMain()
 {
+  int temp_data = 0;
+
   Serial.println("----------Start_Mian_EPD()-----------");
   
   epd_drv_dx.EPD4INC_Port_init();
@@ -583,9 +662,12 @@ void EPD_ShowMain()
 
   //通过BUF处理图层
   epd_drv_dx.Buf_Clear();
-  //@-绘制头部区域分割线
-  epd_drv_dx.Buf_DrawLine(0,Title_Box_High,239,Title_Box_High);   //@-横线 
-  epd_drv_dx.Buf_DrawLine(Title_Box_X,0,Title_Box_X,Title_Box_High);   //@-竖线
+  //@-区域1分割线
+  epd_drv_dx.Buf_DrawLine(0,Area1_Box_High,239,Area1_Box_High);   //@-横线 
+  epd_drv_dx.Buf_DrawLine(Area1_Box_X ,0,Area1_Box_X ,Area1_Box_High);   //@-竖线
+  //@-区域2分割线
+  epd_drv_dx.Buf_DrawLine(0,Area2_Box_High,239,Area2_Box_High);   //@-横线 
+  epd_drv_dx.Buf_DrawLine(Area2_Box_X ,Area1_Box_High,Area2_Box_X ,Area2_Box_High);   //@-竖线
 
   epd_drv_dx.EPD4INC_HVEN();
   delay(2);
@@ -593,6 +675,8 @@ void EPD_ShowMain()
   //@-全部显示缓存更新
   epd_drv_dx.Buf_UpdateFull(1);
 
+
+  //@1---------------------------------------------------------------------------------
   //@-显示日期-年-月
   epd_drv_dx.EPD_SetFount(FONT16);
   sprintf(buff_dx,"%d年 %2d月", dx_dateStruct.year, dx_dateStruct.month);
@@ -616,11 +700,11 @@ void EPD_ShowMain()
   epd_drv_dx.DrawUTF( 70, 45, buff_dx, 1); 
   //@-显示黄历
   epd_drv_dx.EPD_SetFount(FONT16);
-  // sprintf(buff_dx,"%s", Juhe_HuangliData.lunarYear);
-  sprintf(buff_dx,"辛丑年");
+  sprintf(buff_dx,"%s", Juhe_HuangliData.lunarYear);
+  // sprintf(buff_dx,"辛丑年");
   epd_drv_dx.DrawUTF( 35 , 65, buff_dx, 1); 
-  // sprintf(buff_dx,"%s", Juhe_HuangliData.lunar);
-  sprintf(buff_dx,"四月二九");
+  sprintf(buff_dx,"%s", Juhe_HuangliData.lunar);
+  // sprintf(buff_dx,"四月二九");
   epd_drv_dx.DrawUTF( 25 , 81, buff_dx, 1); 
 
   //@-地点-图标
@@ -631,26 +715,43 @@ void EPD_ShowMain()
   epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_location, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
   //@-地点-城市名
   epd_drv_dx.EPD_SetFount(FONT16);
-  // sprintf(buff_dx,"%s", Juhe_HuangliData.lunarYear);
-  sprintf(buff_dx,"杭州");
+  sprintf(buff_dx,"%s", Juhe_WeatherData.weather_city);
+  // sprintf(buff_dx,"杭州");
   epd_drv_dx.DrawUTF( 142 , 3, buff_dx, 1); 
-  //@-AQI-图标
-  user_area_dx.left = 200;    //x
+  //@-电量-图标
+  user_area_dx.left = 205;    //x
   user_area_dx.top = 1;       //y
   user_area_dx.width = 16;
   user_area_dx.height = 16;
-  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_aqi, S1D13541_LD_IMG_4BPP,&user_area_dx,1);
-  //@-AQI值
-  epd_drv_dx.EPD_SetFount(FONT16);
-  // sprintf(buff_dx,"%s", Juhe_WeatherData.weather_aqi);
-  sprintf(buff_dx,"28");
-  epd_drv_dx.DrawUTF( 218 , 3, buff_dx, 1); 
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_battery, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  //@-电量
+  temp_data = ((BAT_V-3.1)/0.012);
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"%2d", temp_data);
+  epd_drv_dx.DrawUTF( 223 , 3, buff_dx, 1); 
 
   //@-显示时间
   epd_drv_dx.DrawTime(121, 17, dx_timeStruct.hours, dx_timeStruct.minutes, FONT48_NUM, 1);
 
-
-
+  //@-天气概述-最大8个汉字
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"%s", Juhe_WeatherData.weather_info);
+  // sprintf(buff_dx,"大暴雨到特大暴雨");
+  epd_drv_dx.DrawUTF( 154 ,67, buff_dx, 1); 
+  sprintf(buff_dx,"%s℃-%s%s", Juhe_WeatherData.weather_temperature, Juhe_WeatherData.weather_direct, Juhe_WeatherData.weather_power);
+  epd_drv_dx.DrawUTF( 154 , 82, buff_dx, 1); 
+  //@-显示天气图标
+  const uint8_t* p_img;
+  sprintf(buff_dx,"%s", Juhe_WeatherData.weather_info_id);
+  int info_id = String(buff_dx).toInt();
+  weather_info_id_show(info_id);
+  user_area_dx.left = 121;    //x
+  user_area_dx.top = 65;       //y
+  user_area_dx.width = 32;
+  user_area_dx.height = 32;
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, weather_index_img_id_dx, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  
+  //@2---------------------------------------------------------------------------------
 
 
 
