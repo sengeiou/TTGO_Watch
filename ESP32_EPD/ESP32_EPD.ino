@@ -39,10 +39,12 @@
 
 //@-GUI界面配置---
 //---------------------------------------------
-#define Area1_Box_X      120
+#define Area1_Box_X      115
 #define Area1_Box_High   105
-#define Area2_Box_X      60
+#define Area2_Box_X      45
 #define Area2_Box_High   Area1_Box_High + 50
+#define Area3_Box_X      123
+#define Area3_Box_High   Area2_Box_High + 50
 
 
 
@@ -115,7 +117,8 @@ uint64_t mask;
 // String serverName = "http://v.juhe.cn/toutiao/index? &type=top &page=1 &page_size=2 &key=71afabc411187aef339731d24ac43b97";
 
 String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=3";  //@-新浪综合新闻5条
-String serverName_covid = "https://lab.isaaclin.cn/nCoV/api/overall";
+String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
+String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
 String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
 String serverName_huangli = "http://v.juhe.cn/calendar/day?key=9774f2f31c8349cbab916eaf11d849db"; //date=2021-6-9
 
@@ -130,7 +133,7 @@ NewsData_t NewsData[3];
 typedef struct {
   int currentConfirmedCount;  //@-国内当前确诊数
   int currentConfirmedIncr;   //@-国内当前新增确诊数
-  long confirmedCount;        //@-国内总确诊数
+  long confirmedCount;        //@-国内累计确诊数
   int  confirmedIncr;         //@-国内新增总确诊数
   int suspectedCount;         //@-国内疑似数
   int suspectedIncr;          //@-国内新增疑似数
@@ -143,7 +146,7 @@ typedef struct {
 
   long g_currentConfirmedCount; //@-全球当前确诊数
   long g_currentConfirmedIncr;  //@-全球当前新增确诊数
-  long g_confirmedCount;        //@-全球总确诊数
+  long g_confirmedCount;        //@-全球累计确诊数
   long g_confirmedIncr;         //@-全球新增总确诊数
   long g_curedCount;            //@-全球治愈数
   long g_curedIncr;             //@-全球新增治愈术
@@ -165,13 +168,16 @@ typedef struct {
   char weather_aqi[32];                 //@-当前AQI指数
 
   char weather_futureDay1_temperature[72];        //@-未来1天天气温度范围
-  char weather_futureDay1_info[48];               //@-未来1天天气情况
+  char weather_futureDay1_info[64];               //@-未来1天天气情况
+  char weather_futureDay1_date[64];               //@-未来1天日期
 
   char weather_futureDay2_temperature[72];        //@-未来2天天气温度范围
-  char weather_futureDay2_info[48];               //@-未来2天天气情况
+  char weather_futureDay2_info[64];               //@-未来2天天气情况
+  char weather_futureDay2_date[64];               //@-未来2天日期
 
   char weather_futureDay3_temperature[72];        //@-未来3天天气温度范围
-  char weather_futureDay3_info[48];               //@-未来3天天气情况
+  char weather_futureDay3_info[64];               //@-未来3天天气情况
+  char weather_futureDay3_date[64];               //@-未来3天日期
   
 } Juhe_WeatherData_t;
 Juhe_WeatherData_t Juhe_WeatherData;
@@ -295,8 +301,8 @@ void setup()
     WIFI_Get_JsonInfo(serverName_sinaNews, 1);
 
     //@-每1hour获取Covid数据
-    if(dx_timeStruct.minutes == 0)
-    WIFI_Get_JsonInfo(serverName_covid, 2);
+    if((dx_timeStruct.minutes == 0) || (bootCount == 1))
+    WIFI_Get_JsonInfo(serverName_covid2, 2);
 
     //@-工作时间每天2次获取天气数据
     if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
@@ -307,7 +313,6 @@ void setup()
     {
       sprintf(temp_str, "&date=%d-%d-%d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
       String huangliData = serverName_huangli + String(temp_str);
-      Serial.println(huangliData);
       WIFI_Get_JsonInfo(huangliData, 4);
     }
 
@@ -356,8 +361,6 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
   {
     //@-创建HTTP链接
     HTTPClient http;
-
-    // String serverPath = serverName + "?temperature=24.37";
 
     //@-获得指定网站的JSON数据
     http.begin(serverName.c_str());
@@ -462,16 +465,22 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
             sprintf(Juhe_WeatherData.weather_futureDay1_temperature, "%s", temp);
             strcpy(temp, root["result"]["future"][1]["weather"]);
             sprintf(Juhe_WeatherData.weather_futureDay1_info, "%s", temp);
+            strcpy(temp, root["result"]["future"][1]["date"]);
+            sprintf(Juhe_WeatherData.weather_futureDay1_date, "%s", temp);
 
             strcpy(temp, root["result"]["future"][2]["temperature"]);
             sprintf(Juhe_WeatherData.weather_futureDay2_temperature, "%s", temp);
             strcpy(temp, root["result"]["future"][2]["weather"]);
             sprintf(Juhe_WeatherData.weather_futureDay2_info, "%s", temp);
+            strcpy(temp, root["result"]["future"][2]["date"]);
+            sprintf(Juhe_WeatherData.weather_futureDay2_date, "%s", temp);
 
             strcpy(temp, root["result"]["future"][3]["temperature"]);
             sprintf(Juhe_WeatherData.weather_futureDay3_temperature, "%s", temp);
             strcpy(temp, root["result"]["future"][3]["weather"]);
             sprintf(Juhe_WeatherData.weather_futureDay3_info, "%s", temp);
+            strcpy(temp, root["result"]["future"][3]["date"]);
+            sprintf(Juhe_WeatherData.weather_futureDay3_date, "%s", temp);
 
             // Serial.print(Juhe_WeatherData.weather_city);
             // Serial.print(Juhe_WeatherData.weather_futureDay3_info); 
@@ -642,6 +651,12 @@ void weather_info_id_show(int id)
 void EPD_ShowMain()
 {
   int temp_data = 0;
+  String temp_str;
+  char temp_char[32];
+  char temp_char1[32];
+  int next_day1 = 0;
+  int next_day2 = 0;
+  int next_day3 = 0;
 
   Serial.println("----------Start_Mian_EPD()-----------");
   
@@ -668,6 +683,9 @@ void EPD_ShowMain()
   //@-区域2分割线
   epd_drv_dx.Buf_DrawLine(0,Area2_Box_High,239,Area2_Box_High);   //@-横线 
   epd_drv_dx.Buf_DrawLine(Area2_Box_X ,Area1_Box_High,Area2_Box_X ,Area2_Box_High);   //@-竖线
+  //@-区域3分割线
+  epd_drv_dx.Buf_DrawLine(0,Area3_Box_High,239,Area3_Box_High);   //@-横线 
+  epd_drv_dx.Buf_DrawLine(Area3_Box_X ,Area2_Box_High,Area3_Box_X ,Area3_Box_High);   //@-竖线
 
   epd_drv_dx.EPD4INC_HVEN();
   delay(2);
@@ -752,10 +770,110 @@ void EPD_ShowMain()
   epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, weather_index_img_id_dx, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
   
   //@2---------------------------------------------------------------------------------
+  //@-显示api图标
+  user_area_dx.left = 5;        //x
+  user_area_dx.top = 110;       //y
+  user_area_dx.width = 16;
+  user_area_dx.height = 16;
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_aqi, S1D13541_LD_IMG_4BPP,&user_area_dx,1);
+  //@-显示api数值
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"%s", Juhe_WeatherData.weather_aqi);
+  epd_drv_dx.DrawUTF( 23 ,113, buff_dx, 1); 
+  //@-显示湿度图标
+  user_area_dx.left = 5;        //x
+  user_area_dx.top = 130;       //y
+  user_area_dx.width = 16;
+  user_area_dx.height = 16;
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_shidu, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  //@-显示湿度数值
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"%s", Juhe_WeatherData.weather_humidity);
+  epd_drv_dx.DrawUTF( 23 ,133, buff_dx, 1); 
 
+  //@-显示后三天天气数据
+  next_day1 = dx_dateStruct.weekDay + 1;
+  next_day2 = dx_dateStruct.weekDay + 2;
+  next_day3 = dx_dateStruct.weekDay + 3;
+  if(next_day1 > 7) 
+  next_day1 = next_day1 - 7;
+  if(next_day2 > 7) 
+  next_day2 = next_day2 - 7;
+  if(next_day3 > 7) 
+  next_day3 = next_day3 - 7;
 
+  epd_drv_dx.EPD_SetFount(FONT12);
+  switch(next_day1)
+  {
+    case 1: sprintf(temp_char,"周一"); break;
+    case 2: sprintf(temp_char,"周二"); break;
+    case 3: sprintf(temp_char,"周三"); break;
+    case 4: sprintf(temp_char,"周四"); break;
+    case 5: sprintf(temp_char,"周五"); break;
+    case 6: sprintf(temp_char,"周六"); break;
+    case 7: sprintf(temp_char,"周日"); break;
+    default: break;
+  }
+  sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay1_date);
+  temp_str = String(temp_char1).substring(5);
+  sprintf(buff_dx,"%s%s %s%s", temp_str.c_str(), temp_char, Juhe_WeatherData.weather_futureDay1_info, Juhe_WeatherData.weather_futureDay1_temperature);
+  epd_drv_dx.DrawUTF( 48 ,110, buff_dx, 1); 
 
+  switch(next_day2)
+  {
+    case 1: sprintf(temp_char,"周一"); break;
+    case 2: sprintf(temp_char,"周二"); break;
+    case 3: sprintf(temp_char,"周三"); break;
+    case 4: sprintf(temp_char,"周四"); break;
+    case 5: sprintf(temp_char,"周五"); break;
+    case 6: sprintf(temp_char,"周六"); break;
+    case 7: sprintf(temp_char,"周日"); break;
+    default: break;
+  }
+  sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay2_date);
+  temp_str = String(temp_char1).substring(5);
+  sprintf(buff_dx,"%s%s %s%s", temp_str.c_str(), temp_char, Juhe_WeatherData.weather_futureDay2_info, Juhe_WeatherData.weather_futureDay2_temperature);
+  epd_drv_dx.DrawUTF( 48 ,125, buff_dx, 1); 
 
+  switch(next_day3)
+  {
+    case 1: sprintf(temp_char,"周一"); break;
+    case 2: sprintf(temp_char,"周二"); break;
+    case 3: sprintf(temp_char,"周三"); break;
+    case 4: sprintf(temp_char,"周四"); break;
+    case 5: sprintf(temp_char,"周五"); break;
+    case 6: sprintf(temp_char,"周六"); break;
+    case 7: sprintf(temp_char,"周日"); break;
+    default: break;
+  }
+  sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay3_date);
+  temp_str = String(temp_char1).substring(5);
+  sprintf(buff_dx,"%s%s %s%s", temp_str.c_str(), temp_char, Juhe_WeatherData.weather_futureDay3_info, Juhe_WeatherData.weather_futureDay3_temperature);
+  epd_drv_dx.DrawUTF( 48 ,140, buff_dx, 1); 
+
+  //@3---------------------------------------------------------------------------------
+  //@-显示国内疫情-现存确诊人数
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"较昨日%d", Covid19Data.currentConfirmedIncr);
+  epd_drv_dx.DrawUTF( 5 ,160, buff_dx, 1); 
+  sprintf(buff_dx,"%d", Covid19Data.currentConfirmedCount);
+  epd_drv_dx.DrawUTF( 8 ,175, buff_dx, 1); 
+  sprintf(buff_dx,"现存确诊");
+  epd_drv_dx.DrawUTF( 5 ,190, buff_dx, 1); 
+  //@-显示国内疫情-累计确诊人数
+  sprintf(buff_dx,"较昨日%d", Covid19Data.confirmedIncr);
+  epd_drv_dx.DrawUTF( 62 ,160, buff_dx, 1); 
+  sprintf(buff_dx,"%d", Covid19Data.confirmedCount);
+  epd_drv_dx.DrawUTF( 65 ,175, buff_dx, 1); 
+  sprintf(buff_dx,"累计确诊");
+  epd_drv_dx.DrawUTF( 62 ,190, buff_dx, 1); 
+
+  //@-显示全球疫情-现存确诊人数
+  sprintf(buff_dx,"现存确诊%d", Covid19Data.g_currentConfirmedCount);
+  epd_drv_dx.DrawUTF( 128 ,160, buff_dx, 1); 
+  //@-显示全球疫情-累计确诊人数
+  sprintf(buff_dx,"累计确诊%d", Covid19Data.g_confirmedCount);
+  epd_drv_dx.DrawUTF( 128 ,190, buff_dx, 1); 
 
 
   // //@-测试数据-------------
