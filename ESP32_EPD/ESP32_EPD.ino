@@ -43,8 +43,10 @@
 #define Area1_Box_High   105
 #define Area2_Box_X      45
 #define Area2_Box_High   Area1_Box_High + 50
-#define Area3_Box_X      123
+#define Area3_Box_X      120
 #define Area3_Box_High   Area2_Box_High + 50
+#define Area4_Box_X      120
+#define Area4_Box_High   Area3_Box_High + 35
 
 
 
@@ -118,9 +120,12 @@ uint64_t mask;
 
 String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=3";  //@-新浪综合新闻5条
 String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
-String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
+// String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
 String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
 String serverName_huangli = "http://v.juhe.cn/calendar/day?key=9774f2f31c8349cbab916eaf11d849db"; //date=2021-6-9
+String serverName_stock_sh = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type=0&key=4dd25417ff9fb7cbab4791e60899d9a8"; //上证指数
+String serverName_stock_sz = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type=1&key=4dd25417ff9fb7cbab4791e60899d9a8"; //深圳指数
+
 
 //@-新闻数据结构体
 typedef struct {
@@ -182,13 +187,21 @@ typedef struct {
 } Juhe_WeatherData_t;
 Juhe_WeatherData_t Juhe_WeatherData;
 
-//@-聚合黄历数据数据
+//@-聚合黄历数据
 typedef struct {
   char lunarYear[32];                //@-农历年信息 
   char lunar[40];                    //@-农历日信息 
 } Juhe_HuangliData_t;
 Juhe_HuangliData_t Juhe_HuangliData;
 
+//@-聚合股票数据
+typedef struct {
+  char  sh_stock_value[72];                //@-上证指数
+  char  sh_stock_per[40];                  //@-上证指数涨跌百分比
+  char  sz_stock_value[72];                //@-深圳指数
+  char  sz_stock_per[40];                  //@-上证指数涨跌百分比
+} Juhe_StockData_t;
+Juhe_StockData_t Juhe_StockData;
 
 //@-WEB服务器
 AsyncWebServer server_dx(80);
@@ -302,7 +315,7 @@ void setup()
 
     //@-每1hour获取Covid数据
     if((dx_timeStruct.minutes == 0) || (bootCount == 1))
-    WIFI_Get_JsonInfo(serverName_covid2, 2);
+    WIFI_Get_JsonInfo(serverName_covid1, 2);
 
     //@-工作时间每天2次获取天气数据
     if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
@@ -314,6 +327,18 @@ void setup()
       sprintf(temp_str, "&date=%d-%d-%d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
       String huangliData = serverName_huangli + String(temp_str);
       WIFI_Get_JsonInfo(huangliData, 4);
+    }
+
+    //@-获得上证指数
+    if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
+    {
+      WIFI_Get_JsonInfo(serverName_stock_sh, 5);
+    }
+
+    //@-获得深圳指数
+    if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
+    {
+      WIFI_Get_JsonInfo(serverName_stock_sz, 6);
     }
 
   }
@@ -328,8 +353,7 @@ void setup()
   //@-显示内容
   if((wakeup_reason == 0))
   EPD_ShowMain();
-
-  // else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
+  else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
   EPD_ShowArea();
 
   //保证屏幕RST引脚高电平
@@ -493,6 +517,22 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
             sprintf(Juhe_HuangliData.lunarYear, "%s", temp);
             strcpy(temp, root["result"]["data"]["lunar"]);
             sprintf(Juhe_HuangliData.lunar, "%s", temp);
+          }
+          //@-上证指数
+          else if(Data_Mode == 5)
+          {
+            strcpy(temp, root["result"]["nowpri"]);
+            sprintf(Juhe_StockData.sh_stock_value, "%s", temp);
+            strcpy(temp, root["result"]["increPer"]);
+            sprintf(Juhe_StockData.sh_stock_per, "%s", temp);
+          }
+          //@-深圳指数
+          else if(Data_Mode == 6)
+          {
+            strcpy(temp, root["result"]["nowpri"]);
+            sprintf(Juhe_StockData.sz_stock_value, "%s", temp);
+            strcpy(temp, root["result"]["increPer"]);
+            sprintf(Juhe_StockData.sz_stock_per, "%s", temp);
           }
         }
       }
@@ -686,6 +726,9 @@ void EPD_ShowMain()
   //@-区域3分割线
   epd_drv_dx.Buf_DrawLine(0,Area3_Box_High,239,Area3_Box_High);   //@-横线 
   epd_drv_dx.Buf_DrawLine(Area3_Box_X ,Area2_Box_High,Area3_Box_X ,Area3_Box_High);   //@-竖线
+  //@-区域4分割线
+  epd_drv_dx.Buf_DrawLine(0,Area4_Box_High,239,Area4_Box_High);   //@-横线 
+  epd_drv_dx.Buf_DrawLine(Area4_Box_X ,Area3_Box_High,Area4_Box_X ,Area4_Box_High);   //@-竖线
 
   epd_drv_dx.EPD4INC_HVEN();
   delay(2);
@@ -875,6 +918,28 @@ void EPD_ShowMain()
   sprintf(buff_dx,"累计确诊%d", Covid19Data.g_confirmedCount);
   epd_drv_dx.DrawUTF( 128 ,190, buff_dx, 1); 
 
+  //@4---------------------------------------------------------------------------------
+  //@-显示上证指数
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"上证指数%s", Juhe_StockData.sh_stock_value);
+  epd_drv_dx.DrawUTF( 5 ,210, buff_dx, 1); 
+  String stock_str = String(Juhe_StockData.sh_stock_per);
+  float stock_float = stock_str.toFloat();
+  if(stock_float < 0)
+  sprintf(buff_dx,"跌 %s%%", Juhe_StockData.sh_stock_per);
+  else
+  sprintf(buff_dx,"涨 %s%%", Juhe_StockData.sh_stock_per);
+  epd_drv_dx.DrawUTF( 5 ,225, buff_dx, 1); 
+  //@-显示深圳指数
+  sprintf(buff_dx,"深圳指数%s", Juhe_StockData.sz_stock_value);
+  epd_drv_dx.DrawUTF( 125 ,210, buff_dx, 1); 
+  stock_str = String(Juhe_StockData.sz_stock_per);
+  stock_float = stock_str.toFloat();
+  if(stock_float < 0)
+  sprintf(buff_dx,"跌 %s%%", Juhe_StockData.sz_stock_per);
+  else
+  sprintf(buff_dx,"涨 %s%%", Juhe_StockData.sz_stock_per);
+  epd_drv_dx.DrawUTF( 125 ,225, buff_dx, 1); 
 
   // //@-测试数据-------------
   // user_area_dx.top = 0;
