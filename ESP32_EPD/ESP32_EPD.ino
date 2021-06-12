@@ -66,8 +66,16 @@ struct pl_area user_area_dx;
 // uint64_t chipid; 
 
 //@-wifi连接信息
-const char* ssid     = "wuyiyi";
-const char* password = "dingxiao";
+const String ssid1     = "wuyiyi";
+const String password1 = "dingxiao";
+const String ssid2 = "DX_JS";  
+const String password2 = "dingxiao";
+
+// const char *ssid3 = "DX_JS";  
+// const char *password3 = "dingxiao";
+
+String ssid;
+String password;
 int wifi_connect_tick = 0;
 int wifi_connect_flag = 0;  //@-0:没有连接  1:连接成功  2:连接超时
 
@@ -102,6 +110,7 @@ esp_sleep_wakeup_cause_t wakeup_reason;
 
 //@-RTC数据存储区
 RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR int Dev_Wifi_Index = 1;
 
 //@-管脚mask
 uint64_t mask;
@@ -118,7 +127,7 @@ uint64_t mask;
 // String serverName = "http://sentence.iciba.com/index.php?c=dailysentence&m=getdetail&title=2021-05-31";  //@-每日一句
 // String serverName = "http://v.juhe.cn/toutiao/index? &type=top &page=1 &page_size=2 &key=71afabc411187aef339731d24ac43b97";
 
-String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=3";  //@-新浪综合新闻5条
+String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=8";  //@-新浪综合新闻5条
 String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
 // String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
 String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
@@ -132,7 +141,7 @@ typedef struct {
   char news_title[256];
   // char news_author_name[64];
 } NewsData_t;
-NewsData_t NewsData[3];
+NewsData_t NewsData[8];
 
 //@-Covid-19数据结构体
 typedef struct {
@@ -238,6 +247,18 @@ void setup()
 
   //@-初始化串口
   Serial.begin(115200);
+
+  //@-选择wifi
+  if(Dev_Wifi_Index == 0)
+  {
+    ssid = ssid1;
+    password = password1;
+  }
+  else if(Dev_Wifi_Index == 1)
+  {
+    ssid = ssid2;
+    password = password2;
+  }
 
   //Increment boot number and print it every reboot
   ++bootCount;
@@ -351,7 +372,7 @@ void setup()
   ReadRTC();
   
   //@-显示内容
-  if((wakeup_reason == 0))
+  if((wakeup_reason == 0)||(bootCount == 1))
   EPD_ShowMain();
   else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
   EPD_ShowArea();
@@ -413,7 +434,7 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
       if(http_payload_size > 100)
       {
         //@3-从网站提供的API接口中获取信息，并将数据json化
-        DynamicJsonDocument doc(3072);
+        DynamicJsonDocument doc(5120);  //3072
         // StaticJsonDocument<2048> doc;
 
         //@-序列化JSON数据
@@ -439,6 +460,16 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
             strcpy(temp, root["result"]["data"]["list"][2]["title"]);
             sprintf(NewsData[2].news_title, "3.%s     ", temp);
             // Serial.println(strlen(NewsData[2].news_title));
+            strcpy(temp, root["result"]["data"]["list"][3]["title"]);
+            sprintf(NewsData[3].news_title, "4.%s     ", temp);
+            strcpy(temp, root["result"]["data"]["list"][4]["title"]);
+            sprintf(NewsData[4].news_title, "5.%s     ", temp);
+            strcpy(temp, root["result"]["data"]["list"][5]["title"]);
+            sprintf(NewsData[5].news_title, "6.%s     ", temp);
+            strcpy(temp, root["result"]["data"]["list"][6]["title"]);
+            sprintf(NewsData[6].news_title, "7.%s     ", temp);
+            strcpy(temp, root["result"]["data"]["list"][7]["title"]);
+            sprintf(NewsData[7].news_title, "8.%s     ", temp);
           }
           //@-Covid-19数据
           else if(Data_Mode == 2)
@@ -941,6 +972,20 @@ void EPD_ShowMain()
   sprintf(buff_dx,"涨 %s%%", Juhe_StockData.sz_stock_per);
   epd_drv_dx.DrawUTF( 125 ,225, buff_dx, 1); 
 
+  //@5---------------------------------------------------------------------------------
+  epd_drv_dx.EPD_SetFount(FONT16);
+  epd_drv_dx.DrawUTF( 0 , 245, NewsData[0].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+17, NewsData[1].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+34, NewsData[2].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+51, NewsData[3].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+68, NewsData[4].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+85, NewsData[5].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+102, NewsData[6].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+119, NewsData[7].news_title, 1); 
+
+
+
+
   // //@-测试数据-------------
   // user_area_dx.top = 0;
   // // user_area_dx.left = 100;   
@@ -953,34 +998,12 @@ void EPD_ShowMain()
   // // S1D13541_LD_IMG_4BPP  ---->  16灰  -->jpg照片
   // epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_EPD_Logo_41W53H,S1D13541_LD_IMG_1BPP,&user_area_dx,1);
 
-  // //刷新背景
-  // // epd_drv.EPD_Update_Full(12000, S1D13541_LD_IMG_1BPP, gImage_InitPage);
-  // //写入ID
-  // // sprintf(buff_dx,"世界人民大团结万岁 =%d",good);
-  // // epd_drv_dx.EPD_SetFount(FONT16);
-  // // epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    //显示设备序列号
-
-  // //@-设置显示数据刷新区域
-  // user_area_dx.top = 180;
-  // user_area_dx.left = 35;
-  // user_area_dx.width = 200;
-  // user_area_dx.height = 50;
   
   // epd_drv_dx.EPD_SetFount(FONT16);
   // sprintf(buff_dx,"温度:%0.1f  湿度:%0.1f", sht30.cTemp, sht30.humidity);
   // epd_drv_dx.DrawUTF( 35 , 180, buff_dx, 1);    
   // sprintf(buff_dx,"时间:%2d:%2d V:%0.1f", dx_timeStruct.hours, dx_timeStruct.minutes, BAT_V);
   // epd_drv_dx.DrawUTF( 35 , 200, buff_dx, 1);  
-
-
-  // //@-显示json数据-12font能显示20个字
-  // // epd_drv_dx.EPD_SetFount(FONT16);
-  // // sprintf(buff_dx,"1-%c", Hitokoto.hitokoto);
-  // epd_drv_dx.DrawUTF( 0 , 260, NewsData[0].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 260+17, NewsData[1].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 260+34, NewsData[2].news_title, 1); 
-  // // epd_drv_dx.DrawUTF( 0 , 260+51, NewsData[3].news_title, 1); 
-  // // epd_drv_dx.DrawUTF( 0 , 260+68, NewsData[4].news_title, 1); 
 
 
   epd_drv_dx.EPD4INC_HVEN();
@@ -998,10 +1021,12 @@ void EPD_ShowMain()
 //@-连接wifi
 void WIFI_Connect()
 {
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
   // Connect to Wi-Fi
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid.c_str(), password.c_str());
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -1010,6 +1035,15 @@ void WIFI_Connect()
     {
       wifi_connect_tick = 0;
       wifi_connect_flag = 2;  //wifi连接超时
+
+      //@-切换wifi信号源
+      if(Dev_Wifi_Index == 0)
+      Dev_Wifi_Index = 1;
+      else if(Dev_Wifi_Index == 1)
+      Dev_Wifi_Index = 0;
+
+      bootCount = 0;
+
       break;
     }
   }
