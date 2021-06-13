@@ -611,13 +611,13 @@ void EPD_ShowArea()
   epd_drv_dx.EPD_SetFount(FONT16);
   switch(dx_dateStruct.weekDay)
   {
+    case 0: sprintf(buff_dx,"周日"); break;
     case 1: sprintf(buff_dx,"周一"); break;
     case 2: sprintf(buff_dx,"周二"); break;
     case 3: sprintf(buff_dx,"周三"); break;
     case 4: sprintf(buff_dx,"周四"); break;
     case 5: sprintf(buff_dx,"周五"); break;
     case 6: sprintf(buff_dx,"周六"); break;
-    case 7: sprintf(buff_dx,"周日"); break;
     default: break;
   }
   epd_drv_dx.DrawUTF( 70, 45, buff_dx, 1); 
@@ -780,13 +780,13 @@ void EPD_ShowMain()
   epd_drv_dx.EPD_SetFount(FONT16);
   switch(dx_dateStruct.weekDay)
   {
+    case 0: sprintf(buff_dx,"周日"); break;
     case 1: sprintf(buff_dx,"周一"); break;
     case 2: sprintf(buff_dx,"周二"); break;
     case 3: sprintf(buff_dx,"周三"); break;
     case 4: sprintf(buff_dx,"周四"); break;
     case 5: sprintf(buff_dx,"周五"); break;
     case 6: sprintf(buff_dx,"周六"); break;
-    case 7: sprintf(buff_dx,"周日"); break;
     default: break;
   }
   epd_drv_dx.DrawUTF( 70, 45, buff_dx, 1); 
@@ -869,23 +869,23 @@ void EPD_ShowMain()
   next_day1 = dx_dateStruct.weekDay + 1;
   next_day2 = dx_dateStruct.weekDay + 2;
   next_day3 = dx_dateStruct.weekDay + 3;
-  if(next_day1 > 7) 
+  if(next_day1 > 6) 
   next_day1 = next_day1 - 7;
-  if(next_day2 > 7) 
+  if(next_day2 > 6) 
   next_day2 = next_day2 - 7;
-  if(next_day3 > 7) 
+  if(next_day3 > 6) 
   next_day3 = next_day3 - 7;
 
   epd_drv_dx.EPD_SetFount(FONT12);
   switch(next_day1)
   {
+    case 0: sprintf(temp_char,"周日"); break;
     case 1: sprintf(temp_char,"周一"); break;
     case 2: sprintf(temp_char,"周二"); break;
     case 3: sprintf(temp_char,"周三"); break;
     case 4: sprintf(temp_char,"周四"); break;
     case 5: sprintf(temp_char,"周五"); break;
     case 6: sprintf(temp_char,"周六"); break;
-    case 7: sprintf(temp_char,"周日"); break;
     default: break;
   }
   sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay1_date);
@@ -895,13 +895,13 @@ void EPD_ShowMain()
 
   switch(next_day2)
   {
+    case 0: sprintf(temp_char,"周日"); break;
     case 1: sprintf(temp_char,"周一"); break;
     case 2: sprintf(temp_char,"周二"); break;
     case 3: sprintf(temp_char,"周三"); break;
     case 4: sprintf(temp_char,"周四"); break;
     case 5: sprintf(temp_char,"周五"); break;
     case 6: sprintf(temp_char,"周六"); break;
-    case 7: sprintf(temp_char,"周日"); break;
     default: break;
   }
   sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay2_date);
@@ -911,13 +911,13 @@ void EPD_ShowMain()
 
   switch(next_day3)
   {
+    case 0: sprintf(temp_char,"周日"); break;
     case 1: sprintf(temp_char,"周一"); break;
     case 2: sprintf(temp_char,"周二"); break;
     case 3: sprintf(temp_char,"周三"); break;
     case 4: sprintf(temp_char,"周四"); break;
     case 5: sprintf(temp_char,"周五"); break;
     case 6: sprintf(temp_char,"周六"); break;
-    case 7: sprintf(temp_char,"周日"); break;
     default: break;
   }
   sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay3_date);
