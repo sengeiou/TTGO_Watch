@@ -127,7 +127,8 @@ uint64_t mask;
 // String serverName = "http://sentence.iciba.com/index.php?c=dailysentence&m=getdetail&title=2021-05-31";  //@-每日一句
 // String serverName = "http://v.juhe.cn/toutiao/index? &type=top &page=1 &page_size=2 &key=71afabc411187aef339731d24ac43b97";
 
-String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=8";  //@-新浪综合新闻5条
+String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=7";  //@-新浪综合新闻7条
+String serverName_covid = "http://route.showapi.com/2217-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b";
 String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
 // String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
 String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
@@ -136,12 +137,19 @@ String serverName_stock_sh = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type
 String serverName_stock_sz = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type=1&key=4dd25417ff9fb7cbab4791e60899d9a8"; //深圳指数
 
 
+//@-数据不是很准确
+// https://coronavirus-tracker-api.herokuapp.com/v2/locations/67  中国
+// https://coronavirus-tracker-api.herokuapp.com/v2/locations?&id=67 中国河北省
+
+// 7c49550af6554658a9005f3014bc6f2b
+
+
 //@-新闻数据结构体
 typedef struct {
   char news_title[256];
   // char news_author_name[64];
 } NewsData_t;
-NewsData_t NewsData[8];
+NewsData_t NewsData[7];
 
 //@-Covid-19数据结构体
 typedef struct {
@@ -434,7 +442,7 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
       if(http_payload_size > 100)
       {
         //@3-从网站提供的API接口中获取信息，并将数据json化
-        DynamicJsonDocument doc(5120);  //3072
+        DynamicJsonDocument doc(6144);  //3072
         // StaticJsonDocument<2048> doc;
 
         //@-序列化JSON数据
@@ -468,12 +476,11 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
             sprintf(NewsData[5].news_title, "6.%s     ", temp);
             strcpy(temp, root["result"]["data"]["list"][6]["title"]);
             sprintf(NewsData[6].news_title, "7.%s     ", temp);
-            strcpy(temp, root["result"]["data"]["list"][7]["title"]);
-            sprintf(NewsData[7].news_title, "8.%s     ", temp);
           }
           //@-Covid-19数据
           else if(Data_Mode == 2)
           {
+            //@-对应serverName_covid1的json格式数据
             Covid19Data.currentConfirmedCount = root["results"][0]["currentConfirmedCount"];
             Covid19Data.currentConfirmedIncr = root["results"][0]["currentConfirmedIncr"];
             Covid19Data.confirmedCount = root["results"][0]["confirmedCount"];
@@ -981,7 +988,7 @@ void EPD_ShowMain()
   epd_drv_dx.DrawUTF( 0 , 245+68, NewsData[4].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 245+85, NewsData[5].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 245+102, NewsData[6].news_title, 1); 
-  epd_drv_dx.DrawUTF( 0 , 245+119, NewsData[7].news_title, 1); 
+  // epd_drv_dx.DrawUTF( 0 , 245+119, NewsData[7].news_title, 1); 
 
 
 
