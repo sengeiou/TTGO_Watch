@@ -110,7 +110,7 @@ esp_sleep_wakeup_cause_t wakeup_reason;
 
 //@-RTC数据存储区
 RTC_DATA_ATTR int bootCount = 0;
-RTC_DATA_ATTR int Dev_Wifi_Index = 1;
+// RTC_DATA_ATTR int Dev_Wifi_Index = 0;
 
 //@-管脚mask
 uint64_t mask;
@@ -127,7 +127,7 @@ uint64_t mask;
 // String serverName = "http://sentence.iciba.com/index.php?c=dailysentence&m=getdetail&title=2021-05-31";  //@-每日一句
 // String serverName = "http://v.juhe.cn/toutiao/index? &type=top &page=1 &page_size=2 &key=71afabc411187aef339731d24ac43b97";
 
-String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=7";  //@-新浪综合新闻7条
+String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=8";  //@-新浪综合新闻7条
 String serverName_covid = "http://route.showapi.com/2217-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b";
 String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
 // String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
@@ -141,7 +141,10 @@ String serverName_stock_sz = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type
 // https://coronavirus-tracker-api.herokuapp.com/v2/locations/67  中国
 // https://coronavirus-tracker-api.herokuapp.com/v2/locations?&id=67 中国河北省
 
-// 7c49550af6554658a9005f3014bc6f2b
+// 
+
+//@-万维易源数据PM2.5空气质量指数
+// String serverName_stock_sz = "http://route.showapi.com/104-29?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b&city=杭州";
 
 
 //@-新闻数据结构体
@@ -149,7 +152,7 @@ typedef struct {
   char news_title[256];
   // char news_author_name[64];
 } NewsData_t;
-NewsData_t NewsData[7];
+NewsData_t NewsData[8];
 
 //@-Covid-19数据结构体
 typedef struct {
@@ -220,32 +223,144 @@ typedef struct {
 } Juhe_StockData_t;
 Juhe_StockData_t Juhe_StockData;
 
+//@-SPIFFS JSON数据结构体
+typedef struct {
+
+    String Json_name;
+    String Json_location;
+
+    String Json_SSID1;
+    String Json_Pass1;
+
+    String Json_SSID2;
+    String Json_Pass2;
+
+    String Json_App_KEY1;
+
+    int Json_Wifi_Index;
+
+    int Json_First_Run;   //@-设备第一次运行标志 1:是  0:不是
+
+} SPIFFS_JSONData_t;
+SPIFFS_JSONData_t SPIFFS_JSONData;
+SPIFFS_JSONData_t SPIFFS_JSONData_Save;
+
 //@-WEB服务器
 AsyncWebServer server_dx(80);
-
 
 //@-天气id对应图标
 const uint8_t* weather_index_img_id_dx = gImage_weather_00;
 
+//-------------------------------------------------------
 
+//@-加载SPIFFS文件系统中的json文件
+void Load_Config()
+{
+  File file = SPIFFS.open("/config.json", FILE_READ);
+  if (!file)
+  {
+    Serial.println("No Config-> white define");
+    Save_Set_Data(0, 0, 0);
+  } 
+  else
+  {
+    size_t size = file.size();
 
+    Serial.print("--------------json file size:");
+    Serial.println(size);
+    if(size == 0)
+    {
+      Serial.println("Config file empty-> white define");
+      Save_Set_Data(0, 0, 0);
+    }
+    else
+    {
+      char buff_dx[1024];
+      file.readBytes(buff_dx, size);
+      DynamicJsonDocument doc(1024);
+      //@-序列化JSON数据
+      DeserializationError error = deserializeJson(doc, buff_dx);
+      if (error) 
+      {
+        Serial.println("JSON parsing failed!");
+      } 
+      else
+      {
+        // get the JsonObject in the JsonDocument
+        JsonObject root = doc.as<JsonObject>(); 
 
+        Serial.print("ssid1:");
+        Serial.println(root["Json_SSID1"].as<String>());
+        Serial.print("pass1:");
+        Serial.println(root["Json_Pass1"].as<String>());
+        Serial.print("ssid2:");
+        Serial.println(root["Json_SSID2"].as<String>());
+        Serial.print("pass2:");
+        Serial.println(root["Json_Pass2"].as<String>());
 
-// Replaces placeholder with LED state value
-String processor(const String& var){
-  Serial.println(var);
-  // ledState = "ON";
-  // if(var == "STATE"){
-  //   if(digitalRead(ledPin)){
-  //     ledState = "ON";
-  //   }
-  //   else{
-  //     ledState = "OFF";
-  //   }
-  //   Serial.print(ledState);
-    // return ledState;
-  // }
-  return String();
+        Serial.print("wifi index:");
+        SPIFFS_JSONData.Json_Wifi_Index = root["Json_Wifi_Index"];
+        Serial.println(SPIFFS_JSONData.Json_Wifi_Index);
+
+        //@-设备第一次运行标志
+        SPIFFS_JSONData.Json_First_Run = root["Json_First_Run"];
+      }
+
+    }
+  }
+
+}
+
+//@-保存参数到SPIFFS文件系统中的json文件
+void Save_Set_Data(int mode, int wifi_index, int first_run)  //@-mode  0:初始化模式   1:用户模式
+{
+  // StaticJsonDocument<500> doc;
+  DynamicJsonDocument doc(1024);
+
+  if(mode == 0)
+  {
+    doc["Json_name"] = "丁霄";
+    doc["Json_location"] = "杭州";
+
+    doc["Json_SSID1"] = "wifi1";
+    doc["Json_Pass1"] = "pass1";
+
+    doc["Json_SSID2"] = "wifi2";
+    doc["Json_Pass2"] = "pass2";
+
+    doc["Json_App_KEY1"] = "key1";
+
+    doc["Json_Wifi_Index"] = wifi_index;
+
+    doc["Json_First_Run"] = first_run;  //调试
+
+  }
+  else if (mode == 1)
+  {
+    doc["Json_name"] = SPIFFS_JSONData_Save.Json_name;
+    doc["Json_location"] = SPIFFS_JSONData_Save.Json_location;
+
+    doc["Json_SSID1"] = SPIFFS_JSONData_Save.Json_SSID1;
+    doc["Json_Pass1"] = SPIFFS_JSONData_Save.Json_Pass1;
+
+    doc["Json_SSID2"] = SPIFFS_JSONData_Save.Json_SSID2;
+    doc["Json_Pass2"] = SPIFFS_JSONData_Save.Json_Pass2;
+
+    doc["Json_App_KEY1"] = SPIFFS_JSONData_Save.Json_App_KEY1;
+
+    doc["Json_Wifi_Index"] = SPIFFS_JSONData_Save.Json_Wifi_Index;
+
+    doc["Json_First_Run"] = SPIFFS_JSONData_Save.Json_First_Run;
+  }
+
+  File file_config = SPIFFS.open("/config.json", FILE_WRITE);
+ 
+  if (!file_config) {
+    Serial.println("There was an error opening the file for writing");
+    return;
+  }
+
+  serializeJson(doc, file_config);
 }
 
 //@-配置
@@ -256,21 +371,33 @@ void setup()
   //@-初始化串口
   Serial.begin(115200);
 
+  //Increment boot number and print it every reboot
+  bootCount = bootCount + 1;
+  Serial.println("Boot number: " + String(bootCount));
+
+  //@-文件系统启动
+  if(!SPIFFS.begin(true)){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
+  //@-加载config文件
+  Load_Config();
+
+
+  // ssid = ssid1;
+  // password = password1;
+
   //@-选择wifi
-  if(Dev_Wifi_Index == 0)
+  if(SPIFFS_JSONData.Json_Wifi_Index == 0)
   {
     ssid = ssid1;
     password = password1;
   }
-  else if(Dev_Wifi_Index == 1)
+  else if(SPIFFS_JSONData.Json_Wifi_Index == 1)
   {
     ssid = ssid2;
     password = password2;
   }
-
-  //Increment boot number and print it every reboot
-  ++bootCount;
-  Serial.println("Boot number: " + String(bootCount));
 
   //ESP32启动方式
   wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -297,11 +424,6 @@ void setup()
   analogReadResolution(BAT_AD_Solution);
   pinMode(BAT_V_PIN,INPUT);
 
-  //@-文件系统启动
-  if(!SPIFFS.begin(true)){
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
 
   //@-配置I2C总线
   Wire.begin(21, 22);
@@ -321,54 +443,36 @@ void setup()
     //@-连接wifi
     WIFI_Connect();
 
-    // if(WiFi.status()== WL_CONNECTED)
-    // {
-    //     // Print ESP32 Local IP Address
-    //     Serial.println(WiFi.localIP());
-
-    //     // Route for root / web page
-    //     server_dx.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    //       request->send(SPIFFS, "/index.html", String(), false, processor);
-    //     });
-        
-    //     // Route to load style.css file
-    //     server_dx.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    //       request->send(SPIFFS, "/style.css", "text/css");
-    //     });
-          // // Start server_dx
-          // server_dx.begin();
-    // }
-
     //@-每5min获取Sina综合新闻json数据
-    WIFI_Get_JsonInfo(serverName_sinaNews, 1);
+    WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
 
     //@-每1hour获取Covid数据
     if((dx_timeStruct.minutes == 0) || (bootCount == 1))
-    WIFI_Get_JsonInfo(serverName_covid1, 2);
+    WIFI_Get_JsonInfo(serverName_covid1, 2, "Covid-19");
 
     //@-工作时间每天2次获取天气数据
     if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 11))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
-    WIFI_Get_JsonInfo(serverName_weather, 3);
+    WIFI_Get_JsonInfo(serverName_weather, 3, "聚合天气");
 
     //@-获得黄历数据
     if(((dx_timeStruct.hours == 1)&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
     {
       sprintf(temp_str, "&date=%d-%d-%d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
       String huangliData = serverName_huangli + String(temp_str);
-      WIFI_Get_JsonInfo(huangliData, 4);
+      WIFI_Get_JsonInfo(huangliData, 4, "聚合黄历");
     }
 
-    //@-获得上证指数
-    if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
-    {
-      WIFI_Get_JsonInfo(serverName_stock_sh, 5);
-    }
+    // //@-获得上证指数
+    // if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
+    // {
+    //   WIFI_Get_JsonInfo(serverName_stock_sh, 5, "聚合股票-上海");
+    // }
 
-    //@-获得深圳指数
-    if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
-    {
-      WIFI_Get_JsonInfo(serverName_stock_sz, 6);
-    }
+    // //@-获得深圳指数
+    // if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
+    // {
+    //   WIFI_Get_JsonInfo(serverName_stock_sz, 6, "聚合股票-深圳");
+    // }
 
   }
 
@@ -403,7 +507,7 @@ void setup()
 }
 
 //@-获取信息网站JSON数据
-void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
+void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
 {
   char temp[256];
   int httpResponseCode;
@@ -425,8 +529,8 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
     if (httpResponseCode>0) 
     {
       //@-获得GET返回值
-      Serial.print("HTTP Response code: ");
-      Serial.println(httpResponseCode);
+      // Serial.print("HTTP Response code: ");
+      // Serial.println(httpResponseCode);
       String payload = http.getString();
 
       //@1-从html页面中获取信息
@@ -435,7 +539,8 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
 
       //@2-打印获得的数据长度
       http_payload_size = payload.length();
-      Serial.print("HTTP payload Size:");
+      Serial.print(Http_source);
+      Serial.print(" HTTP payload Size:");
       Serial.println(http_payload_size);
       // Serial.println(payload);
 
@@ -476,6 +581,8 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode)
             sprintf(NewsData[5].news_title, "6.%s     ", temp);
             strcpy(temp, root["result"]["data"]["list"][6]["title"]);
             sprintf(NewsData[6].news_title, "7.%s     ", temp);
+            // strcpy(temp, root["result"]["data"]["list"][7]["title"]);
+            // sprintf(NewsData[7].news_title, "8.%s     ", temp);
           }
           //@-Covid-19数据
           else if(Data_Mode == 2)
@@ -1043,13 +1150,14 @@ void WIFI_Connect()
       wifi_connect_tick = 0;
       wifi_connect_flag = 2;  //wifi连接超时
 
-      //@-切换wifi信号源
-      if(Dev_Wifi_Index == 0)
-      Dev_Wifi_Index = 1;
-      else if(Dev_Wifi_Index == 1)
-      Dev_Wifi_Index = 0;
-
       bootCount = 0;
+      delay(5);
+
+      //@-切换wifi信号源
+      if(SPIFFS_JSONData.Json_Wifi_Index == 0)
+      Save_Set_Data(0, 1, 0);
+      else if(SPIFFS_JSONData.Json_Wifi_Index == 1)
+      Save_Set_Data(0, 0, 0);
 
       break;
     }

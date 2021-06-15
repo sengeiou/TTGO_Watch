@@ -38,7 +38,7 @@ const char* PARAM_INPUT_2 = "passkey1";
 const char* PARAM_INPUT_3 = "ssid2";
 const char* PARAM_INPUT_4 = "passkey2";
 
-//@-新闻数据结构体
+//@-SPIFFS数据结构体
 typedef struct {
     String inputMessage1;
     String inputParam1;
