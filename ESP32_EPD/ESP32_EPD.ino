@@ -27,10 +27,13 @@
 
 #define ESP32
 
+#define Software_Version "20210618 V1.02"
+
 //@-IO定义
 #define Button0_PIN   0  
 #define Button1_PIN  27  
 #define Button2_PIN  26
+#define Charge_PIN   18
 #define BAT_EN_PIN   23
 #define BAT_V_PIN    35
 #define BAT_AD_Solution 12
@@ -42,11 +45,13 @@
 #define Area1_Box_X      115
 #define Area1_Box_High   105
 #define Area2_Box_X      45
-#define Area2_Box_High   Area1_Box_High + 50
-#define Area3_Box_X      120
-#define Area3_Box_High   Area2_Box_High + 50
+#define Area2_Box_High   Area1_Box_High + 50   //155
+// #define Area3_Box_X      120
+#define Area3_Box_High   Area2_Box_High + 50   //205
 #define Area4_Box_X      120
-#define Area4_Box_High   Area3_Box_High + 35
+#define Area4_Box_High   Area3_Box_High + 35   //240
+// #define Area5_Box_X      120
+#define Area5_Box_High   Area4_Box_High + 142  //382
 
 
 #define SPIFFS_Save_Def          0
@@ -105,6 +110,7 @@ I2C_BM8563_TimeTypeDef dx_timeStruct;
 int Button0_State = 0;          //@-按键0状态
 int Button1_State = 0;          //@-按键1状态
 int Button2_State = 0;          //@-按键2状态
+int Charge_State = 0;           //@-充电接入状态
 bool Key_Flag = false;
 int Config_Set_Tick = 0;        //@-进入设备配置计数器
 
@@ -134,7 +140,7 @@ uint64_t mask;
 // String serverName = "http://v.juhe.cn/toutiao/index? &type=top &page=1 &page_size=2 &key=71afabc411187aef339731d24ac43b97";
 
 String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=8";  //@-新浪综合新闻7条
-String serverName_covid = "http://route.showapi.com/2217-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b";
+// String serverName_covid = "http://route.showapi.com/2217-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b";
 String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
 // String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
 String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
@@ -151,6 +157,14 @@ String serverName_stock_sz = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type
 
 //@-万维易源数据PM2.5空气质量指数
 // String serverName_stock_sz = "http://route.showapi.com/104-29?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b&city=杭州";
+//@-万维易源数据疫情数据
+// String serverName_covid = http://route.showapi.com/2217-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b
+//@-万维易源数据黄历数据
+// String serverName_covid = "http://route.showapi.com/856-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b&ymd=20210618";
+
+// D:\Work\Django\blog\home\dx\sites\dx1023.com\django_blog\blog
+String serverName_covid = "http://www.dx1023.com/dxjson/";
+
 
 
 //@-新闻数据结构体
@@ -162,27 +176,40 @@ NewsData_t NewsData[8];
 
 //@-Covid-19数据结构体
 typedef struct {
-  int currentConfirmedCount;  //@-国内当前确诊数
-  int currentConfirmedIncr;   //@-国内当前新增确诊数
-  long confirmedCount;        //@-国内累计确诊数
-  int  confirmedIncr;         //@-国内新增总确诊数
-  int suspectedCount;         //@-国内疑似数
-  int suspectedIncr;          //@-国内新增疑似数
-  long curedCount;            //@-国内治愈数
-  int  curedIncr;             //@-国内新增治愈术
-  int deadCount;              //@-国内死亡数
-  int deadIncr;               //@-国内新增死亡数
-  int seriousCount;           //@-国内重症数
-  int seriousIncr;            //@-国内新增重症数
+  //@-对应serverName_covid1的json格式数据
+  #if 0
+  // int currentConfirmedCount;  //@-国内当前确诊数  
+  // int currentConfirmedIncr;   //@-国内当前新增确诊数 
+  // long confirmedCount;        //@-国内累计确诊数
+  // int  confirmedIncr;         //@-国内新增总确诊数
+  // int suspectedCount;         //@-国内疑似数
+  // int suspectedIncr;          //@-国内新增疑似数
+  // long curedCount;            //@-国内治愈数
+  // int  curedIncr;             //@-国内新增治愈术
+  // int deadCount;              //@-国内死亡数       
+  // int deadIncr;               //@-国内新增死亡数    
+  // int seriousCount;           //@-国内重症数
+  // int seriousIncr;            //@-国内新增重症数
 
-  long g_currentConfirmedCount; //@-全球当前确诊数
-  long g_currentConfirmedIncr;  //@-全球当前新增确诊数
-  long g_confirmedCount;        //@-全球累计确诊数
-  long g_confirmedIncr;         //@-全球新增总确诊数
-  long g_curedCount;            //@-全球治愈数
-  long g_curedIncr;             //@-全球新增治愈术
-  long g_deadCount;             //@-全球死亡数
-  long g_deadIncr;              //@-全球新增死亡数
+  // long g_currentConfirmedCount; //@-全球当前确诊数
+  // long g_currentConfirmedIncr;  //@-全球当前新增确诊数
+  // long g_confirmedCount;        //@-全球累计确诊数
+  // long g_confirmedIncr;         //@-全球新增总确诊数
+  // long g_curedCount;            //@-全球治愈数
+  // long g_curedIncr;             //@-全球新增治愈术
+  // long g_deadCount;             //@-全球死亡数
+  // long g_deadIncr;              //@-全球新增死亡数
+  #endif
+
+  //@-对应serverName_covid的json格式数据
+  int confirmedNum;            //@-现存确诊
+  int confirmedIncr;           //@-现存确诊新增
+  int externalConfirmedNum;    //@-境外输入
+  int externalConfirmedIncr;   //@-境外输入新增
+  int asymptomaticNum;         //@-无症状
+  int asymptomaticIncr;        //@-无症状新增
+  int deadNum;                 //@-累计死亡
+  int deadIncr;                //@-累计死亡新增
 
 } Covid19Data_t;
 Covid19Data_t Covid19Data;
@@ -452,8 +479,8 @@ void setup()
   //@-初始化串口
   Serial.begin(115200);
 
-  // if(bootCount > 5)
-  // bootCount = 0;
+  if(bootCount > 720)
+  bootCount = 0;
   //Increment boot number and print it every reboot
   bootCount = bootCount + 1;
   Serial.println("Boot number: " + String(bootCount));
@@ -500,6 +527,7 @@ void setup()
   pinMode(Button0_PIN, INPUT|PULLUP);
   pinMode(Button1_PIN, INPUT|PULLUP);
   pinMode(Button2_PIN, INPUT|PULLUP);
+  pinMode(Charge_PIN, INPUT|PULLUP);
 
   //@-查询是否需要进入配置模式
   Config_Set_Tick = 0;
@@ -524,6 +552,11 @@ void setup()
       }
   }
 
+  //@-读取USB充电状态
+  Charge_State = digitalRead(Charge_PIN);
+  Serial.print("USB Charge:");
+  Serial.println(Charge_State);
+
   //@-AD采样检测
   pinMode(BAT_EN_PIN, OUTPUT);
   digitalWrite(BAT_EN_PIN, HIGH);
@@ -543,10 +576,11 @@ void setup()
   if(EPD_Dev_RunMode == 0)
   {
     //@-配置wifi连接-每5min检测wifi连接-并获取json数据
-    if((dx_timeStruct.minutes == 5)||(dx_timeStruct.minutes == 15)||(dx_timeStruct.minutes == 20)||
-      (dx_timeStruct.minutes == 25)||(dx_timeStruct.minutes == 30)||(dx_timeStruct.minutes == 35)||
-      (dx_timeStruct.minutes == 40)||(dx_timeStruct.minutes == 45)||(dx_timeStruct.minutes == 50)||
-      (dx_timeStruct.minutes == 55)||(dx_timeStruct.minutes == 0) ||(bootCount == 1))
+    if((dx_timeStruct.minutes == 5)||(dx_timeStruct.minutes == 10)||(dx_timeStruct.minutes == 15)||
+      (dx_timeStruct.minutes == 20)||(dx_timeStruct.minutes == 25)||(dx_timeStruct.minutes == 30)||
+      (dx_timeStruct.minutes == 35)||(dx_timeStruct.minutes == 40)||(dx_timeStruct.minutes == 45)||
+      (dx_timeStruct.minutes == 50)||(dx_timeStruct.minutes == 55)||(dx_timeStruct.minutes == 0) ||
+      (bootCount == 1))
     {
       //@-连接wifi
       WIFI_Connect();
@@ -554,17 +588,20 @@ void setup()
       //@-每5min获取Sina综合新闻json数据
       WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
 
-      //@-每1hour获取Covid数据
-      if((dx_timeStruct.minutes == 0) || (bootCount == 1))
+      //@-获取Covid数据-每天7，15点获取1次
+      if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
-        WIFI_Get_JsonInfo(serverName_covid1, 2, "Covid-19");
+        WIFI_Get_JsonInfo(serverName_covid, 2, "Covid-19");
       }
+
+      #if 1
       //@-工作时间每天4次获取天气数据
       if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 16))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
         WIFI_Get_JsonInfo(serverName_weather, 3, "聚合天气");
       }
-      //@-获得黄历数据
+
+      //@-获得黄历数据-每天凌晨1点获取1次
       if(((dx_timeStruct.hours == 1)&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
         sprintf(temp_str, "&date=%d-%d-%d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
@@ -572,21 +609,21 @@ void setup()
         WIFI_Get_JsonInfo(huangliData, 4, "聚合黄历");
       }
 
-      //@-获得上证指数
+      //@-获得上证指数-工作日的9/10/11/13/14/15:30获取6次
       if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
       {
         //@-交易时间刷新
-        if((((dx_timeStruct.hours == 9)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 11)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 14)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 30))||(bootCount == 1))
+        if((((dx_timeStruct.hours == 9)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 11)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 14)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 35))||(bootCount == 1))
         WIFI_Get_JsonInfo(serverName_stock_sh, 5, "聚合股票-上海");
       }
-
-      // //@-获得深圳指数
+      // //@-获得深圳指数-工作日的9/10/11/13/14/15:30获取6次
       if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
       {
         //@-交易时间刷新
-        if((((dx_timeStruct.hours == 9)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 11)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 14)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 30))||(bootCount == 1))
+        if((((dx_timeStruct.hours == 9)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 11)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 14)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 35))||(bootCount == 1))
         WIFI_Get_JsonInfo(serverName_stock_sz, 6, "聚合股票-深圳");
       }
+      #endif
 
       //@-断开wifi链接
       WiFi.disconnect(true);
@@ -608,7 +645,7 @@ void setup()
     }
     if((wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) && (bootCount != 1))
     {
-      EPD_ShowArea1();
+      EPD_ShowArea();
     }
 
     //保证屏幕RST引脚高电平
@@ -749,49 +786,60 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
           if(Data_Mode == 1)
           {
             strcpy(temp, root["result"]["data"]["list"][0]["title"]);
-            sprintf(NewsData[0].news_title, "1.%s     ", temp);
+            sprintf(NewsData[0].news_title, "1.%s           ", temp);
             strcpy(temp, root["result"]["data"]["list"][1]["title"]);
-            sprintf(NewsData[1].news_title, "2.%s     ", temp);
+            sprintf(NewsData[1].news_title, "2.%s           ", temp);
             strcpy(temp, root["result"]["data"]["list"][2]["title"]);
-            sprintf(NewsData[2].news_title, "3.%s     ", temp);
+            sprintf(NewsData[2].news_title, "3.%s           ", temp);
             strcpy(temp, root["result"]["data"]["list"][3]["title"]);
-            sprintf(NewsData[3].news_title, "4.%s     ", temp);
+            sprintf(NewsData[3].news_title, "4.%s           ", temp);
             strcpy(temp, root["result"]["data"]["list"][4]["title"]);
-            sprintf(NewsData[4].news_title, "5.%s     ", temp);
+            sprintf(NewsData[4].news_title, "5.%s           ", temp);
             strcpy(temp, root["result"]["data"]["list"][5]["title"]);
-            sprintf(NewsData[5].news_title, "6.%s     ", temp);
+            sprintf(NewsData[5].news_title, "6.%s           ", temp);
             strcpy(temp, root["result"]["data"]["list"][6]["title"]);
-            sprintf(NewsData[6].news_title, "7.%s     ", temp);
+            sprintf(NewsData[6].news_title, "7.%s           ", temp);
+            strcpy(temp, root["result"]["data"]["list"][7]["title"]);
+            sprintf(NewsData[7].news_title, "8.%s           ", temp);
             //@-显示标志置位
             Display_News_Flag = 1;
-            // strcpy(temp, root["result"]["data"]["list"][7]["title"]);
-            // sprintf(NewsData[7].news_title, "8.%s     ", temp);
+
           }
           //@-Covid-19数据
           else if(Data_Mode == 2)
           {
             //@-对应serverName_covid1的json格式数据
-            Covid19Data.currentConfirmedCount = root["results"][0]["currentConfirmedCount"];
-            Covid19Data.currentConfirmedIncr = root["results"][0]["currentConfirmedIncr"];
-            Covid19Data.confirmedCount = root["results"][0]["confirmedCount"];
-            Covid19Data.confirmedIncr = root["results"][0]["confirmedIncr"];
-            Covid19Data.suspectedCount = root["results"][0]["suspectedCount"];
-            Covid19Data.suspectedIncr = root["results"][0]["suspectedIncr"];
-            Covid19Data.curedCount = root["results"][0]["curedCount"];
-            Covid19Data.curedIncr = root["results"][0]["curedIncr"];
-            Covid19Data.deadCount = root["results"][0]["deadCount"];
-            Covid19Data.deadIncr = root["results"][0]["deadIncr"];
-            Covid19Data.seriousCount = root["results"][0]["seriousCount"];
-            Covid19Data.seriousIncr = root["results"][0]["seriousIncr"];
+            // Covid19Data.currentConfirmedCount = root["results"][0]["currentConfirmedCount"];
+            // Covid19Data.currentConfirmedIncr = root["results"][0]["currentConfirmedIncr"];
+            // Covid19Data.confirmedCount = root["results"][0]["confirmedCount"];
+            // Covid19Data.confirmedIncr = root["results"][0]["confirmedIncr"];
+            // Covid19Data.suspectedCount = root["results"][0]["suspectedCount"];
+            // Covid19Data.suspectedIncr = root["results"][0]["suspectedIncr"];
+            // Covid19Data.curedCount = root["results"][0]["curedCount"];
+            // Covid19Data.curedIncr = root["results"][0]["curedIncr"];
+            // Covid19Data.deadCount = root["results"][0]["deadCount"];
+            // Covid19Data.deadIncr = root["results"][0]["deadIncr"];
+            // Covid19Data.seriousCount = root["results"][0]["seriousCount"];
+            // Covid19Data.seriousIncr = root["results"][0]["seriousIncr"];
 
-            Covid19Data.g_currentConfirmedCount = root["results"][0]["globalStatistics"]["currentConfirmedCount"];
-            Covid19Data.g_currentConfirmedIncr = root["results"][0]["globalStatistics"]["currentConfirmedIncr"];
-            Covid19Data.g_confirmedCount = root["results"][0]["globalStatistics"]["confirmedCount"];
-            Covid19Data.g_confirmedIncr = root["results"][0]["globalStatistics"]["confirmedIncr"];
-            Covid19Data.g_curedCount = root["results"][0]["globalStatistics"]["curedCount"];
-            Covid19Data.g_curedIncr = root["results"][0]["globalStatistics"]["curedIncr"];
-            Covid19Data.g_deadCount = root["results"][0]["globalStatistics"]["deadCount"];
-            Covid19Data.g_deadIncr = root["results"][0]["globalStatistics"]["deadIncr"];
+            // Covid19Data.g_currentConfirmedCount = root["results"][0]["globalStatistics"]["currentConfirmedCount"];
+            // Covid19Data.g_currentConfirmedIncr = root["results"][0]["globalStatistics"]["currentConfirmedIncr"];
+            // Covid19Data.g_confirmedCount = root["results"][0]["globalStatistics"]["confirmedCount"];
+            // Covid19Data.g_confirmedIncr = root["results"][0]["globalStatistics"]["confirmedIncr"];
+            // Covid19Data.g_curedCount = root["results"][0]["globalStatistics"]["curedCount"];
+            // Covid19Data.g_curedIncr = root["results"][0]["globalStatistics"]["curedIncr"];
+            // Covid19Data.g_deadCount = root["results"][0]["globalStatistics"]["deadCount"];
+            // Covid19Data.g_deadIncr = root["results"][0]["globalStatistics"]["deadIncr"];
+
+            //@-对应serverName_covid的json格式数据
+            Covid19Data.confirmedNum = root["result"]["confirmedNum"];
+            Covid19Data.confirmedIncr = root["result"]["confirmedIncr"];
+            Covid19Data.externalConfirmedNum = root["result"]["externalConfirmedNum"];
+            Covid19Data.externalConfirmedIncr = root["result"]["externalConfirmedIncr"];
+            Covid19Data.asymptomaticNum = root["result"]["asymptomaticNum"];
+            Covid19Data.asymptomaticIncr = root["result"]["asymptomaticIncr"];
+            Covid19Data.deadNum = root["result"]["deadNum"];
+            Covid19Data.deadIncr = root["result"]["deadIncr"];
 
             //@-显示标志置位
             Display_Covid_Flag = 1;
@@ -890,8 +938,8 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
   }
 }
 
-//@-显示时间-年月日-实时时间
-void EPD_Display_YearTime()
+//@-EPD绘制时间-年月日-实时时间
+void EPD_Paint_YearTime()
 {
   int temp_data = 0; 
 
@@ -933,7 +981,10 @@ void EPD_Display_YearTime()
   user_area_dx.top = 1;       //y
   user_area_dx.width = 16;
   user_area_dx.height = 16;
+  if(Charge_State == 0)
   epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_battery, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  else if(Charge_State == 1)
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_battery_charge, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
   //@-电量
   temp_data = ((BAT_V-3.1)/0.012);
   epd_drv_dx.EPD_SetFount(FONT12);
@@ -943,8 +994,8 @@ void EPD_Display_YearTime()
   //@-显示时间
   epd_drv_dx.DrawTime(121, 17, dx_timeStruct.hours, dx_timeStruct.minutes, FONT48_NUM, 1);
 }
-
-void EPD_Display_Lunar()
+//@-EPD绘制农历时间
+void EPD_Paint_Lunar()
 {
   //@-显示黄历
   epd_drv_dx.EPD_SetFount(FONT16);
@@ -955,8 +1006,8 @@ void EPD_Display_Lunar()
   // sprintf(buff_dx,"四月二九");
   epd_drv_dx.DrawUTF( 25 , 81, buff_dx, 1); 
 }
-
-void EPD_Display_WeatherSummer()
+//@-EPD绘制天气概述
+void EPD_Paint_WeatherSummer()
 {
   //@-天气概述-最大8个汉字
   epd_drv_dx.EPD_SetFount(FONT12);
@@ -976,8 +1027,8 @@ void EPD_Display_WeatherSummer()
   user_area_dx.height = 32;
   epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, weather_index_img_id_dx, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
 }
-
-void EPD_Display_WeatherFuture()
+//@-EPD绘制未来天气
+void EPD_Paint_WeatherFuture()
 {
   String temp_str;
   char temp_char[32];
@@ -1067,34 +1118,41 @@ void EPD_Display_WeatherFuture()
   sprintf(buff_dx,"%s%s %s%s", temp_str.c_str(), temp_char, Juhe_WeatherData.weather_futureDay3_info, Juhe_WeatherData.weather_futureDay3_temperature);
   epd_drv_dx.DrawUTF( 48 ,140, buff_dx, 1); 
 }
-
-void EPD_Display_Covid()
+//@-EPD绘制Covid19信息
+void EPD_Paint_Covid()
 {
   //@-显示国内疫情-现存确诊人数
   epd_drv_dx.EPD_SetFount(FONT12);
-  sprintf(buff_dx,"较昨日%d", Covid19Data.currentConfirmedIncr);
+  sprintf(buff_dx,"较昨日%d", Covid19Data.confirmedIncr);
   epd_drv_dx.DrawUTF( 5 ,160, buff_dx, 1); 
-  sprintf(buff_dx,"%d", Covid19Data.currentConfirmedCount);
+  sprintf(buff_dx,"%d", Covid19Data.confirmedNum);
   epd_drv_dx.DrawUTF( 8 ,175, buff_dx, 1); 
   sprintf(buff_dx,"现存确诊");
   epd_drv_dx.DrawUTF( 5 ,190, buff_dx, 1); 
-  //@-显示国内疫情-累计确诊人数
-  sprintf(buff_dx,"较昨日%d", Covid19Data.confirmedIncr);
-  epd_drv_dx.DrawUTF( 62 ,160, buff_dx, 1); 
-  sprintf(buff_dx,"%d", Covid19Data.confirmedCount);
-  epd_drv_dx.DrawUTF( 65 ,175, buff_dx, 1); 
-  sprintf(buff_dx,"累计确诊");
-  epd_drv_dx.DrawUTF( 62 ,190, buff_dx, 1); 
-
-  //@-显示全球疫情-现存确诊人数
-  sprintf(buff_dx,"现存确诊%d", Covid19Data.g_currentConfirmedCount);
-  epd_drv_dx.DrawUTF( 128 ,160, buff_dx, 1); 
-  //@-显示全球疫情-累计确诊人数
-  sprintf(buff_dx,"累计确诊%d", Covid19Data.g_confirmedCount);
-  epd_drv_dx.DrawUTF( 128 ,190, buff_dx, 1); 
+  //@-显示国内疫情-境外输入人数
+  sprintf(buff_dx,"较昨日%d", Covid19Data.externalConfirmedIncr);
+  epd_drv_dx.DrawUTF( 67 ,160, buff_dx, 1); 
+  sprintf(buff_dx,"%d", Covid19Data.externalConfirmedNum);
+  epd_drv_dx.DrawUTF( 70 ,175, buff_dx, 1); 
+  sprintf(buff_dx,"境外输入");
+  epd_drv_dx.DrawUTF( 67 ,190, buff_dx, 1); 
+  //@-显示国内疫情-无症状人数
+  sprintf(buff_dx,"较昨日%d", Covid19Data.asymptomaticIncr);
+  epd_drv_dx.DrawUTF( 124 ,160, buff_dx, 1); 
+  sprintf(buff_dx,"%d", Covid19Data.asymptomaticNum);
+  epd_drv_dx.DrawUTF( 127 ,175, buff_dx, 1); 
+  sprintf(buff_dx,"现无症状");
+  epd_drv_dx.DrawUTF( 124 ,190, buff_dx, 1); 
+  //@-显示国内疫情-死亡人数
+  sprintf(buff_dx,"较昨日%d", Covid19Data.deadIncr);
+  epd_drv_dx.DrawUTF( 181 ,160, buff_dx, 1); 
+  sprintf(buff_dx,"%d", Covid19Data.deadNum);
+  epd_drv_dx.DrawUTF( 184 ,175, buff_dx, 1); 
+  sprintf(buff_dx,"累计死亡");
+  epd_drv_dx.DrawUTF( 181 ,190, buff_dx, 1); 
 }
-
-void EPD_Display_Stock()
+//@-EPD绘制股票信息
+void EPD_Paint_Stock()
 {
   //@-显示上证指数
   epd_drv_dx.EPD_SetFount(FONT12);
@@ -1118,8 +1176,8 @@ void EPD_Display_Stock()
   sprintf(buff_dx,"涨 %s%%", Juhe_StockData.sz_stock_per);
   epd_drv_dx.DrawUTF( 125 ,225, buff_dx, 1); 
 }
-
-void EPD_Display_News()
+//@-EPD绘制新闻信息
+void EPD_Paint_News()
 {
   epd_drv_dx.EPD_SetFount(FONT16);
   epd_drv_dx.DrawUTF( 0 , 245, NewsData[0].news_title, 1); 
@@ -1129,7 +1187,24 @@ void EPD_Display_News()
   epd_drv_dx.DrawUTF( 0 , 245+68, NewsData[4].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 245+85, NewsData[5].news_title, 1); 
   epd_drv_dx.DrawUTF( 0 , 245+102, NewsData[6].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+119, NewsData[7].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+119, NewsData[7].news_title, 1); 
+}
+//@-EPD绘制底部信息
+void EPD_Paint_BottomInfo()
+{
+  //@-wifi-图标
+  user_area_dx.left = 2;    //x
+  user_area_dx.top = 383;       //y
+  user_area_dx.width = 16;
+  user_area_dx.height = 16;
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_wifi, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  //@-显示wifi ssid
+  epd_drv_dx.EPD_SetFount(FONT12);
+  sprintf(buff_dx,"%s", ssid);
+  epd_drv_dx.DrawUTF( 20 ,385, buff_dx, 1); 
+  //@-显示软件版本号
+  sprintf(buff_dx,"%s", Software_Version);
+  epd_drv_dx.DrawUTF( 150 ,385, buff_dx, 1); 
 }
 
 //@-天气id图标
@@ -1178,117 +1253,6 @@ void weather_info_id_show(int id)
 }
 
 //@-非全局刷新
-void EPD_ShowArea1()
-{
-  
-  int temp_data = 0; 
-  String temp_str;
-  char temp_char[32];
-  char temp_char1[32];
-  int next_day1 = 0;
-  int next_day2 = 0;
-  int next_day3 = 0;
-
-  Serial.println("----------DrawTimeUpdata-----------");
-  epd_drv_dx.EPD4INC_Port_Reinit();      //SPI初始化
-  epd_drv_dx.EPD4INC_HVEN();
-  delay(2); 
-  epd_drv_dx.EPD_CLK_EX();               //其中时钟
-  epd_drv_dx.s1d135xx_set_epd_power(1);
-  delay(2);
-
-
-  //@1-------------------------------------实时时间--------------------------------------------
-  EPD_Display_YearTime();
-  //@-局部刷新
-  user_area_dx.left = 0;   //x
-  user_area_dx.top = 0;    //y
-  user_area_dx.width = 239;
-  user_area_dx.height = 65;
-  epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
-
-  //@2-------------------------------------农历天气--------------------------------------------
-  if(Display_Lunar_Flag == 1)
-  {
-    Display_Lunar_Flag = 0;
-    EPD_Display_Lunar();
-    //@-局部刷新
-    user_area_dx.left = 0;   //x
-    user_area_dx.top = 66;    //y
-    user_area_dx.width = 115;
-    user_area_dx.height = 105;
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
-  }
-
-  if(Display_Weather_Flag == 1)
-  {
-    Display_Weather_Flag = 0;
-    EPD_Display_WeatherSummer();
-    //@-局部刷新
-    user_area_dx.left = 116;   //x
-    user_area_dx.top = 66;    //y
-    user_area_dx.width = 239;
-    user_area_dx.height = 105;
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
-
-    EPD_Display_WeatherFuture();
-    //@-局部刷新
-    user_area_dx.left = 0;   //x
-    user_area_dx.top = 106;    //y
-    user_area_dx.width = 239;
-    user_area_dx.height = 155;
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);    
-  }
-
-  //@3-------------------------------------Covid--------------------------------------------
-  if(Display_Covid_Flag == 1)
-  {
-    Display_Covid_Flag = 0;
-    EPD_Display_Covid();
-    //@-局部刷新
-    user_area_dx.left = 0;   //x
-    user_area_dx.top = 156;    //y
-    user_area_dx.width = 239;
-    user_area_dx.height = 205;
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);    
-  }
-
-  //@4-------------------------------------股票--------------------------------------------
-  if(Display_Stock_Flag == 1)
-  {
-    Display_Stock_Flag = 0;
-    EPD_Display_Stock();
-    //@-局部刷新
-    user_area_dx.left = 0;   //x
-    user_area_dx.top = 206;    //y
-    user_area_dx.width = 239;
-    user_area_dx.height = 240;
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);   
-  }
-
-  //@5-------------------------------------新闻--------------------------------------------
-  if(Display_News_Flag == 1)
-  {
-    Display_News_Flag = 0;
-    EPD_Display_News();
-    //@-局部刷新
-    user_area_dx.left = 0;   //x
-    user_area_dx.top = 240;    //y
-    user_area_dx.width = 239;
-    user_area_dx.height = 350;
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);   
-  }
-
-
-  //   epd_drv_dx.EPD_UpdateUser(1, UPDATE_FULL, NULL);
-
-  delay(500);
-  epd_drv_dx.EPD4INC_HVDISEN();
-  epd_drv_dx.s1d135xx_set_power_state(PL_EPDC_SLEEP);
-  epd_drv_dx.EPD_CLK_STOP();
-}
-
-//@-非全局刷新
 void EPD_ShowArea()
 {
   int temp_data = 0; 
@@ -1307,272 +1271,84 @@ void EPD_ShowArea()
   epd_drv_dx.s1d135xx_set_epd_power(1);
   delay(2);
 
-
- //@1---------------------------------------------------------------------------------
-  //@-显示日期-年-月
-  epd_drv_dx.EPD_SetFount(FONT16);
-  sprintf(buff_dx,"%d年 %2d月", dx_dateStruct.year, dx_dateStruct.month);
-  epd_drv_dx.DrawUTF( 15 , 3, buff_dx, 1); 
-  //@-显示日期
-  epd_drv_dx.EPD_SetFount(FONT48_NUM);
-  epd_drv_dx.DrawNum_DX( 20 , 17, dx_dateStruct.date, 1); 
-  //@-显示星期
-  epd_drv_dx.EPD_SetFount(FONT16);
-  switch(dx_dateStruct.weekDay)
-  {
-    case 0: sprintf(buff_dx,"周日"); break;
-    case 1: sprintf(buff_dx,"周一"); break;
-    case 2: sprintf(buff_dx,"周二"); break;
-    case 3: sprintf(buff_dx,"周三"); break;
-    case 4: sprintf(buff_dx,"周四"); break;
-    case 5: sprintf(buff_dx,"周五"); break;
-    case 6: sprintf(buff_dx,"周六"); break;
-    default: break;
-  }
-  epd_drv_dx.DrawUTF( 70, 45, buff_dx, 1); 
-
-  //@-显示黄历
-  if(Display_Lunar_Flag == 1)
-  {
-    Display_Lunar_Flag = 0;
-    epd_drv_dx.EPD_SetFount(FONT16);
-    sprintf(buff_dx,"%s", Juhe_HuangliData.lunarYear);
-    epd_drv_dx.DrawUTF( 35 , 65, buff_dx, 1); 
-    sprintf(buff_dx,"%s", Juhe_HuangliData.lunar);
-    epd_drv_dx.DrawUTF( 25 , 81, buff_dx, 1); 
-  }
-
-  //@-电量-图标
-  user_area_dx.left = 205;    //x
-  user_area_dx.top = 1;       //y
-  user_area_dx.width = 16;
-  user_area_dx.height = 16;
-  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_battery, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
-  //@-电量
-  temp_data = ((BAT_V-3.1)/0.012);
-  epd_drv_dx.EPD_SetFount(FONT12);
-  sprintf(buff_dx,"%2d", temp_data);
-  epd_drv_dx.DrawUTF( 223 , 3, buff_dx, 1); 
-
-  //@-显示时间
-  epd_drv_dx.DrawTime(121, 17, dx_timeStruct.hours, dx_timeStruct.minutes, FONT48_NUM, 1);
-
+  //@1-------------------------------------实时时间--------------------------------------------
+  EPD_Paint_YearTime();
   //@-局部刷新
   user_area_dx.left = 0;   //x
   user_area_dx.top = 0;    //y
   user_area_dx.width = 239;
-  user_area_dx.height = 100;
-
-  epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
+  user_area_dx.height = 65;
+  
+  //@2-------------------------------------农历天气--------------------------------------------
+  if(Display_Lunar_Flag == 1)
+  {
+    Serial.println("----------Area-EPD_Display_Lunar-----------");
+    Display_Lunar_Flag = 0;
+    EPD_Paint_Lunar();
+    //@-局部刷新
+    user_area_dx.left = 0;   //x
+    user_area_dx.top =  0;    //66;    //y
+    user_area_dx.width = 115;
+    user_area_dx.height = 105;
+  }
 
   if(Display_Weather_Flag == 1)
   {
+    Serial.println("----------Area-EPD_Display_WeatherSummer__WeatherFuture-----------");
     Display_Weather_Flag = 0;
-    //@-天气概述-最大8个汉字
-    epd_drv_dx.EPD_SetFount(FONT12);
-    sprintf(buff_dx,"%s", Juhe_WeatherData.weather_info);
-    // sprintf(buff_dx,"大暴雨到特大暴雨");
-    epd_drv_dx.DrawUTF( 154 ,67, buff_dx, 1); 
-    sprintf(buff_dx,"%s℃-%s%s", Juhe_WeatherData.weather_temperature, Juhe_WeatherData.weather_direct, Juhe_WeatherData.weather_power);
-    epd_drv_dx.DrawUTF( 154 , 82, buff_dx, 1); 
-    //@-显示天气图标
-    const uint8_t* p_img;
-    sprintf(buff_dx,"%s", Juhe_WeatherData.weather_info_id);
-    int info_id = String(buff_dx).toInt();
-    weather_info_id_show(info_id);
-    user_area_dx.left = 121;    //x
-    user_area_dx.top = 65;       //y
-    user_area_dx.width = 32;
-    user_area_dx.height = 32;
-    epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, weather_index_img_id_dx, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
-    
-    //@2---------------------------------------------------------------------------------
-    //@-显示api图标
-    user_area_dx.left = 5;        //x
-    user_area_dx.top = 110;       //y
-    user_area_dx.width = 16;
-    user_area_dx.height = 16;
-    epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_aqi, S1D13541_LD_IMG_4BPP,&user_area_dx,1);
-    //@-显示api数值
-    epd_drv_dx.EPD_SetFount(FONT12);
-    sprintf(buff_dx,"%s", Juhe_WeatherData.weather_aqi);
-    epd_drv_dx.DrawUTF( 23 ,113, buff_dx, 1); 
-    //@-显示湿度图标
-    user_area_dx.left = 5;        //x
-    user_area_dx.top = 130;       //y
-    user_area_dx.width = 16;
-    user_area_dx.height = 16;
-    epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_shidu, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
-    //@-显示湿度数值
-    epd_drv_dx.EPD_SetFount(FONT12);
-    sprintf(buff_dx,"%s", Juhe_WeatherData.weather_humidity);
-    epd_drv_dx.DrawUTF( 23 ,133, buff_dx, 1); 
-
-    //@-显示后三天天气数据
-    next_day1 = dx_dateStruct.weekDay + 1;
-    next_day2 = dx_dateStruct.weekDay + 2;
-    next_day3 = dx_dateStruct.weekDay + 3;
-    if(next_day1 > 6) 
-    next_day1 = next_day1 - 7;
-    if(next_day2 > 6) 
-    next_day2 = next_day2 - 7;
-    if(next_day3 > 6) 
-    next_day3 = next_day3 - 7;
-
-    epd_drv_dx.EPD_SetFount(FONT12);
-    switch(next_day1)
-    {
-      case 0: sprintf(temp_char,"周日"); break;
-      case 1: sprintf(temp_char,"周一"); break;
-      case 2: sprintf(temp_char,"周二"); break;
-      case 3: sprintf(temp_char,"周三"); break;
-      case 4: sprintf(temp_char,"周四"); break;
-      case 5: sprintf(temp_char,"周五"); break;
-      case 6: sprintf(temp_char,"周六"); break;
-      default: break;
-    }
-    sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay1_date);
-    temp_str = String(temp_char1).substring(5);
-    sprintf(buff_dx,"%s%s %s%s", temp_str.c_str(), temp_char, Juhe_WeatherData.weather_futureDay1_info, Juhe_WeatherData.weather_futureDay1_temperature);
-    epd_drv_dx.DrawUTF( 48 ,110, buff_dx, 1); 
-
-    switch(next_day2)
-    {
-      case 0: sprintf(temp_char,"周日"); break;
-      case 1: sprintf(temp_char,"周一"); break;
-      case 2: sprintf(temp_char,"周二"); break;
-      case 3: sprintf(temp_char,"周三"); break;
-      case 4: sprintf(temp_char,"周四"); break;
-      case 5: sprintf(temp_char,"周五"); break;
-      case 6: sprintf(temp_char,"周六"); break;
-      default: break;
-    }
-    sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay2_date);
-    temp_str = String(temp_char1).substring(5);
-    sprintf(buff_dx,"%s%s %s%s", temp_str.c_str(), temp_char, Juhe_WeatherData.weather_futureDay2_info, Juhe_WeatherData.weather_futureDay2_temperature);
-    epd_drv_dx.DrawUTF( 48 ,125, buff_dx, 1); 
-
-    switch(next_day3)
-    {
-      case 0: sprintf(temp_char,"周日"); break;
-      case 1: sprintf(temp_char,"周一"); break;
-      case 2: sprintf(temp_char,"周二"); break;
-      case 3: sprintf(temp_char,"周三"); break;
-      case 4: sprintf(temp_char,"周四"); break;
-      case 5: sprintf(temp_char,"周五"); break;
-      case 6: sprintf(temp_char,"周六"); break;
-      default: break;
-    }
-    sprintf(temp_char1,"%s", Juhe_WeatherData.weather_futureDay3_date);
-    temp_str = String(temp_char1).substring(5);
-    sprintf(buff_dx,"%s%s %s%s", temp_str.c_str(), temp_char, Juhe_WeatherData.weather_futureDay3_info, Juhe_WeatherData.weather_futureDay3_temperature);
-    epd_drv_dx.DrawUTF( 48 ,140, buff_dx, 1); 
-
+    EPD_Paint_WeatherSummer();
+    EPD_Paint_WeatherFuture();
     //@-局部刷新
     user_area_dx.left = 0;   //x
-    user_area_dx.top = 0;    //y
+    user_area_dx.top =  0;//106;    //y
     user_area_dx.width = 239;
-    user_area_dx.height = 155;
-
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
+    user_area_dx.height = 155; 
   }
 
-  //@3---------------------------------------------------------------------------------
+  //@3-------------------------------------Covid--------------------------------------------
   if(Display_Covid_Flag == 1)
   {
+    Serial.println("----------Area-EPD_Display_Covid-----------");
     Display_Covid_Flag = 0;
-    //@-显示国内疫情-现存确诊人数
-    epd_drv_dx.EPD_SetFount(FONT12);
-    sprintf(buff_dx,"较昨日%d", Covid19Data.currentConfirmedIncr);
-    epd_drv_dx.DrawUTF( 5 ,160, buff_dx, 1); 
-    sprintf(buff_dx,"%d", Covid19Data.currentConfirmedCount);
-    epd_drv_dx.DrawUTF( 8 ,175, buff_dx, 1); 
-    sprintf(buff_dx,"现存确诊");
-    epd_drv_dx.DrawUTF( 5 ,190, buff_dx, 1); 
-    //@-显示国内疫情-累计确诊人数
-    sprintf(buff_dx,"较昨日%d", Covid19Data.confirmedIncr);
-    epd_drv_dx.DrawUTF( 62 ,160, buff_dx, 1); 
-    sprintf(buff_dx,"%d", Covid19Data.confirmedCount);
-    epd_drv_dx.DrawUTF( 65 ,175, buff_dx, 1); 
-    sprintf(buff_dx,"累计确诊");
-    epd_drv_dx.DrawUTF( 62 ,190, buff_dx, 1); 
-
-    //@-显示全球疫情-现存确诊人数
-    sprintf(buff_dx,"现存确诊%d", Covid19Data.g_currentConfirmedCount);
-    epd_drv_dx.DrawUTF( 128 ,160, buff_dx, 1); 
-    //@-显示全球疫情-累计确诊人数
-    sprintf(buff_dx,"累计确诊%d", Covid19Data.g_confirmedCount);
-    epd_drv_dx.DrawUTF( 128 ,190, buff_dx, 1); 
-
+    EPD_Paint_Covid();
     //@-局部刷新
     user_area_dx.left = 0;   //x
-    user_area_dx.top = 155;    //y
+    user_area_dx.top =  0;//156;    //y
     user_area_dx.width = 239;
-    user_area_dx.height = 205;
-
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
+    user_area_dx.height = 205;  
   }
 
-  //@4---------------------------------------------------------------------------------
+  //@4-------------------------------------股票--------------------------------------------
   if(Display_Stock_Flag == 1)
   {
+    Serial.println("----------Area-EPD_Display_Stock-----------");
     Display_Stock_Flag = 0;
-    //@-显示上证指数
-    epd_drv_dx.EPD_SetFount(FONT12);
-    sprintf(buff_dx,"上证指数%s", Juhe_StockData.sh_stock_value);
-    epd_drv_dx.DrawUTF( 5 ,210, buff_dx, 1); 
-    String stock_str = String(Juhe_StockData.sh_stock_per);
-    float stock_float = stock_str.toFloat();
-    if(stock_float < 0)
-    sprintf(buff_dx,"跌 %s%%", Juhe_StockData.sh_stock_per);
-    else
-    sprintf(buff_dx,"涨 %s%%", Juhe_StockData.sh_stock_per);
-    epd_drv_dx.DrawUTF( 5 ,225, buff_dx, 1); 
-    //@-显示深圳指数
-    sprintf(buff_dx,"深圳指数%s", Juhe_StockData.sz_stock_value);
-    epd_drv_dx.DrawUTF( 125 ,210, buff_dx, 1); 
-    stock_str = String(Juhe_StockData.sz_stock_per);
-    stock_float = stock_str.toFloat();
-    if(stock_float < 0)
-    sprintf(buff_dx,"跌 %s%%", Juhe_StockData.sz_stock_per);
-    else
-    sprintf(buff_dx,"涨 %s%%", Juhe_StockData.sz_stock_per);
-    epd_drv_dx.DrawUTF( 125 ,225, buff_dx, 1); 
-
+    EPD_Paint_Stock();
     //@-局部刷新
     user_area_dx.left = 0;   //x
-    user_area_dx.top = 205;    //y
+    user_area_dx.top =  0;//206;    //y
     user_area_dx.width = 239;
     user_area_dx.height = 240;
-
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
   }
 
-  //@5---------------------------------------------------------------------------------
-  if(Display_News_Flag ==  1)
+  //@5-------------------------------------新闻--------------------------------------------
+  if(Display_News_Flag == 1)
   {
+    Serial.println("----------Area-EPD_Display_News-----------");
     Display_News_Flag = 0;
-    epd_drv_dx.EPD_SetFount(FONT16);
-    epd_drv_dx.DrawUTF( 0 , 245, NewsData[0].news_title, 1); 
-    epd_drv_dx.DrawUTF( 0 , 245+17, NewsData[1].news_title, 1); 
-    epd_drv_dx.DrawUTF( 0 , 245+34, NewsData[2].news_title, 1); 
-    epd_drv_dx.DrawUTF( 0 , 245+51, NewsData[3].news_title, 1); 
-    epd_drv_dx.DrawUTF( 0 , 245+68, NewsData[4].news_title, 1); 
-    epd_drv_dx.DrawUTF( 0 , 245+85, NewsData[5].news_title, 1); 
-    epd_drv_dx.DrawUTF( 0 , 245+102, NewsData[6].news_title, 1); 
-
+    EPD_Paint_News();
     //@-局部刷新
     user_area_dx.left = 0;   //x
-    user_area_dx.top = 245;    //y
+    user_area_dx.top = 0;//240;    //y
     user_area_dx.width = 239;
-    user_area_dx.height = 120;
-
-    epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
+    user_area_dx.height = 382;
   }
+
+  epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
 
   //   epd_drv_dx.EPD_UpdateUser(1, UPDATE_FULL, NULL);
 
-  delay(300);
+  delay(500);
   epd_drv_dx.EPD4INC_HVDISEN();
   epd_drv_dx.s1d135xx_set_power_state(PL_EPDC_SLEEP);
   epd_drv_dx.EPD_CLK_STOP();
@@ -1616,10 +1392,12 @@ void EPD_ShowMain()
   epd_drv_dx.Buf_DrawLine(Area2_Box_X ,Area1_Box_High,Area2_Box_X ,Area2_Box_High);   //@-竖线
   //@-区域3分割线
   epd_drv_dx.Buf_DrawLine(0,Area3_Box_High,239,Area3_Box_High);   //@-横线 
-  epd_drv_dx.Buf_DrawLine(Area3_Box_X ,Area2_Box_High,Area3_Box_X ,Area3_Box_High);   //@-竖线
+  // epd_drv_dx.Buf_DrawLine(Area3_Box_X ,Area2_Box_High,Area3_Box_X ,Area3_Box_High);   //@-竖线
   //@-区域4分割线
   epd_drv_dx.Buf_DrawLine(0,Area4_Box_High,239,Area4_Box_High);   //@-横线 
   epd_drv_dx.Buf_DrawLine(Area4_Box_X ,Area3_Box_High,Area4_Box_X ,Area4_Box_High);   //@-竖线
+  //@-区域5分割线
+  epd_drv_dx.Buf_DrawLine(0,Area5_Box_High,239,Area5_Box_High);   //@-横线 
 
   epd_drv_dx.EPD4INC_HVEN();
   delay(2);
@@ -1628,23 +1406,26 @@ void EPD_ShowMain()
   epd_drv_dx.Buf_UpdateFull(1);
 
   //@1---------------------------------------------------------------------------------
-  EPD_Display_YearTime();
+  EPD_Paint_YearTime();
 
-  EPD_Display_Lunar();
+  EPD_Paint_Lunar();
 
-  EPD_Display_WeatherSummer();
+  EPD_Paint_WeatherSummer();
 
   //@2---------------------------------------------------------------------------------
-  EPD_Display_WeatherFuture();
+  EPD_Paint_WeatherFuture();
 
   //@3---------------------------------------------------------------------------------
-  EPD_Display_Covid();
+  EPD_Paint_Covid();
 
   //@4---------------------------------------------------------------------------------
-  EPD_Display_Stock();
+  EPD_Paint_Stock();
 
   //@5---------------------------------------------------------------------------------
-  EPD_Display_News();
+  EPD_Paint_News();
+
+  //@6---------------------------------------------------------------------------------
+  EPD_Paint_BottomInfo();
 
   Display_Weather_Flag = 0;
   Display_Covid_Flag =   0;
@@ -1721,7 +1502,6 @@ void EPD_ShowConfig()
   epd_drv_dx.EPD_CLK_STOP();
   
 }
-
 
 //@-连接wifi
 void WIFI_Connect()
