@@ -247,7 +247,7 @@ extern String fontname;
 enum FONT {
   FONT12 = 0,
   FONT8 = 1,
-  FONT15 = 2,
+  FONT10 = 2,
   FONT16 = 3,
   FONT24 = 4,
   FONT32 = 5,
@@ -260,7 +260,6 @@ enum FONT {
   ICON32 = 12,
   ICON40 = 13,
   ICON80 = 14,
-
 };
 struct font_type {
   uint16_t font_lo;   //字库存储的位置  1 文件系统 0 flash直接存储

@@ -148,6 +148,8 @@ String serverName_huangli = "http://v.juhe.cn/calendar/day?key=9774f2f31c8349cba
 String serverName_stock_sh = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type=0&key=4dd25417ff9fb7cbab4791e60899d9a8"; //上证指数
 String serverName_stock_sz = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type=1&key=4dd25417ff9fb7cbab4791e60899d9a8"; //深圳指数
 
+String serverName_weatherAQI = "http://route.showapi.com/104-29?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b&city=杭州";  //空气质量-万维易源
+String serverName_huangli1 = "http://route.showapi.com/856-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b";
 
 //@-数据不是很准确
 // https://coronavirus-tracker-api.herokuapp.com/v2/locations/67  中国
@@ -256,6 +258,28 @@ typedef struct {
 } Juhe_StockData_t;
 Juhe_StockData_t Juhe_StockData;
 
+//@-万维数源黄历数据
+typedef struct {
+  char  nongli[72];                  //@-农历信息
+  char  ganzhi[72];                  //@-干子信息
+  char  qixiang[72];                 //@-气象信息
+  char  jieri[72];                   //@-节假日
+  char  jieqi24[72];                 //@-24节气
+} WanWei_HuangliData_t;
+WanWei_HuangliData_t WanWei_HuangliData;
+
+//@-万维数源天气质量数据
+typedef struct {
+  char  quality[32];                  //@-天气资料描述
+  char  pm2_5[32];                    //@-pm2.5信息
+  char  pm10[32];                     //@-pm10信息
+  char  so2[32];                      //@-二氧化硫一小时平均，μg/m³
+  char  o3[32];                       //@-臭氧1小时平均，μg/m³
+  char  co[32];                       //@-一氧化碳1小时平均，mg/m3
+  char  no2[32];                      //@-二氧化氮1小时平均，μg/m3
+} WanWei_WeatherData_t;
+WanWei_WeatherData_t WanWei_WeatherData;
+
 //@-SPIFFS JSON数据结构体
 typedef struct {
 
@@ -301,6 +325,8 @@ int Display_Covid_Flag =   0;
 int Display_Stock_Flag =   0;
 int Display_News_Flag =    0;
 int Display_Lunar_Flag =   0;
+int Display_WanWeiLunar_Flag =   0;
+int Display_WanWeiWeather_Flag =   0;
 
 //-------------------------------------------------------
 
@@ -575,6 +601,7 @@ void setup()
   //@-正常运行模式
   if(EPD_Dev_RunMode == 0)
   {
+    #if 1
     //@-配置wifi连接-每5min检测wifi连接-并获取json数据
     if((dx_timeStruct.minutes == 5)||(dx_timeStruct.minutes == 10)||(dx_timeStruct.minutes == 15)||
       (dx_timeStruct.minutes == 20)||(dx_timeStruct.minutes == 25)||(dx_timeStruct.minutes == 30)||
@@ -594,20 +621,33 @@ void setup()
         WIFI_Get_JsonInfo(serverName_covid, 2, "Covid-19");
       }
 
-      #if 1
-      //@-工作时间每天4次获取天气数据
+      //@-工作时间每天4次获取天气数据-聚合天气
       if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 16))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
         WIFI_Get_JsonInfo(serverName_weather, 3, "聚合天气");
       }
 
+      // //@-工作时间每天4次获取天气数据-万维气象
+      // if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 16))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
+      // {
+      //   WIFI_Get_JsonInfo(serverName_weatherAQI, 7, "万维气象");
+      // }
+
       //@-获得黄历数据-每天凌晨1点获取1次
-      if(((dx_timeStruct.hours == 1)&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
+      if(((dx_timeStruct.hours == 0)&&(dx_timeStruct.minutes == 1))||(bootCount == 1))
       {
         sprintf(temp_str, "&date=%d-%d-%d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
         String huangliData = serverName_huangli + String(temp_str);
         WIFI_Get_JsonInfo(huangliData, 4, "聚合黄历");
       }
+
+      // //@-获得黄历数据-每天凌晨1点获取0:1次
+      // if(((dx_timeStruct.hours == 0)&&(dx_timeStruct.minutes == 1))||(bootCount == 1))
+      // {
+      //   sprintf(temp_str, "&ymd=%04d%02d%02d", dx_dateStruct.year, dx_dateStruct.month, dx_dateStruct.date);
+      //   String huangliData = serverName_huangli1 + String(temp_str);
+      //   WIFI_Get_JsonInfo(huangliData, 8, "万维农历");
+      // }
 
       //@-获得上证指数-工作日的9/10/11/13/14/15:30获取6次
       if(((dx_dateStruct.weekDay == 1)||(dx_dateStruct.weekDay == 2)||(dx_dateStruct.weekDay == 3)||(dx_dateStruct.weekDay == 4)||(dx_dateStruct.weekDay == 5))||(bootCount == 1))
@@ -623,13 +663,13 @@ void setup()
         if((((dx_timeStruct.hours == 9)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 11)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 14)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 35))||(bootCount == 1))
         WIFI_Get_JsonInfo(serverName_stock_sz, 6, "聚合股票-深圳");
       }
-      #endif
 
       //@-断开wifi链接
       WiFi.disconnect(true);
       WiFi.mode(WIFI_OFF);
       Serial.println("WiFi Disconnected");
     }
+    #endif
 
     //@-读取AD
     BAT_V = analogRead(BAT_V_PIN)/560.1;
@@ -732,6 +772,7 @@ void setup()
 void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
 {
   char temp[256];
+  float temp_float;
   int httpResponseCode;
   int http_payload_size;
   //@-创建HTTP链接
@@ -786,21 +827,21 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
           if(Data_Mode == 1)
           {
             strcpy(temp, root["result"]["data"]["list"][0]["title"]);
-            sprintf(NewsData[0].news_title, "1.%s           ", temp);
+            sprintf(NewsData[0].news_title, "1.%s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][1]["title"]);
-            sprintf(NewsData[1].news_title, "2.%s           ", temp);
+            sprintf(NewsData[1].news_title, "2.%s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][2]["title"]);
-            sprintf(NewsData[2].news_title, "3.%s           ", temp);
+            sprintf(NewsData[2].news_title, "3.%s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][3]["title"]);
-            sprintf(NewsData[3].news_title, "4.%s           ", temp);
+            sprintf(NewsData[3].news_title, "4.%s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][4]["title"]);
-            sprintf(NewsData[4].news_title, "5.%s           ", temp);
+            sprintf(NewsData[4].news_title, "5.%s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][5]["title"]);
-            sprintf(NewsData[5].news_title, "6.%s           ", temp);
+            sprintf(NewsData[5].news_title, "6.%s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][6]["title"]);
-            sprintf(NewsData[6].news_title, "7.%s           ", temp);
+            sprintf(NewsData[6].news_title, "7.%s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][7]["title"]);
-            sprintf(NewsData[7].news_title, "8.%s           ", temp);
+            sprintf(NewsData[7].news_title, "8.%s                   ", temp);
             //@-显示标志置位
             Display_News_Flag = 1;
 
@@ -907,9 +948,11 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
           else if(Data_Mode == 5)
           {
             strcpy(temp, root["result"]["nowpri"]);
-            sprintf(Juhe_StockData.sh_stock_value, "%s", temp);
+            temp_float = String(temp).toFloat();
+            sprintf(Juhe_StockData.sh_stock_value, "%0.2f", temp_float);
             strcpy(temp, root["result"]["increPer"]);
-            sprintf(Juhe_StockData.sh_stock_per, "%s", temp);
+            temp_float = String(temp).toFloat();
+            sprintf(Juhe_StockData.sh_stock_per, "%0.2f", temp_float);
 
             //@-显示标志置位
             Display_Stock_Flag = 1;
@@ -918,12 +961,50 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
           else if(Data_Mode == 6)
           {
             strcpy(temp, root["result"]["nowpri"]);
-            sprintf(Juhe_StockData.sz_stock_value, "%s", temp);
+            temp_float = String(temp).toFloat();
+            sprintf(Juhe_StockData.sz_stock_value, "%0.2f", temp_float);
             strcpy(temp, root["result"]["increPer"]);
-            sprintf(Juhe_StockData.sz_stock_per, "%s", temp);
+            temp_float = String(temp).toFloat();
+            sprintf(Juhe_StockData.sz_stock_per, "%0.2f", temp_float);
 
             //@-显示标志置位
             Display_Stock_Flag = 1;
+          }
+          //@-万维气象
+          else if(Data_Mode == 7)
+          {
+            strcpy(temp, root["showapi_res_body"]["pm"]["quality"]);
+            sprintf(WanWei_WeatherData.quality, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["pm"]["pm2_5"]);
+            sprintf(WanWei_WeatherData.pm2_5, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["pm"]["pm10"]);
+            sprintf(WanWei_WeatherData.pm10, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["pm"]["so2"]);
+            sprintf(WanWei_WeatherData.so2, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["pm"]["o3"]);
+            sprintf(WanWei_WeatherData.o3, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["pm"]["co"]);
+            sprintf(WanWei_WeatherData.co, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["pm"]["no2"]);
+            sprintf(WanWei_WeatherData.no2, "%s", temp);
+            Serial.println(WanWei_WeatherData.quality);
+            Display_WanWeiWeather_Flag = 1;
+          }
+          //@-万维农历
+          else if(Data_Mode == 8)
+          {
+            strcpy(temp, root["showapi_res_body"]["nongli"]);
+            sprintf(WanWei_HuangliData.nongli, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["ganzhi"]);
+            sprintf(WanWei_HuangliData.ganzhi, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["jieri"]);
+            sprintf(WanWei_HuangliData.jieri, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["qixiang"]);
+            sprintf(WanWei_HuangliData.qixiang, "%s", temp);
+            strcpy(temp, root["showapi_res_body"]["jieqi24"]);
+            sprintf(WanWei_HuangliData.jieqi24, "%s", temp);
+            Serial.println(WanWei_HuangliData.jieqi24);
+            Display_WanWeiLunar_Flag = 1;
           }
         }
       }
@@ -1003,7 +1084,7 @@ void EPD_Paint_Lunar()
   // sprintf(buff_dx,"辛丑年");
   epd_drv_dx.DrawUTF( 35 , 65, buff_dx, 1); 
   sprintf(buff_dx,"%s", Juhe_HuangliData.lunar);
-  // sprintf(buff_dx,"四月二九");
+  // sprintf(buff_dx,"五月初九");
   epd_drv_dx.DrawUTF( 25 , 81, buff_dx, 1); 
 }
 //@-EPD绘制天气概述
