@@ -20,6 +20,15 @@
 //@-图片数据
 #include "DX_EPD_Test.h"
 
+#define USE_BLE 0
+
+#if USE_BLE
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+#endif
+
 
 //20210520-该版本EPD无光感传感器
 // #define XDOT  240
@@ -306,7 +315,7 @@ SPIFFS_JSONData_t SPIFFS_JSONData_Save;
 const uint8_t* weather_index_img_id_dx = gImage_weather_00;
 
 //@-设备运行模式
-int EPD_Dev_RunMode = 0;   //0:正常模式  1:配置模式
+int EPD_Dev_RunMode = 0;   //0:正常模式  1:配置模式  2:蓝牙BLE模式
 
 //@-WEB服务器
 AsyncWebServer server_dx(80);
@@ -329,6 +338,24 @@ int Display_WanWeiLunar_Flag =   0;
 int Display_WanWeiWeather_Flag =   0;
 
 //-------------------------------------------------------
+#if USE_BLE
+//@-BLE相关
+// See the following for generating UUIDs:
+// https://www.uuidgenerator.net/
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+BLEServer* pServer = NULL;
+BLECharacteristic* pCharacteristic = NULL;
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
+uint32_t value = 0;
+uint8_t txValue = 0;
+char  BLE_Msg[256];                      //BLE接收缓存区
+char  BLE_SendMsg[256];                  //BLE发送缓存区
+#endif
+
+
 
 //@-加载SPIFFS文件系统中的json文件
 void Load_Config()
@@ -578,6 +605,15 @@ void setup()
       }
   }
 
+  #if USE_BLE
+  //@-查询是否进入蓝牙BLE模式
+  if(wakeup_reason == ESP_SLEEP_WAKEUP_EXT1)
+  {
+    Serial.println("BLE Mode Start----------------->");
+    Dev_BLEInit();
+  }
+  #endif
+
   //@-读取USB充电状态
   Charge_State = digitalRead(Charge_PIN);
   Serial.print("USB Charge:");
@@ -766,6 +802,13 @@ void setup()
     //@-显示配置信息
     EPD_ShowConfig();
   }
+  #if USE_BLE
+  //@-蓝牙BLE模式
+  else if(EPD_Dev_RunMode == 2)
+  {
+
+  }
+  #endif
 }
 
 //@-获取信息网站JSON数据
@@ -1727,6 +1770,77 @@ void Button_Check()
     Key_Flag = false;
   }
 }
+
+#if USE_BLE
+//@-BLE设备服务回调
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+    };
+
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+    }
+};
+
+//@-BLE设备接收回调
+class MyCallbacks: public BLECharacteristicCallbacks {
+  
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string rxValue = pCharacteristic->getValue();
+                            
+    //  Serial.println("DXDXDX");
+
+      if( rxValue.length() < 256)
+      {
+          memset(BLE_Msg, 0, sizeof(BLE_Msg));
+          for (int i = 0; i < rxValue.length(); i++)
+          {
+            BLE_Msg[i] = rxValue[i];
+            // BLE_Msg_Input.setCharAt(i,rxValue[i]);
+          }
+      }
+     }
+};
+
+void Dev_BLEInit()
+{
+  // Create the BLE Device
+  BLEDevice::init("DX_EPD_BLE");
+
+  // Create the BLE Server
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  // Create the BLE Service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // Create a BLE Characteristic
+  pCharacteristic = pService->createCharacteristic(
+                      CHARACTERISTIC_UUID,
+                      BLECharacteristic::PROPERTY_READ   |
+                      BLECharacteristic::PROPERTY_WRITE  |
+                      BLECharacteristic::PROPERTY_NOTIFY |
+                      BLECharacteristic::PROPERTY_INDICATE
+                    );
+  pCharacteristic->setCallbacks(new MyCallbacks()); 
+
+  // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
+  // Create a BLE Descriptor
+  pCharacteristic->addDescriptor(new BLE2902());
+
+  // Start the service
+  pService->start();
+
+  // Start advertising
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+  BLEDevice::startAdvertising();
+  Serial.println("Waiting a client connection to notify...");
+}
+#endif
 
 
 //@-主循环
