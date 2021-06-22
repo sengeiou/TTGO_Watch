@@ -97,6 +97,7 @@ const String password2 = "dingxiao";
 String ssid;
 String password;
 int wifi_connect_tick = 0;
+int wifi_connect_time = 60;  //默认wifi连接时间
 
 
 //@-网络授时
@@ -152,7 +153,7 @@ String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list
 // String serverName_covid = "http://route.showapi.com/2217-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b";
 String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
 // String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
-String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&city=杭州&key=2b636957c5b1b630bf13194d76d86801";
+String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&key=2b636957c5b1b630bf13194d76d86801";
 String serverName_huangli = "http://v.juhe.cn/calendar/day?key=9774f2f31c8349cbab916eaf11d849db"; //date=2021-6-9
 String serverName_stock_sh = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type=0&key=4dd25417ff9fb7cbab4791e60899d9a8"; //上证指数
 String serverName_stock_sz = "http://web.juhe.cn:8080/finance/stock/hs?gid=&type=1&key=4dd25417ff9fb7cbab4791e60899d9a8"; //深圳指数
@@ -323,10 +324,13 @@ const char* PARAM_INPUT_1 = "ssid1";   //@-html文件中input属性的name值
 const char* PARAM_INPUT_2 = "passkey1";
 const char* PARAM_INPUT_3 = "ssid2";
 const char* PARAM_INPUT_4 = "passkey2";
+const char* PARAM_INPUT_5 = "city";
 //*********SSID and Pass for AP**************//
 const char* ssidAPConfig = "dx_epd";
 const char* passAPConfig = "dingxiao";
 
+int Dev_ConfigSuc_Flag = 0;  //@-设备参数配置成功标志
+int Dev_ConfigSecond = 8;    //@-设备参数配置成功秒倒计时
 //------------------------------------------
 //@-内容显示标志
 int Display_Weather_Flag = 0;
@@ -547,20 +551,22 @@ void setup()
   Load_Config();
 
   //@-选择wifi
-  if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_1)
-  {
-    // ssid = ssid1;
-    // password = password1;
-    ssid = SPIFFS_JSONData_Read.Json_SSID1;
-    password = SPIFFS_JSONData_Read.Json_Pass1;
-  }
-  else if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_2)
-  {
-    // ssid = ssid2;
-    // password = password2;
-    ssid = SPIFFS_JSONData_Read.Json_SSID2;
-    password = SPIFFS_JSONData_Read.Json_Pass2;
-  }
+  // if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_1)
+  // {
+  //   // ssid = ssid1;
+  //   // password = password1;
+  //   ssid = SPIFFS_JSONData_Read.Json_SSID1;
+  //   password = SPIFFS_JSONData_Read.Json_Pass1;
+  // }
+  // else if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_2)
+  // {
+  //   // ssid = ssid2;
+  //   // password = password2;
+  //   ssid = SPIFFS_JSONData_Read.Json_SSID2;
+  //   password = SPIFFS_JSONData_Read.Json_Pass2;
+  // }
+  ssid = SPIFFS_JSONData_Read.Json_SSID1;
+  password = SPIFFS_JSONData_Read.Json_Pass1;
 
   //ESP32启动方式
   wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -568,7 +574,7 @@ void setup()
   {
     case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
     case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); wifi_connect_time = 8;break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
     case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
     default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
@@ -595,7 +601,7 @@ void setup()
         {
           Config_Set_Tick = Config_Set_Tick + 1;
           Serial.print(".");
-          if(Config_Set_Tick > 10)
+          if(Config_Set_Tick > 8)
           {
             EPD_Dev_RunMode = 1;
             break;
@@ -660,7 +666,11 @@ void setup()
       //@-工作时间每天4次获取天气数据-聚合天气
       if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 16))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
-        WIFI_Get_JsonInfo(serverName_weather, 3, "聚合天气");
+        
+        sprintf(temp_str, "&city=%s", SPIFFS_JSONData_Read.Json_location);
+        String serverName_weather1 = serverName_weather + String(temp_str);
+        // Serial.println(serverName_weather1);
+        WIFI_Get_JsonInfo(serverName_weather1, 3, "聚合天气");
       }
 
       // //@-工作时间每天4次获取天气数据-万维气象
@@ -718,6 +728,8 @@ void setup()
     if((wakeup_reason == 0)||(bootCount == 1))
     {
       EPD_ShowMain();
+      // EPD_ShowConfigSuc();
+      // EPD_ShowCofigSuc_Second(6);
     }
     if((wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) && (bootCount != 1))
     {
@@ -756,6 +768,12 @@ void setup()
       request->send(SPIFFS, "/Test.html", "text/html");
     });
 
+    //@-api设置页面
+    server_dx.on("/set", HTTP_GET, [](AsyncWebServerRequest *request)
+    {
+      request->send(SPIFFS, "/Set.html", "text/html");
+    });
+
     //@-从SPIFFS文件系统中获得图片
     server_dx.on("/logo", HTTP_GET, [](AsyncWebServerRequest *request)
     {
@@ -770,7 +788,9 @@ void setup()
       SPIFFS_JSONData_Save.Json_Pass1 = request->getParam(PARAM_INPUT_2)->value();
       SPIFFS_JSONData_Save.Json_SSID2 = request->getParam(PARAM_INPUT_3)->value();
       SPIFFS_JSONData_Save.Json_Pass2 = request->getParam(PARAM_INPUT_4)->value();
+      SPIFFS_JSONData_Save.Json_location = request->getParam(PARAM_INPUT_5)->value();
 
+      Serial.println(SPIFFS_JSONData_Save.Json_location);
       Serial.println(SPIFFS_JSONData_Save.Json_SSID1);
       Serial.println(SPIFFS_JSONData_Save.Json_Pass1);
       Serial.println(SPIFFS_JSONData_Save.Json_SSID2);
@@ -778,7 +798,7 @@ void setup()
 
       //@-debug
       SPIFFS_JSONData_Save.Json_name = "丁霄";
-      SPIFFS_JSONData_Save.Json_location = "杭州";
+      // SPIFFS_JSONData_Save.Json_location = "杭州";
       SPIFFS_JSONData_Save.Json_App_KEY1 = "key1";
 
       //@-SPIFFS写入参数
@@ -789,8 +809,19 @@ void setup()
       + SPIFFS_JSONData_Save.Json_SSID1 + ") with pass: " + SPIFFS_JSONData_Save.Json_Pass1 +
       "<br><a href=\"/\">Return to Home Page</a>");
 
-      delay(5000);
-      ESP.restart();
+      // delay(5000);
+      // ESP.restart();
+      Dev_ConfigSuc_Flag = 1;
+    });
+
+    //@-挂载http get_api 操作
+    server_dx.on("/get_api", HTTP_GET, [] (AsyncWebServerRequest *request) 
+    {
+      //@-获得参数
+      String API_KEY1 = request->getParam("api_key1")->value();
+      Serial.println(API_KEY1);
+      //@-API Key 配置成功返回主页
+      request->send(SPIFFS, "/Test.html", "text/html");
     });
 
     //@-配置服务器没有找到页面配置
@@ -1166,7 +1197,7 @@ void EPD_Paint_WeatherFuture()
   user_area_dx.top = 110;       //y
   user_area_dx.width = 16;
   user_area_dx.height = 16;
-  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_aqi, S1D13541_LD_IMG_4BPP,&user_area_dx,1);
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_aqi, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
   //@-显示api数值
   epd_drv_dx.EPD_SetFount(FONT12);
   sprintf(buff_dx,"%s", Juhe_WeatherData.weather_aqi);
@@ -1603,17 +1634,28 @@ void EPD_ShowConfig()
   //@1---------------------------------------------------------------------------------
   //@-显示
   epd_drv_dx.EPD_SetFount(FONT16);
-  sprintf(buff_dx,"DX EPD 参数配置");
-  epd_drv_dx.DrawUTF( 115 , 200, buff_dx, 1); 
-  sprintf(buff_dx,"请连接设备wifi,ssid为dx_epd,默认pass为dingxiao");
-  epd_drv_dx.DrawUTF( 15 , 217, buff_dx, 1); 
-  
-  //@-地点-图标
-  user_area_dx.left = 125;    //x
-  user_area_dx.top = 1;       //y
-  user_area_dx.width = 16;
-  user_area_dx.height = 16;
-  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_location, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  sprintf(buff_dx,"wifi连接设备");
+  epd_drv_dx.DrawUTF( 125 , 160, buff_dx, 1); 
+  sprintf(buff_dx,"ssid:dx_epd");
+  epd_drv_dx.DrawUTF( 125 , 177, buff_dx, 1); 
+  sprintf(buff_dx,"pass:dingxiao");
+  epd_drv_dx.DrawUTF( 125 , 194, buff_dx, 1); 
+
+  //@-二维码
+  user_area_dx.left = 135;    //x
+  user_area_dx.top = 220;       //y
+  user_area_dx.width = 80;
+  user_area_dx.height = 80;
+  //@-图片的尺寸需要8的倍数
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_QRCode_W80H80, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+
+  //@-漫画
+  user_area_dx.left = 2;    //x
+  user_area_dx.top = 80;       //y
+  user_area_dx.width = 120;
+  user_area_dx.height = 232;
+  //@-图片的尺寸需要8的倍数
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_play_W120H232, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
   
   epd_drv_dx.EPD4INC_HVEN();
   delay(10);
@@ -1627,6 +1669,86 @@ void EPD_ShowConfig()
   
 }
 
+#if 0
+//@-全刷新显示配置成功信息
+void EPD_ShowConfigSuc()
+{
+  Serial.println("----------Config_Success()-----------");
+  epd_drv_dx.EPD4INC_Port_Reinit();      //SPI初始化
+
+  //通过BUF处理图层
+  epd_drv_dx.Buf_Clear();
+
+  epd_drv_dx.EPD4INC_HVEN();
+  delay(2); 
+  epd_drv_dx.EPD_CLK_EX();               //其中时钟
+  epd_drv_dx.s1d135xx_set_epd_power(1);
+  delay(2);
+
+
+  //@-中国人
+  user_area_dx.left = 31;    //x
+  user_area_dx.top = 100;       //y
+  user_area_dx.width = 176;
+  user_area_dx.height = 192;
+  //@-图片的尺寸需要8的倍数
+  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, gImage_chinese_W176H192, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  
+  //@-显示
+  epd_drv_dx.EPD_SetFount(FONT16);
+  sprintf(buff_dx,"设备重启中...");
+  epd_drv_dx.DrawUTF( 80 , 295, buff_dx, 1); 
+
+
+  //@-局部刷新
+  user_area_dx.left = 0;   //x
+  user_area_dx.top = 0;    //y
+  user_area_dx.width = 239;
+  user_area_dx.height = 350;
+  
+  epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
+
+  delay(500);
+  epd_drv_dx.EPD4INC_HVDISEN();
+  epd_drv_dx.s1d135xx_set_power_state(PL_EPDC_SLEEP);
+  epd_drv_dx.EPD_CLK_STOP();
+  
+}
+#endif
+
+//@-非全局刷新
+void EPD_ShowCofigSuc_Second(int second)
+{
+  Serial.println("----------SecondUpdata-----------");
+  epd_drv_dx.EPD4INC_Port_Reinit();      //SPI初始化
+  epd_drv_dx.EPD4INC_HVEN();
+  delay(2); 
+  epd_drv_dx.EPD_CLK_EX();               //其中时钟
+  epd_drv_dx.s1d135xx_set_epd_power(1);
+  delay(2);
+
+  //@1-------------------------------------秒时间倒计时--------------------------------------------
+  //@-显示
+  epd_drv_dx.EPD_SetFount(FONT16);
+  sprintf(buff_dx,"设备重启中...");
+  epd_drv_dx.DrawUTF( 80 , 315, buff_dx, 1); 
+
+  sprintf(buff_dx,"%d秒", second);
+  epd_drv_dx.DrawUTF( 108 , 332, buff_dx, 1); 
+  //@-局部刷新
+  user_area_dx.left = 70;   //x
+  user_area_dx.top = 312;    //y
+  user_area_dx.width = 239;
+  user_area_dx.height = 50;
+  
+  epd_drv_dx.EPD_UpdateUser(2, UPDATE_PARTIAL_AREA, &user_area_dx);
+
+  delay(500);
+  epd_drv_dx.EPD4INC_HVDISEN();
+  epd_drv_dx.s1d135xx_set_power_state(PL_EPDC_SLEEP);
+  epd_drv_dx.EPD_CLK_STOP();
+}
+
 //@-连接wifi
 void WIFI_Connect()
 {
@@ -1636,11 +1758,12 @@ void WIFI_Connect()
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid.c_str(), password.c_str());
+  // WiFi.begin("liang12", "12345678");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
     wifi_connect_tick = wifi_connect_tick + 1;
-    if(wifi_connect_tick > 8)
+    if(wifi_connect_tick > wifi_connect_time)
     {
       wifi_connect_tick = 0;
 
@@ -1852,17 +1975,31 @@ void loop()
   //@-读取AD
   BAT_V = analogRead(BAT_V_PIN)/560.1;
 
-  dis_tick = dis_tick + 1;
-  if(dis_tick >= 10)
+  //@-判断是否配置成功
+  if(Dev_ConfigSuc_Flag == 1)
   {
-    dis_tick = 0;
+    if(Dev_ConfigSecond <= 0)
+    {
+      ESP.restart();
+    }
 
-    good = good + 1;
-
-    sht30.get();  //获得温湿度数据
-    delay(5);
-    ReadRTC();
+    EPD_ShowCofigSuc_Second(Dev_ConfigSecond);
+    Dev_ConfigSecond = Dev_ConfigSecond - 1;
+    delay(500);
   }
-  
-  delay(10);
+  else if(Dev_ConfigSuc_Flag == 0)
+  {
+    dis_tick = dis_tick + 1;
+    if(dis_tick >= 10)
+    {
+      dis_tick = 0;
+
+      good = good + 1;
+
+      sht30.get();  //获得温湿度数据
+      delay(5);
+      ReadRTC();
+    }
+    delay(10);
+  }
 }
