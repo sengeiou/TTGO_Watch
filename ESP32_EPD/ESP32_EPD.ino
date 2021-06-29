@@ -536,7 +536,7 @@ void setup()
   //@-初始化串口
   Serial.begin(115200);
 
-  if(bootCount > 720)
+  if(bootCount > 600)
   bootCount = 0;
   //Increment boot number and print it every reboot
   bootCount = bootCount + 1;
@@ -1785,8 +1785,9 @@ void WIFI_Connect()
   }
 
   //@-wifi连接成功-每天23:01-23:03进行网络对时
-  if((WiFi.status() == WL_CONNECTED) && (dx_timeStruct.hours == 23) && 
+  if(((WiFi.status() == WL_CONNECTED) && (dx_timeStruct.hours == 23) && 
     ((dx_timeStruct.minutes == 5)||(dx_timeStruct.minutes == 15)||(dx_timeStruct.minutes == 20)))
+    ||(bootCount == 1))
   {
     // Init and get the time
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
