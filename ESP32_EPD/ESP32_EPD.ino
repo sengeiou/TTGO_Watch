@@ -29,6 +29,8 @@
 #include <BLE2902.h>
 #endif
 
+//const char* ssid = "8879";
+//const char* password = "blackbug381";
 
 //20210520-该版本EPD无光感传感器
 // #define XDOT  240
@@ -103,8 +105,8 @@ int wifi_connect_time = 60;  //默认wifi连接时间
 //@-网络授时
 // const char* ntpServer = "pool.ntp.org";   ----->ok
 // const char* ntpServer = "cn.pool.ntp.org";  ---->OK
-// const char* ntpServer = "cn.ntp.org.cn";
-const char* ntpServer = "time.pool.aliyun.com";
+// const char* ntpServer = "time.pool.aliyun.com";   ---->OK
+const char* ntpServer = "ntp.aliyun.com";
 
 //@-设置时区参数
 const long  gmtOffset_sec = 7 * 3600;
@@ -151,7 +153,7 @@ uint64_t mask;
 
 String serverName_sinaNews = "http://interface.sina.cn/dfz/outside/wap/news/list.d.html?col=56261&show_num=8";  //@-新浪综合新闻7条
 // String serverName_covid = "http://route.showapi.com/2217-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b";
-String serverName_covid1 = "https://lab.isaaclin.cn/nCoV/api/overall";
+String serverName_covid = "https://lab.isaaclin.cn/nCoV/api/overall";
 // String serverName_covid2 = "http://81.68.90.103/nCoV/api/overall";
 String serverName_weather = "http://apis.juhe.cn/simpleWeather/query?&key=2b636957c5b1b630bf13194d76d86801";
 String serverName_huangli = "http://v.juhe.cn/calendar/day?key=9774f2f31c8349cbab916eaf11d849db"; //date=2021-6-9
@@ -175,7 +177,7 @@ String serverName_huangli1 = "http://route.showapi.com/856-2?showapi_appid=67230
 // String serverName_covid = "http://route.showapi.com/856-2?showapi_appid=672306&showapi_sign=7c49550af6554658a9005f3014bc6f2b&ymd=20210618";
 
 // D:\Work\Django\blog\home\dx\sites\dx1023.com\django_blog\blog
-String serverName_covid = "http://www.dx1023.com/dxjson/";
+String serverName_covid1 = "http://www.dx1023.com/dxjson/";
 
 
 
@@ -946,15 +948,25 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
             // Covid19Data.g_deadCount = root["results"][0]["globalStatistics"]["deadCount"];
             // Covid19Data.g_deadIncr = root["results"][0]["globalStatistics"]["deadIncr"];
 
+            // https://lab.isaaclin.cn/nCoV/api/overall
+            Covid19Data.confirmedNum =  root["results"][0]["currentConfirmedCount"];
+            Covid19Data.confirmedIncr = root["results"][0]["currentConfirmedIncr"];
+            Covid19Data.externalConfirmedNum = root["results"][0]["suspectedCount"];
+            Covid19Data.externalConfirmedIncr = root["results"][0]["suspectedIncr"];
+            Covid19Data.asymptomaticNum = root["results"][0]["seriousCount"];
+            Covid19Data.asymptomaticIncr = root["results"][0]["seriousIncr"];
+            Covid19Data.deadNum = root["results"][0]["deadCount"];
+            Covid19Data.deadIncr = root["results"][0]["deadIncr"];
+
             //@-对应serverName_covid的json格式数据
-            Covid19Data.confirmedNum = root["result"]["confirmedNum"];
-            Covid19Data.confirmedIncr = root["result"]["confirmedIncr"];
-            Covid19Data.externalConfirmedNum = root["result"]["externalConfirmedNum"];
-            Covid19Data.externalConfirmedIncr = root["result"]["externalConfirmedIncr"];
-            Covid19Data.asymptomaticNum = root["result"]["asymptomaticNum"];
-            Covid19Data.asymptomaticIncr = root["result"]["asymptomaticIncr"];
-            Covid19Data.deadNum = root["result"]["deadNum"];
-            Covid19Data.deadIncr = root["result"]["deadIncr"];
+            // Covid19Data.confirmedNum = root["result"]["confirmedNum"];
+            // Covid19Data.confirmedIncr = root["result"]["confirmedIncr"];
+            // Covid19Data.externalConfirmedNum = root["result"]["externalConfirmedNum"];
+            // Covid19Data.externalConfirmedIncr = root["result"]["externalConfirmedIncr"];
+            // Covid19Data.asymptomaticNum = root["result"]["asymptomaticNum"];
+            // Covid19Data.asymptomaticIncr = root["result"]["asymptomaticIncr"];
+            // Covid19Data.deadNum = root["result"]["deadNum"];
+            // Covid19Data.deadIncr = root["result"]["deadIncr"];
 
             //@-显示标志置位
             Display_Covid_Flag = 1;
