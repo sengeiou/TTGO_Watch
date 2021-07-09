@@ -5,6 +5,7 @@
 #include <HTTPClient.h>
 #include <TFT_eSPI.h> 
 #include <SPI.h>
+#include <ArduinoJson.h>
 // JPEG decoder library
 #include <JPEGDecoder.h>
 
@@ -12,6 +13,94 @@
 #define minimum(a,b)     (((a) < (b)) ? (a) : (b))
 
 TFT_eSPI tft = TFT_eSPI(); 
+
+String serverName_dxjson = "http://www.dx1023.com/dxjson/";
+
+//@-DXJSON数据结构体
+typedef struct {
+  char pdf_title[128];
+  char pdf_image[512];
+} DXJSONData_t;
+DXJSONData_t DXJSONData;
+
+//@-获取信息网站JSON数据
+void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
+{
+  char temp[256];
+  float temp_float;
+  int httpResponseCode;
+  int http_payload_size;
+  //@-创建HTTP链接
+  HTTPClient http;
+
+  //@-判断WIFI连接状态
+  if(WiFi.status()== WL_CONNECTED)
+  {
+    //@-获得指定网站的JSON数据
+    http.begin(serverName.c_str());
+
+    //@-发送HTTP Get
+    httpResponseCode = http.GET();
+
+    //@-成功连接网站
+    if (httpResponseCode>0) 
+    {
+      //@-获得GET返回值
+      // Serial.print("HTTP Response code: ");
+      // Serial.println(httpResponseCode);
+      String payload = http.getString();
+
+      //@1-从html页面中获取信息
+      // String word3 = getValue(payload, '\n', 77);
+      // Serial.println(word3);
+
+      //@2-打印获得的数据长度
+      http_payload_size = payload.length();
+      Serial.print(Http_source);
+      Serial.print(" HTTP payload Size:");
+      Serial.println(http_payload_size);
+      // Serial.println(payload);
+
+      if(http_payload_size > 100)
+      {
+        //@3-从网站提供的API接口中获取信息，并将数据json化
+        DynamicJsonDocument doc(6144);  //3072
+        // StaticJsonDocument<2048> doc;
+
+        //@-序列化JSON数据
+        DeserializationError error = deserializeJson(doc, payload);
+        if (error) 
+        {
+          Serial.println("JSON parsing failed!");
+        } 
+        else 
+        {
+          // get the JsonObject in the JsonDocument
+          JsonObject root = doc.as<JsonObject>(); 
+
+          //@-DXJSON数据
+          if(Data_Mode == 1)
+          {
+            strcpy(temp, root["result"]["pdf_name"]);
+            sprintf(DXJSONData.pdf_title, "%s", temp);
+            strcpy(temp, root["result"]["pdf_image"]);
+            sprintf(DXJSONData.pdf_image, "%s", temp);
+
+            Serial.println(DXJSONData.pdf_title);
+            Serial.println(DXJSONData.pdf_image);
+          }
+        }
+      }
+    }
+    else 
+    {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+      //@-释放http资源
+      http.end();
+  }
+}
 
 void setup()
 {
@@ -29,7 +118,8 @@ void setup()
     WiFi.mode(WIFI_STA);
     // Connect to Wi-Fi
     Serial.print("Connecting to ");
-    WiFi.begin("wuyiyi", "dingxiao");
+    // WiFi.begin("wuyiyi", "dingxiao");
+    WiFi.begin("DX_JS", "dingxiao");
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
@@ -40,7 +130,11 @@ void setup()
         Serial.println("WiFi connected.");
     }
 
-    downloadAndSaveFile("/test_download.jpg","http://www.dx1023.com/media/images/test_dddxx.jpg");
+    //@-获取json数据
+    WIFI_Get_JsonInfo(serverName_dxjson, 1, "DX_JSON");
+
+    // downloadAndSaveFile("/test_download.jpg","http://www.dx1023.com/media/images/test_dddxx.jpg");
+    downloadAndSaveFile("/test_download.jpg",String(DXJSONData.pdf_image));
     // bitmapDemo();
     ReadImageFile();
 
