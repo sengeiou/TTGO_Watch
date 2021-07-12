@@ -118,8 +118,8 @@ void setup()
     WiFi.mode(WIFI_STA);
     // Connect to Wi-Fi
     Serial.print("Connecting to ");
-    // WiFi.begin("wuyiyi", "dingxiao");
-    WiFi.begin("DX_JS", "dingxiao");
+    WiFi.begin("wuyiyi", "dingxiao");
+    // WiFi.begin("DX_JS", "dingxiao");
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
