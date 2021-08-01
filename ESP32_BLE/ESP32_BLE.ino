@@ -78,6 +78,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
+#include <WiFi.h>
+
 #include "dx_lcd_map.h"
 
 
@@ -176,6 +178,8 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 void setup() {
 
   Serial.begin(115200);
+
+   Serial.println(WiFi.macAddress());
 
   //@-接管电源控制
   pinMode(Power_Ctl_Pin, OUTPUT);
