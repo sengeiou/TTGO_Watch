@@ -2,6 +2,7 @@
 #include <SPIFFS.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
+// #define ARDUINOJSON_DECODE_UNICODE 1
 #include <ArduinoJson.h>
 #include <Wire.h>
 #include <I2C_BM8563.h>
@@ -71,6 +72,7 @@
 
 #define WIFI_Index_1             0
 #define WIFI_Index_2             1
+
 
 
 //@-创建EPD驱动
@@ -181,6 +183,24 @@ String serverName_covid1 = "http://www.dx1023.com/dxjson/";
 
 
 
+// struct SpiRamAllocator {
+//   void* allocate(size_t size) {
+//     return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+//   }
+
+//   void deallocate(void* pointer) {
+//     heap_caps_free(pointer);
+//   }
+
+//   void* reallocate(void* ptr, size_t new_size) {
+//     return heap_caps_realloc(ptr, new_size, MALLOC_CAP_SPIRAM);
+//   }
+// };
+
+// using SpiRamJsonDocument = BasicJsonDocument<SpiRamAllocator>;
+
+
+
 //@-新闻数据结构体
 typedef struct {
   char news_title[256];
@@ -227,6 +247,8 @@ typedef struct {
 
 } Covid19Data_t;
 Covid19Data_t Covid19Data;
+
+// unsigned char json_gImage_play_W120H232[3480];
 
 //@-聚合天气数据
 typedef struct {
@@ -360,6 +382,7 @@ uint8_t txValue = 0;
 char  BLE_Msg[256];                      //BLE接收缓存区
 char  BLE_SendMsg[256];                  //BLE发送缓存区
 #endif
+
 
 
 
@@ -535,8 +558,12 @@ void setup()
 {
   char temp_str[256];
 
+  psramInit();
+
   //@-初始化串口
   Serial.begin(115200);
+
+  Serial.println((String)"Memory available in PSRAM : " +ESP.getFreePsram());
 
   if(bootCount > 600)
   bootCount = 0;
@@ -662,9 +689,10 @@ void setup()
       //@-获取Covid数据-每天7，15点获取1次
       if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
-        WIFI_Get_JsonInfo(serverName_covid, 2, "Covid-19");
+        WIFI_Get_JsonInfo(serverName_covid1, 2, "Covid-19");
       }
 
+      #if 1
       //@-工作时间每天4次获取天气数据-聚合天气
       if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 16))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
@@ -711,6 +739,7 @@ void setup()
         if((((dx_timeStruct.hours == 9)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 11)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 14)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 35))||(bootCount == 1))
         WIFI_Get_JsonInfo(serverName_stock_sz, 6, "聚合股票-深圳");
       }
+      #endif
 
       //@-断开wifi链接
       WiFi.disconnect(true);
@@ -882,10 +911,15 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
       Serial.println(http_payload_size);
       // Serial.println(payload);
 
+      // size_t capacity = ESP.getMaxAllocHeap();  // ESP32
+      // Serial.print(" ESP.getMaxAllocHeap:");
+      // Serial.println(capacity);
+
       if(http_payload_size > 100)
       {
-        //@3-从网站提供的API接口中获取信息，并将数据json化
-        DynamicJsonDocument doc(6144);  //3072
+        // @3-从网站提供的API接口中获取信息，并将数据json化
+        DynamicJsonDocument doc(6144);  //6144//3072
+        // SpiRamJsonDocument  doc(14000);
         // StaticJsonDocument<2048> doc;
 
         //@-序列化JSON数据
@@ -949,25 +983,28 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
             // Covid19Data.g_deadIncr = root["results"][0]["globalStatistics"]["deadIncr"];
 
             // https://lab.isaaclin.cn/nCoV/api/overall
-            Covid19Data.confirmedNum =  root["results"][0]["currentConfirmedCount"];
-            Covid19Data.confirmedIncr = root["results"][0]["currentConfirmedIncr"];
-            Covid19Data.externalConfirmedNum = root["results"][0]["suspectedCount"];
-            Covid19Data.externalConfirmedIncr = root["results"][0]["suspectedIncr"];
-            Covid19Data.asymptomaticNum = root["results"][0]["seriousCount"];
-            Covid19Data.asymptomaticIncr = root["results"][0]["seriousIncr"];
-            Covid19Data.deadNum = root["results"][0]["deadCount"];
-            Covid19Data.deadIncr = root["results"][0]["deadIncr"];
+            // Covid19Data.confirmedNum =  root["results"][0]["currentConfirmedCount"];
+            // Covid19Data.confirmedIncr = root["results"][0]["currentConfirmedIncr"];
+            // Covid19Data.externalConfirmedNum = root["results"][0]["suspectedCount"];
+            // Covid19Data.externalConfirmedIncr = root["results"][0]["suspectedIncr"];
+            // Covid19Data.asymptomaticNum = root["results"][0]["seriousCount"];
+            // Covid19Data.asymptomaticIncr = root["results"][0]["seriousIncr"];
+            // Covid19Data.deadNum = root["results"][0]["deadCount"];
+            // Covid19Data.deadIncr = root["results"][0]["deadIncr"];
 
-            //@-对应serverName_covid的json格式数据
-            // Covid19Data.confirmedNum = root["result"]["confirmedNum"];
-            // Covid19Data.confirmedIncr = root["result"]["confirmedIncr"];
-            // Covid19Data.externalConfirmedNum = root["result"]["externalConfirmedNum"];
-            // Covid19Data.externalConfirmedIncr = root["result"]["externalConfirmedIncr"];
-            // Covid19Data.asymptomaticNum = root["result"]["asymptomaticNum"];
-            // Covid19Data.asymptomaticIncr = root["result"]["asymptomaticIncr"];
-            // Covid19Data.deadNum = root["result"]["deadNum"];
-            // Covid19Data.deadIncr = root["result"]["deadIncr"];
+            //@-对应serverName_covid的dx1023站点json格式数据
+            Covid19Data.confirmedNum = root["result"]["confirmedNum"];
+            Covid19Data.confirmedIncr = root["result"]["confirmedIncr"];
+            Covid19Data.externalConfirmedNum = root["result"]["externalConfirmedNum"];
+            Covid19Data.externalConfirmedIncr = root["result"]["externalConfirmedIncr"];
+            Covid19Data.asymptomaticNum = root["result"]["asymptomaticNum"];
+            Covid19Data.asymptomaticIncr = root["result"]["asymptomaticIncr"];
+            Covid19Data.deadNum = root["result"]["deadNum"];
+            Covid19Data.deadIncr = root["result"]["deadIncr"];
 
+            // for(int i=0; i < 3480; i++)
+            // json_gImage_play_W120H232[i] = root["result"]["gray_img"][i];
+            
             //@-显示标志置位
             Display_Covid_Flag = 1;
           }
