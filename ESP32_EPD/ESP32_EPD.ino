@@ -697,7 +697,7 @@ void setup()
         WIFI_Get_JsonInfo(serverName_covid1, 2, "Covid-19");
       }
 
-      #if 0
+      #if 1
       //@-工作时间每天4次获取天气数据-聚合天气
       if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 13)||(dx_timeStruct.hours == 16))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
@@ -998,42 +998,42 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
             // Covid19Data.deadIncr = root["results"][0]["deadIncr"];
 
             //@-对应serverName_covid的dx1023站点json格式数据
-            // Covid19Data.confirmedNum = root["result"]["confirmedNum"];
-            // Covid19Data.confirmedIncr = root["result"]["confirmedIncr"];
-            // Covid19Data.externalConfirmedNum = root["result"]["externalConfirmedNum"];
-            // Covid19Data.externalConfirmedIncr = root["result"]["externalConfirmedIncr"];
-            // Covid19Data.asymptomaticNum = root["result"]["asymptomaticNum"];
-            // Covid19Data.asymptomaticIncr = root["result"]["asymptomaticIncr"];
-            // Covid19Data.deadNum = root["result"]["deadNum"];
-            // Covid19Data.deadIncr = root["result"]["deadIncr"];
+            Covid19Data.confirmedNum = root["result"]["confirmedNum"];
+            Covid19Data.confirmedIncr = root["result"]["confirmedIncr"];
+            Covid19Data.externalConfirmedNum = root["result"]["externalConfirmedNum"];
+            Covid19Data.externalConfirmedIncr = root["result"]["externalConfirmedIncr"];
+            Covid19Data.asymptomaticNum = root["result"]["asymptomaticNum"];
+            Covid19Data.asymptomaticIncr = root["result"]["asymptomaticIncr"];
+            Covid19Data.deadNum = root["result"]["deadNum"];
+            Covid19Data.deadIncr = root["result"]["deadIncr"];
 
             //@-获得图片数据
-            strcpy(temp, root["result"]);
-            sprintf(Covid19Data.dx_string, "%s", temp);
-            String dx_s = String(Covid19Data.dx_string);
-            int s_size = dx_s.length();
-            String dx_s1 = dx_s.substring(15,s_size-3); 
+            // strcpy(temp, root["result"]);
+            // sprintf(Covid19Data.dx_string, "%s", temp);
+            // String dx_s = String(Covid19Data.dx_string);
+            // int s_size = dx_s.length();
+            // String dx_s1 = dx_s.substring(15,s_size-3); 
 
-            // Split the string into substrings
-            StringCount = 0;
-            while (dx_s1.length() > 0)
-            {
-              int index = dx_s1.indexOf(',');
-              if (index == -1) // No space found
-              {
-                json_gImage_play_W56H59[StringCount++] = dx_s1.toInt();
-                break;
-              }
-              else
-              {
-                json_gImage_play_W56H59[StringCount++] = dx_s1.substring(0, index).toInt();
-                dx_s1 = dx_s1.substring(index+1);
-              }
-            }
+            // // Split the string into substrings
+            // StringCount = 0;
+            // while (dx_s1.length() > 0)
+            // {
+            //   int index = dx_s1.indexOf(',');
+            //   if (index == -1) // No space found
+            //   {
+            //     json_gImage_play_W56H59[StringCount++] = dx_s1.toInt();
+            //     break;
+            //   }
+            //   else
+            //   {
+            //     json_gImage_play_W56H59[StringCount++] = dx_s1.substring(0, index).toInt();
+            //     dx_s1 = dx_s1.substring(index+1);
+            //   }
+            // }
 
-            Serial.println(json_gImage_play_W56H59[0]);
-            Serial.println(StringCount);
-            Serial.println(json_gImage_play_W56H59[StringCount-1]);
+            // Serial.println(json_gImage_play_W56H59[0]);
+            // Serial.println(StringCount);
+            // Serial.println(json_gImage_play_W56H59[StringCount-1]);
 
             // for(int i=0; i < 3480; i++)
             // json_gImage_play_W56H59[i] = root["result"]["gray_img"][i];
@@ -1416,22 +1416,23 @@ void EPD_Paint_Stock()
 //@-EPD绘制新闻信息
 void EPD_Paint_News()
 {
-  // epd_drv_dx.EPD_SetFount(FONT16);
-  // epd_drv_dx.DrawUTF( 0 , 245, NewsData[0].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+17, NewsData[1].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+34, NewsData[2].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+51, NewsData[3].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+68, NewsData[4].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+85, NewsData[5].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+102, NewsData[6].news_title, 1); 
-  // epd_drv_dx.DrawUTF( 0 , 245+119, NewsData[7].news_title, 1); 
+  epd_drv_dx.EPD_SetFount(FONT16);
+  epd_drv_dx.DrawUTF( 0 , 245, NewsData[0].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+17, NewsData[1].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+34, NewsData[2].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+51, NewsData[3].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+68, NewsData[4].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+85, NewsData[5].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+102, NewsData[6].news_title, 1); 
+  epd_drv_dx.DrawUTF( 0 , 245+119, NewsData[7].news_title, 1); 
 
   //@-显示网络图片
-  user_area_dx.left = 20;    //x
-  user_area_dx.top = 250;       //y
-  user_area_dx.width = 56;
-  user_area_dx.height = 59;
-  epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, json_gImage_play_W56H59, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
+  // user_area_dx.left = 20;    //x
+  // user_area_dx.top = 250;       //y
+  // // user_area_dx.width = 56;
+  // user_area_dx.width = 112;
+  // user_area_dx.height = 59;
+  // epd_drv_dx.User_Img_Tran(user_area_dx.width, user_area_dx.height, json_gImage_play_W56H59, S1D13541_LD_IMG_1BPP,&user_area_dx,1);
  
 }
 //@-EPD绘制底部信息
