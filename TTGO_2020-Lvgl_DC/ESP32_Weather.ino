@@ -51,7 +51,7 @@ HTTPClient http;
 HTTPClient http1;
 //@-json数据格式化
 // DynamicJsonBuffer
-StaticJsonBuffer<1500> jsonBuffer;
+StaticJsonBuffer<1500> jsonBuffer;   //@-arduinojson使用老版本库5.13.5，新的版本库使用6.18.0
 String App_Html_Add = "https://api.openweathermap.org/data/2.5/weather?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";  //-当天数据
 String App_Html_Add1 = "https://api.openweathermap.org/data/2.5/forecast?q=hangzhou&appid=8874f49040c9bad35a788cbdb34f5444";     //-5 Day / 3 Hour Forecast
 String App_Html_Add2 = "http://wthrcdn.etouch.cn/weather_mini?citykey=101210101";
@@ -222,5 +222,3 @@ void GetweatherTask(void *pvParameters)
       vTaskDelete(NULL);
     }
 }
-
-
