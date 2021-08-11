@@ -692,7 +692,7 @@ void setup()
       WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
 
       //@-获取Covid数据-每天7，15点获取1次
-      if((((dx_timeStruct.hours == 7)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
+      if((((dx_timeStruct.hours == 10)||(dx_timeStruct.hours == 15))&&(dx_timeStruct.minutes == 0))||(bootCount == 1))
       {
         WIFI_Get_JsonInfo(serverName_covid1, 2, "Covid-19");
       }

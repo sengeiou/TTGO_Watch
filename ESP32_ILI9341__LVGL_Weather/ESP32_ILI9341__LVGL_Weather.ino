@@ -1,19 +1,13 @@
+
+
+#include <SPIFFS.h>
+#include <FS.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
 #include <WiFiUdp.h>
 
-#include <lvgl.h>   //@-使用lv_arduino2.1.4版本，新版3.0.1中文字库调整太麻烦---
 
-// This ESP_VS1053_Library
-#include "VS1053.h"
-
-#include <Preferences.h>  //For reading and writing into the ROM memory
-Preferences preferences;
-unsigned int old_counter,new_counter;
-unsigned int counter = 0;
-// #include "helloMp3.h"
-#include <WiFi.h>
 #include <HTTPClient.h>
 #include <esp_wifi.h>
 #include <CircularBuffer.h>
@@ -22,9 +16,11 @@ unsigned int counter = 0;
 #include <math.h>
 #include <lvgl.h>    //该应用使用lv_arduion库V3.0.1对等与LVGL Core 7.0.2
 #include <TFT_eSPI.h>
+#include <Ticker.h>
 
-//--------------------------------------
-#include <Adafruit_NeoPixel.h>
+
+
+
 
 
 //@-配置用户字体
@@ -47,6 +43,13 @@ LV_FONT_DECLARE(myLED_Font);
 //@-LVGL的系统tick
 #define LVGL_TICK_PERIOD 60
 
+
+TFT_eSPI tft = TFT_eSPI(); /* TFT instance */
+
+/* Add a simple drive to open images */
+lv_fs_drv_t fs_drv;                          /*A driver descriptor*/
+File f;
+
 // char ssid[] = "wuyiyi";    //  your network SSID (name) 
 // char pass[] = "10238831";   // your network password
 char ssid[] = "DX_JS";    //  your network SSID (name) 
@@ -61,7 +64,7 @@ WiFiClient  client;
           
 //-----------------------------------------------------
 Ticker tick; /* timer for interrupt handler */
-TFT_eSPI tft = TFT_eSPI(); /* TFT instance */
+
 static lv_disp_buf_t disp_buf;
 static lv_color_t buf[LV_HOR_RES_MAX * 10];
 int screenWidth = 320;
@@ -71,11 +74,10 @@ int screenHeight = 240;
 int tick1 = 0;
 
 lv_obj_t * btn;
+lv_obj_t * home_btn;
 
 lv_obj_t * kb;
 lv_obj_t * btn_dis;
-
-
 
 
 
@@ -171,6 +173,123 @@ bool my_touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data)
 }
 
 
+/*-------------------------------------------------------------*/
+void spiffs_drv_init()
+{
+  lv_fs_drv_init(&fs_drv);                     /*Basic initialization*/
+
+  fs_drv.letter = 'D';                         /*An uppercase letter to identify the drive */
+  fs_drv.file_size = sizeof(File);   /*Size required to store a file object*/
+  fs_drv.open_cb = my_open_cb;                 /*Callback to open a file */
+  fs_drv.close_cb = my_close_cb;               /*Callback to close a file */
+  fs_drv.remove_cb = my_remove_cb;             /*Callback to remove a file */
+  fs_drv.read_cb = my_read_cb;                 /*Callback to read a file */
+  fs_drv.write_cb = my_write_cb;               /*Callback to write a file */
+  fs_drv.seek_cb = my_seek_cb;                 /*Callback to seek in a file (Move cursor) */
+  fs_drv.tell_cb = my_tell_cb;                 /*Callback to tell the cursor position  */
+
+  lv_fs_drv_register(&fs_drv);                 /*Finally register the drive*/
+}
+
+lv_fs_res_t my_open_cb(lv_fs_drv_t *drv, void *file_p, const char *fn, lv_fs_mode_t mode)
+{
+  // (void) drv; /*Unused*/
+
+  if (f) {
+    return LV_FS_RES_OK;
+  }
+
+  char buf[100];
+  sprintf(buf,"/%s",fn);
+  Serial.println(buf);
+
+  f = SPIFFS.open(buf, mode == LV_FS_MODE_WR ? FILE_WRITE : FILE_READ);
+
+  if(!f || f.isDirectory()){
+    return LV_FS_RES_UNKNOWN;
+  } else{
+    return LV_FS_RES_OK;
+  }
+}
+
+// lv_fs_res_t my_open_cb(lv_fs_drv_t *drv, void *file_p, const char *fn, lv_fs_mode_t mode){
+//   (void) drv; /*Unused*/
+  
+//   File *fp = file_p;
+//   if (*fp) {
+//     return LV_FS_RES_OK;
+//   }
+
+//   char buf[100];
+//   sprintf(buf,"/%s",fn);
+
+//   (*fp) = SPIFFS.open(buf, mode == LV_FS_MODE_WR ? FILE_WRITE : FILE_READ);
+
+//   if(!(*fp) || (*fp).isDirectory()){
+//     return LV_FS_RES_UNKNOWN;
+//   } else{
+//     return LV_FS_RES_OK;
+//   }
+// }
+
+lv_fs_res_t my_close_cb(lv_fs_drv_t *drv, void *file_p)
+{
+  // (void) drv; /*Unused*/
+
+  f.close();
+  return LV_FS_RES_OK;
+}
+
+lv_fs_res_t my_read_cb(lv_fs_drv_t *drv, void *file_p, 
+                        void *buf, uint32_t btr, uint32_t *br)
+{
+  // (void) drv; /*Unused*/
+
+  *br = f.read((uint8_t*)buf, btr);
+  Serial.println("READ");
+  // Serial.println(btr);
+  
+  return LV_FS_RES_OK;
+}
+
+lv_fs_res_t my_write_cb(lv_fs_drv_t *drv, void *file_p, 
+                        const void *buf, uint32_t btw, uint32_t *bw){
+  // (void) drv; /*Unused*/
+
+  *bw = f.write((const uint8_t*)buf, btw);
+  return LV_FS_RES_OK;
+}
+
+lv_fs_res_t my_seek_cb(lv_fs_drv_t *drv, void *file_p, uint32_t pos){
+  // (void) drv; /*Unused*/
+
+  f.seek(pos);
+  return LV_FS_RES_OK;
+}
+
+lv_fs_res_t my_tell_cb(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p){
+  // (void) drv; /*Unused*/
+
+  uint32_t tmp = f.position();
+  pos_p = &tmp;
+  
+  return LV_FS_RES_OK;
+}
+
+lv_fs_res_t my_remove_cb(lv_fs_drv_t *drv, const char *fn){
+  // (void) drv; /*Unused*/
+
+  char buf[100];
+  sprintf(buf,"/%s",fn);
+
+  if(SPIFFS.remove(buf)){
+    return LV_FS_RES_OK;
+  } else{
+    return LV_FS_RES_UNKNOWN;
+  }
+}
+/*-------------------------------------------------------------------------------------*/
+
 //@-LVGL驱动刷新tick
 /* Interrupt driven periodic handler */
 static void lv_tick_handler(void)
@@ -189,6 +308,15 @@ void setup ()
     //@-lvgl 初始化
     lv_init();
     delay(500);
+
+    if(!SPIFFS.begin(true)){
+      
+      Serial.println("SPIFFS False！\n");
+      while(true){
+        delay(1000);
+      }
+    }
+    spiffs_drv_init();
 
     //@-初始化SPI接口
     SPI.begin();
@@ -284,14 +412,38 @@ void dx_gui_init()
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont);
 
-    btn = lv_btn_create(lv_scr_act(), NULL);
-    lv_obj_set_event_cb(btn, btn_event_cb);
-    lv_obj_align(btn, NULL, LV_ALIGN_CENTER, 0, 10);
 
-    lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
-    lv_obj_add_style(label_0_0, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text( label_0_0, "0-中国"); 
-    lv_obj_align( label_0_0, NULL, LV_ALIGN_CENTER,0,0);
+    /*Darken the button when pressed*/
+    static lv_style_t style_imagebtn;
+    lv_style_init(&style_imagebtn);
+    lv_style_set_image_recolor_opa(&style_imagebtn, LV_STATE_PRESSED, LV_OPA_30);
+    lv_style_set_image_recolor(&style_imagebtn, LV_STATE_PRESSED, LV_COLOR_BLACK);
+    lv_style_set_text_color(&style_imagebtn, LV_STATE_DEFAULT, LV_COLOR_WHITE);
+
+    /*Create an Image button*/
+    // lv_obj_t * imgbtn1 = lv_imgbtn_create(lv_scr_act(), NULL);
+    lv_obj_t * imgbtn1 = lv_imgbtn_create(scr, NULL);
+    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_RELEASED, "D:/DX.bin");   //&imgbtn_green
+    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_PRESSED, "D:/DX.bin");    //&imgbtn_green
+    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_RELEASED, "D:/DX.bin");  //&imgbtn_blue
+    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_PRESSED, "D:/DX.bin");   //&imgbtn_blue
+    lv_imgbtn_set_checkable(imgbtn1, true);
+    lv_obj_add_style(imgbtn1, LV_IMGBTN_PART_MAIN, &style_imagebtn);
+    lv_obj_align(imgbtn1, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    /*Create a label on the Image button*/
+    lv_obj_t * label = lv_label_create(imgbtn1, NULL);
+    lv_label_set_text(label, "Button");
+
+
+    // btn = lv_btn_create(scr, NULL);
+    // // lv_obj_set_event_cb(btn, btn_event_cb);
+    // lv_obj_align(btn, NULL, LV_ALIGN_CENTER, 0, 10);
+
+    // lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
+    // lv_obj_add_style(label_0_0, LV_OBJ_PART_MAIN, &model_style);
+    // lv_label_set_text( label_0_0, "0-中国"); 
+    // lv_obj_align( label_0_0, NULL, LV_ALIGN_CENTER,0,0);
 
 }
 
