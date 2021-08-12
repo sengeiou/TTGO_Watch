@@ -20,9 +20,6 @@
 
 
 
-
-
-
 //@-配置用户字体
 LV_FONT_DECLARE(myFont);
 LV_FONT_DECLARE(dxLED7);
@@ -75,9 +72,9 @@ int tick1 = 0;
 
 lv_obj_t * btn;
 lv_obj_t * home_btn;
+lv_obj_t * img1;
 
-lv_obj_t * kb;
-lv_obj_t * btn_dis;
+int img_flag = 0;
 
 
 
@@ -246,7 +243,7 @@ lv_fs_res_t my_read_cb(lv_fs_drv_t *drv, void *file_p,
   // (void) drv; /*Unused*/
 
   *br = f.read((uint8_t*)buf, btr);
-  Serial.println("READ");
+  // Serial.println("READ");
   // Serial.println(btr);
   
   return LV_FS_RES_OK;
@@ -381,23 +378,38 @@ void btn_event_cb(lv_obj_t * obj, lv_event_t event)
   switch(event) 
   {
       case LV_EVENT_PRESSED:
-            Serial.println("Pressed\n");
+            // Serial.println("Pressed\n");
+            if(obj == btn)
+            {
+                if(img_flag == 0)
+                {
+                  img_flag = 1;
+                  lv_img_set_src(img1, "D:/pic2.bin");
+                  Serial.println("pic2.bin");
+                }
+                else if(img_flag == 1)
+                {
+                  img_flag = 0;
+                  lv_img_set_src(img1, "D:/me.bin");
+                  Serial.println("me.bin");
+                }
+            }
             break;
-      case LV_EVENT_SHORT_CLICKED:
-            Serial.println("Short clicked\n");
-            break;
-      case LV_EVENT_CLICKED:
-            Serial.println("Clicked\n");
-            break;
-      case LV_EVENT_LONG_PRESSED:
-            Serial.println("Long press\n");
-            break;
-      case LV_EVENT_LONG_PRESSED_REPEAT:
-            Serial.println("Long press repeat\n");
-            break;
-      case LV_EVENT_RELEASED:
-            Serial.println("Released\n");
-            break;
+      // case LV_EVENT_SHORT_CLICKED:
+      //       Serial.println("Short clicked\n");
+      //       break;
+      // case LV_EVENT_CLICKED:
+      //       Serial.println("Clicked\n");
+      //       break;
+      // case LV_EVENT_LONG_PRESSED:
+      //       Serial.println("Long press\n");
+      //       break;
+      // case LV_EVENT_LONG_PRESSED_REPEAT:
+      //       Serial.println("Long press repeat\n");
+      //       break;
+      // case LV_EVENT_RELEASED:
+      //       Serial.println("Released\n");
+      //       break;
   }
 }
 
@@ -407,43 +419,82 @@ void dx_gui_init()
     lv_obj_t * scr = lv_cont_create(NULL, NULL);
     lv_disp_load_scr(scr);
 
+
+    // LV_FONT_DECLARE(myFont);
+    // LV_FONT_DECLARE(dxLED7);
+    // LV_FONT_DECLARE(dxLED7_60);
+    // LV_FONT_DECLARE(myLED_Font);
+
     static lv_style_t model_style;
     lv_style_init(&model_style);
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont);
 
+    static lv_style_t model_style1;
+    lv_style_init(&model_style1);
+    lv_style_set_text_color(&model_style1, LV_STATE_DEFAULT, LV_COLOR_BLACK);
+    lv_style_set_text_font(&model_style1, LV_STATE_DEFAULT, &dxLED7_60);
+
 
     /*Darken the button when pressed*/
-    static lv_style_t style_imagebtn;
-    lv_style_init(&style_imagebtn);
-    lv_style_set_image_recolor_opa(&style_imagebtn, LV_STATE_PRESSED, LV_OPA_30);
-    lv_style_set_image_recolor(&style_imagebtn, LV_STATE_PRESSED, LV_COLOR_BLACK);
-    lv_style_set_text_color(&style_imagebtn, LV_STATE_DEFAULT, LV_COLOR_WHITE);
+    // static lv_style_t style_imagebtn;
+    // lv_style_init(&style_imagebtn);
+    // lv_style_set_image_recolor_opa(&style_imagebtn, LV_STATE_PRESSED, LV_OPA_30);
+    // lv_style_set_image_recolor(&style_imagebtn, LV_STATE_PRESSED, LV_COLOR_BLACK);
+    // lv_style_set_text_color(&style_imagebtn, LV_STATE_DEFAULT, LV_COLOR_WHITE);
 
-    /*Create an Image button*/
-    // lv_obj_t * imgbtn1 = lv_imgbtn_create(lv_scr_act(), NULL);
-    lv_obj_t * imgbtn1 = lv_imgbtn_create(scr, NULL);
-    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_RELEASED, "D:/DX.bin");   //&imgbtn_green
-    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_PRESSED, "D:/DX.bin");    //&imgbtn_green
-    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_RELEASED, "D:/DX.bin");  //&imgbtn_blue
-    lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_PRESSED, "D:/DX.bin");   //&imgbtn_blue
-    lv_imgbtn_set_checkable(imgbtn1, true);
-    lv_obj_add_style(imgbtn1, LV_IMGBTN_PART_MAIN, &style_imagebtn);
-    lv_obj_align(imgbtn1, NULL, LV_ALIGN_CENTER, 0, 0);
+    /*Create an Image button---*/
+    // // lv_obj_t * imgbtn1 = lv_imgbtn_create(lv_scr_act(), NULL);
+    // lv_obj_t * imgbtn1 = lv_imgbtn_create(scr, NULL);
+    // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_RELEASED, "D:/me.bin");   //&imgbtn_green
+    // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_PRESSED, "D:/me.bin");    //&imgbtn_green
+    // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_RELEASED, "D:/me.bin");  //&imgbtn_blue
+    // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_PRESSED, "D:/me.bin");   //&imgbtn_blue
 
-    /*Create a label on the Image button*/
-    lv_obj_t * label = lv_label_create(imgbtn1, NULL);
-    lv_label_set_text(label, "Button");
+    // // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_RELEASED, "D:/me1.png");   //&imgbtn_green
+    // // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_PRESSED, "D:/me1.png");    //&imgbtn_green
+    // // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_RELEASED, "D:/me1.png");  //&imgbtn_blue
+    // // lv_imgbtn_set_src(imgbtn1, LV_BTN_STATE_CHECKED_PRESSED, "D:/me1.png");   //&imgbtn_blue
+    
+    // lv_imgbtn_set_checkable(imgbtn1, true);
+    // lv_obj_add_style(imgbtn1, LV_IMGBTN_PART_MAIN, &style_imagebtn);
+    // lv_obj_align(imgbtn1, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    // /*Create a label on the Image button*/
+    // lv_obj_t * label = lv_label_create(imgbtn1, NULL);
+    // lv_label_set_text(label, "Button");
 
 
-    // btn = lv_btn_create(scr, NULL);
-    // // lv_obj_set_event_cb(btn, btn_event_cb);
-    // lv_obj_align(btn, NULL, LV_ALIGN_CENTER, 0, 10);
+    img1 = lv_img_create(scr, NULL);
+    lv_img_set_src(img1, "D:/pic2.bin");
+    lv_obj_align(img1, NULL, LV_ALIGN_IN_TOP_LEFT, 0, 0);
 
-    // lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
-    // lv_obj_add_style(label_0_0, LV_OBJ_PART_MAIN, &model_style);
-    // lv_label_set_text( label_0_0, "0-中国"); 
-    // lv_obj_align( label_0_0, NULL, LV_ALIGN_CENTER,0,0);
+
+    btn = lv_btn_create(scr, NULL);
+    lv_obj_set_event_cb(btn, btn_event_cb);
+    lv_obj_align(btn, NULL, LV_ALIGN_CENTER, 0, 10);
+
+    lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
+    lv_obj_add_style(label_0_0, LV_OBJ_PART_MAIN, &model_style);
+    lv_label_set_text( label_0_0, "0-中国"); 
+    lv_obj_align( label_0_0, NULL, LV_ALIGN_CENTER,0,0);
+
+    lv_obj_t * label1 = lv_label_create(scr, NULL);
+    lv_label_set_long_mode(label1, LV_LABEL_LONG_BREAK); /*Break the long lines*/
+    lv_label_set_recolor(label1, true); /*Enable re-coloring by␣
+    ,!commands in the text*/
+    lv_label_set_align(label1, LV_LABEL_ALIGN_CENTER); /*Center aligned lines*/
+    lv_label_set_text(label1, "#0000ff Re-color# #ff00ff words# #ff0000 of a# label "
+    "and wrap long text automatically.");
+    lv_obj_set_width(label1, 150);
+    lv_obj_align(label1, NULL, LV_ALIGN_CENTER, 0, 60);
+
+    lv_obj_t * label2 = lv_label_create(scr, NULL);
+    lv_obj_add_style(label2, LV_OBJ_PART_MAIN, &model_style1);
+    lv_label_set_long_mode(label2, LV_LABEL_LONG_SROLL_CIRC); /*Circular scroll*/
+    lv_obj_set_width(label2, 320);
+    lv_label_set_text(label2, "It is a circularly scrolling text. ");
+    lv_obj_align(label2, NULL, LV_ALIGN_CENTER, 0, 100);
 
 }
 
