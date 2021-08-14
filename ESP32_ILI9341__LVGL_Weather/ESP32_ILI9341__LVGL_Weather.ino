@@ -3,20 +3,18 @@
 #include <SPIFFS.h>
 #include <FS.h>
 #include <WiFi.h>
-#include <WiFiClient.h>
-#include <WiFiServer.h>
-#include <WiFiUdp.h>
-
-
+#include <WiFiMulti.h>
+#include <ArduinoJson.h>
+#include <ESPAsyncWebServer.h>
+#include <WebSocketsServer.h>
 #include <HTTPClient.h>
-#include <esp_wifi.h>
-#include <CircularBuffer.h>
 #include <Arduino.h>
-
-#include <math.h>
 #include <lvgl.h>    //该应用使用lv_arduion库V3.0.1对等与LVGL Core 7.0.2
 #include <TFT_eSPI.h>
 #include <Ticker.h>
+
+
+
 
 
 
@@ -25,16 +23,6 @@ LV_FONT_DECLARE(myFont);
 LV_FONT_DECLARE(dxLED7);
 LV_FONT_DECLARE(dxLED7_60);
 LV_FONT_DECLARE(myLED_Font);
-
-#define PIN            21
-
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS      60
-
-
-#define recv_start 10000
-#define recv_avg   500
-#define recv_less  50
 
 
 //@-LVGL的系统tick
@@ -73,12 +61,39 @@ int tick1 = 0;
 lv_obj_t * btn;
 lv_obj_t * home_btn;
 lv_obj_t * img1;
+lv_obj_t * label2;
 
 int img_flag = 0;
+int img_do = 0;
 
 
+int wifi_connect_tick = 0;
+int wifi_connect_time = 60;  //默认wifi连接时间
 
 
+//@-网络授时
+// const char* ntpServer = "pool.ntp.org";   ----->ok
+// const char* ntpServer = "cn.pool.ntp.org";  ---->OK
+// const char* ntpServer = "time.pool.aliyun.com";   ---->OK
+const char* ntpServer = "ntp.aliyun.com";
+
+//@-设置时区参数
+const long  gmtOffset_sec = 7 * 3600;
+const int   daylightOffset_sec = 3600;
+
+int Dev_SystemTime_Year = 2021;
+int Dev_SystemTime_Month = 8;
+int Dev_SystemTime_Day = 13;
+int Dev_SystemTime_WeekOfDay = 1;
+int Dev_SystemTime_Hour = 10;
+int Dev_SystemTime_Minute = 23;
+int Dev_SystemTime_Second = 0;
+
+hw_timer_t *time1 = NULL;
+int tim1_IRQ_count = 0;
+
+
+//----------------------------------------------------------------
 //@-显示刷新函数
 /* Display flushing */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -295,11 +310,24 @@ static void lv_tick_handler(void)
 }
 
 
+void tim1Interrupt()
+{
+  // Serial.println("haha");
+  // tim1_IRQ_count++;
+  Dev_SystemTime_Second = Dev_SystemTime_Second + 1;
+  timerAlarmEnabled(time1);
+  // Serial.println(timerAlarmEnabled(time1));
+}
+
+
 /*@--------------------彩屏天气预报控制台---------------------*/
 void setup () 
 {
     //@-初始化串口
     Serial.begin(115200);
+    delay(500);
+
+    WIFI_Connect();
     delay(500);
 
     //@-lvgl 初始化
@@ -356,16 +384,132 @@ void setup ()
     //@-设置显示tick
     tick.attach_ms(LVGL_TICK_PERIOD, lv_tick_handler);
 
+    time1 = timerBegin(0, 80, true);
+    timerAttachInterrupt(time1, tim1Interrupt, true);
+    timerAlarmWrite(time1, 1000000, true);
+    timerAlarmEnable(time1);
+
     //@-设置显示主题   
     dx_gui_init();
+}
+
+
+//@-连接wifi
+void WIFI_Connect()
+{
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+  // Connect to Wi-Fi
+  Serial.print("Connecting to ");
+  // Serial.println(ssid);
+  // WiFi.begin(ssid.c_str(), password.c_str());
+  WiFi.begin("wuyiyi", "dingxiao");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    wifi_connect_tick = wifi_connect_tick + 1;
+    if(wifi_connect_tick > wifi_connect_time)
+    {
+      wifi_connect_tick = 0;
+      break;
+    }
+  }
+  if(WiFi.status() == WL_CONNECTED)
+  {
+    Serial.println("");
+    Serial.println("WiFi connected.");
+  }
+    // Init and get the time
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    printLocalTime();
+  
+}
+
+//@-打印实时时间
+void printLocalTime(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+
+  // tm_sec	int	seconds after the minute	0-60*
+  // tm_min	int	minutes after the hour	0-59
+  // tm_hour	int	hours since midnight	0-23
+  // tm_mday	int	day of the month	1-31
+  // tm_mon	int	months since January	0-11
+  // tm_year	int	years since 1900	
+  // tm_wday	int	days since Sunday	0-6
+
+  // Serial.println("----------dx--------------");
+  // Serial.println(timeinfo.tm_year);
+  // Serial.println(timeinfo.tm_mon);
+  // Serial.println(timeinfo.tm_mday);
+  // Serial.println(timeinfo.tm_wday);
+  // Serial.println(timeinfo.tm_hour);
+  // Serial.println(timeinfo.tm_min);
+  // Serial.println(timeinfo.tm_sec);
+
+
+  Dev_SystemTime_Year = timeinfo.tm_year+1900;
+  Dev_SystemTime_Month = timeinfo.tm_mon+1;
+  Dev_SystemTime_Day = timeinfo.tm_mday;
+  Dev_SystemTime_WeekOfDay = timeinfo.tm_wday;
+  Dev_SystemTime_Hour = timeinfo.tm_hour;
+  Dev_SystemTime_Minute = timeinfo.tm_min;
+  Dev_SystemTime_Second = timeinfo.tm_sec;
+
+  Serial.println("----------dx--------------");
+  Serial.println(Dev_SystemTime_Year);
+  Serial.println(Dev_SystemTime_Month);
+  Serial.println(Dev_SystemTime_Day);
+  Serial.println(Dev_SystemTime_WeekOfDay);
+  Serial.println(Dev_SystemTime_Hour);
+  Serial.println(Dev_SystemTime_Minute);
+  Serial.println(Dev_SystemTime_Second);
+
 }
 
 
 //@-主循环
 void loop() 
 {
+    char temp_str[256];
+
     //@-tick1
     tick1 = tick1 + 1;
+
+    if(tick1 > 500)
+    {
+      tick1 = 0;
+      // Serial.println("tick");
+
+      if(img_do == 1)
+      {
+        img_do = 0;
+        if(img_flag == 1)
+        lv_img_set_src(img1, "D:/pic2.bin");
+        else if(img_flag == 0)
+        lv_img_set_src(img1, "D:/me.bin");
+      }
+      
+      sprintf(temp_str, "%2d-%2d-%2d", Dev_SystemTime_Hour, Dev_SystemTime_Minute, Dev_SystemTime_Second);
+      lv_label_set_text(label2, temp_str);
+
+      if(Dev_SystemTime_Second >= 59)
+      {
+        Dev_SystemTime_Second = 0;
+        Dev_SystemTime_Minute = Dev_SystemTime_Minute + 1;
+        if(Dev_SystemTime_Minute >= 59)
+        {
+          Dev_SystemTime_Minute = 0;
+          Dev_SystemTime_Hour = Dev_SystemTime_Hour + 1;
+          if(Dev_SystemTime_Hour > 23)
+          Dev_SystemTime_Hour = 0;
+        }
+      }
+    }
 
     //@-LVGL任务接口
     lv_task_handler(); /* let the GUI do its work */
@@ -384,13 +528,13 @@ void btn_event_cb(lv_obj_t * obj, lv_event_t event)
                 if(img_flag == 0)
                 {
                   img_flag = 1;
-                  lv_img_set_src(img1, "D:/pic2.bin");
+                  img_do = 1;
                   Serial.println("pic2.bin");
                 }
                 else if(img_flag == 1)
                 {
                   img_flag = 0;
-                  lv_img_set_src(img1, "D:/me.bin");
+                  img_do = 1;
                   Serial.println("me.bin");
                 }
             }
@@ -466,7 +610,7 @@ void dx_gui_init()
 
 
     img1 = lv_img_create(scr, NULL);
-    lv_img_set_src(img1, "D:/pic2.bin");
+    lv_img_set_src(img1, "D:/310.bin");
     lv_obj_align(img1, NULL, LV_ALIGN_IN_TOP_LEFT, 0, 0);
 
 
@@ -489,7 +633,7 @@ void dx_gui_init()
     lv_obj_set_width(label1, 150);
     lv_obj_align(label1, NULL, LV_ALIGN_CENTER, 0, 60);
 
-    lv_obj_t * label2 = lv_label_create(scr, NULL);
+    label2 = lv_label_create(scr, NULL);
     lv_obj_add_style(label2, LV_OBJ_PART_MAIN, &model_style1);
     lv_label_set_long_mode(label2, LV_LABEL_LONG_SROLL_CIRC); /*Circular scroll*/
     lv_obj_set_width(label2, 320);
