@@ -92,6 +92,8 @@ int Dev_SystemTime_Second = 0;
 hw_timer_t *time1 = NULL;
 int tim1_IRQ_count = 0;
 
+int AutoTime_Flag = 0;
+
 
 //----------------------------------------------------------------
 //@-显示刷新函数
@@ -403,7 +405,8 @@ void WIFI_Connect()
   Serial.print("Connecting to ");
   // Serial.println(ssid);
   // WiFi.begin(ssid.c_str(), password.c_str());
-  WiFi.begin("wuyiyi", "dingxiao");
+  // WiFi.begin("wuyiyi", "dingxiao");
+  WiFi.begin("DX_JS", "dingxiao");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -418,11 +421,18 @@ void WIFI_Connect()
   {
     Serial.println("");
     Serial.println("WiFi connected.");
-  }
+  
     // Init and get the time
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     printLocalTime();
-  
+
+    AutoTime_Flag = 0;
+  }
+
+    //@-断开wifi链接
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    Serial.println("WiFi Disconnected");
 }
 
 //@-打印实时时间
@@ -480,6 +490,12 @@ void loop()
     //@-tick1
     tick1 = tick1 + 1;
 
+    //@-自动对时
+    if(AutoTime_Flag == 1)
+    {
+        WIFI_Connect();
+    }
+
     if(tick1 > 500)
     {
       tick1 = 0;
@@ -492,6 +508,13 @@ void loop()
         lv_img_set_src(img1, "D:/pic2.bin");
         else if(img_flag == 0)
         lv_img_set_src(img1, "D:/me.bin");
+      }
+
+      //@-自动对时
+      if((Dev_SystemTime_Minute == 0) || (Dev_SystemTime_Minute == 10) || (Dev_SystemTime_Minute == 20) ||
+         (Dev_SystemTime_Minute == 30) || (Dev_SystemTime_Minute == 40) || (Dev_SystemTime_Minute == 50))
+      {
+          AutoTime_Flag = 1;
       }
       
       sprintf(temp_str, "%2d-%2d-%2d", Dev_SystemTime_Hour, Dev_SystemTime_Minute, Dev_SystemTime_Second);
