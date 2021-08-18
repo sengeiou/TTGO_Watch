@@ -93,6 +93,8 @@ hw_timer_t *time1 = NULL;
 int tim1_IRQ_count = 0;
 
 int AutoTime_Flag = 0;
+int AutoTimeTask_Run = 0;
+TaskHandle_t ntAutoTimeTaskHandler;
 
 
 //----------------------------------------------------------------
@@ -432,6 +434,7 @@ void WIFI_Connect()
     //@-断开wifi链接
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
+    AutoTimeTask_Run = 0;
     Serial.println("WiFi Disconnected");
 }
 
@@ -481,6 +484,15 @@ void printLocalTime(){
 
 }
 
+//@-wifi 自动对时 任务
+void AutoTimeTask(void *pvParameters) 
+{
+    vTaskDelay(200); 
+
+    WIFI_Connect();
+
+    vTaskDelete(NULL);
+}
 
 //@-主循环
 void loop() 
@@ -489,12 +501,6 @@ void loop()
 
     //@-tick1
     tick1 = tick1 + 1;
-
-    //@-自动对时
-    if(AutoTime_Flag == 1)
-    {
-        WIFI_Connect();
-    }
 
     if(tick1 > 500)
     {
@@ -511,10 +517,22 @@ void loop()
       }
 
       //@-自动对时
-      if((Dev_SystemTime_Minute == 0) || (Dev_SystemTime_Minute == 10) || (Dev_SystemTime_Minute == 20) ||
-         (Dev_SystemTime_Minute == 30) || (Dev_SystemTime_Minute == 40) || (Dev_SystemTime_Minute == 50))
+      if(((Dev_SystemTime_Minute == 0) || (Dev_SystemTime_Minute == 10) || (Dev_SystemTime_Minute == 20) ||
+         (Dev_SystemTime_Minute == 30) || (Dev_SystemTime_Minute == 40) || (Dev_SystemTime_Minute == 57)) && (Dev_SystemTime_Second < 3) && (AutoTime_Flag != 1))
       {
           AutoTime_Flag = 1;
+      }
+
+      //@-自动对时
+      if(AutoTime_Flag == 1)
+      {
+        // WIFI_Connect();
+        AutoTime_Flag = 2;
+        if(AutoTimeTask_Run == 0)
+        {
+          AutoTimeTask_Run = 1;
+          xTaskCreate(AutoTimeTask,"AutoTimeTask",4096, NULL,1,&ntAutoTimeTaskHandler);
+        }
       }
       
       sprintf(temp_str, "%2d-%2d-%2d", Dev_SystemTime_Hour, Dev_SystemTime_Minute, Dev_SystemTime_Second);
