@@ -89,12 +89,20 @@ int Dev_SystemTime_Hour = 10;
 int Dev_SystemTime_Minute = 23;
 int Dev_SystemTime_Second = 0;
 
-hw_timer_t *time1 = NULL;
-int tim1_IRQ_count = 0;
+
+hw_timer_t * timer1 = NULL;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 int AutoTime_Flag = 0;
 int AutoTimeTask_Run = 0;
 TaskHandle_t ntAutoTimeTaskHandler;
+TaskHandle_t ntSwitchPicTaskHandler;
+
+int image_show_tick = 0;
+int image_show_flag = 1;
+
+//@-RTC数据存储区
+RTC_DATA_ATTR int bootCount = 0;
 
 
 //----------------------------------------------------------------
@@ -211,21 +219,26 @@ lv_fs_res_t my_open_cb(lv_fs_drv_t *drv, void *file_p, const char *fn, lv_fs_mod
 {
   // (void) drv; /*Unused*/
 
-  if (f) {
-    return LV_FS_RES_OK;
-  }
+  // if (f) {
+  //   // Serial.println("empty--->");
+  //   return LV_FS_RES_OK;
+  // }
 
   char buf[100];
   sprintf(buf,"/%s",fn);
-  Serial.println(buf);
+  // Serial.println(buf);
 
   f = SPIFFS.open(buf, mode == LV_FS_MODE_WR ? FILE_WRITE : FILE_READ);
+
+  Serial.println(buf);
 
   if(!f || f.isDirectory()){
     return LV_FS_RES_UNKNOWN;
   } else{
     return LV_FS_RES_OK;
   }
+
+  // return LV_FS_RES_OK;
 }
 
 // lv_fs_res_t my_open_cb(lv_fs_drv_t *drv, void *file_p, const char *fn, lv_fs_mode_t mode){
@@ -314,13 +327,20 @@ static void lv_tick_handler(void)
 }
 
 
-void tim1Interrupt()
-{
-  // Serial.println("haha");
-  // tim1_IRQ_count++;
-  Dev_SystemTime_Second = Dev_SystemTime_Second + 1;
-  timerAlarmEnabled(time1);
-  // Serial.println(timerAlarmEnabled(time1));
+// void timer1Interrupt()
+// {
+//   // Serial.println("haha");
+//   // tim1_IRQ_count++;
+//   Dev_SystemTime_Second = Dev_SystemTime_Second + 1;
+//   timerAlarmEnabled(time1);
+//   // Serial.println(timerAlarmEnabled(time1));
+// }
+
+// Code with critica section
+void IRAM_ATTR timer1Interrupt() {
+   portENTER_CRITICAL_ISR(&timerMux);
+   Dev_SystemTime_Second++;
+   portEXIT_CRITICAL_ISR(&timerMux);
 }
 
 
@@ -330,6 +350,9 @@ void setup ()
     //@-初始化串口
     Serial.begin(115200);
     delay(500);
+
+    bootCount = bootCount + 1;
+    Serial.println("Boot number: " + String(bootCount));
 
     WIFI_Connect();
     delay(500);
@@ -388,10 +411,13 @@ void setup ()
     //@-设置显示tick
     tick.attach_ms(LVGL_TICK_PERIOD, lv_tick_handler);
 
-    time1 = timerBegin(0, 80, true);
-    timerAttachInterrupt(time1, tim1Interrupt, true);
-    timerAlarmWrite(time1, 1000000, true);
-    timerAlarmEnable(time1);
+    // Configure the Prescaler at 80 the quarter of the ESP32 is cadence at 80Mhz
+    // 80000000 / 80 = 1000000 tics / seconde
+    timer1 = timerBegin(0, 80, true);                
+    timerAttachInterrupt(timer1, &timer1Interrupt, true);    
+    // Sets an alarm to sound every second
+    timerAlarmWrite(timer1, 1000000, true);           
+    timerAlarmEnable(timer1);
 
     //@-设置显示主题   
     dx_gui_init();
@@ -487,9 +513,37 @@ void printLocalTime(){
 //@-wifi 自动对时 任务
 void AutoTimeTask(void *pvParameters) 
 {
+    Serial.print("WIFI Task is running on: ");
+    Serial.println(xPortGetCoreID());
+
     vTaskDelay(200); 
 
     WIFI_Connect();
+
+    vTaskDelete(NULL);
+}
+
+//@-图片切换任务
+void SwitchPicTask(void *pvParameters)
+{
+    Serial.print("PIC Task is running on: ");
+    Serial.println(xPortGetCoreID());
+    Serial.println(bootCount);
+    
+    vTaskDelay(200); 
+
+    if(image_show_flag == 1)
+    {
+      image_show_flag = 0;
+      Serial.println("image1 show---->");
+      lv_img_set_src(img1, "D:/me.bin");
+    }
+    else if(image_show_flag == 0)
+    {
+      image_show_flag = 1;
+      Serial.println("image2 show---->");
+      lv_img_set_src(img1, "D:/pic2.bin");
+    }
 
     vTaskDelete(NULL);
 }
@@ -501,6 +555,28 @@ void loop()
 
     //@-tick1
     tick1 = tick1 + 1;
+
+    image_show_tick = image_show_tick + 1;
+
+    if((image_show_tick > 5000))
+    {
+      image_show_tick = 0;
+
+      xTaskCreate(SwitchPicTask,"SwitchPicTask",6144, NULL,1,&ntSwitchPicTaskHandler);
+
+      // if(image_show_flag == 1)
+      // {
+      //   image_show_flag = 0;
+      //   Serial.println("image1 show---->");
+      //   lv_img_set_src(img1, "D:/me.bin");
+      // }
+      // else if(image_show_flag == 0)
+      // {
+      //   image_show_flag = 1;
+      //   Serial.println("image2 show---->");
+      //   lv_img_set_src(img1, "D:/pic2.bin");
+      // }
+    }
 
     if(tick1 > 500)
     {
@@ -518,7 +594,7 @@ void loop()
 
       //@-自动对时
       if(((Dev_SystemTime_Minute == 0) || (Dev_SystemTime_Minute == 10) || (Dev_SystemTime_Minute == 20) ||
-         (Dev_SystemTime_Minute == 30) || (Dev_SystemTime_Minute == 40) || (Dev_SystemTime_Minute == 57)) && (Dev_SystemTime_Second < 3) && (AutoTime_Flag != 1))
+         (Dev_SystemTime_Minute == 30) || (Dev_SystemTime_Minute == 40) || (Dev_SystemTime_Minute == 50)) && (Dev_SystemTime_Second < 3) && (AutoTime_Flag != 1))
       {
           AutoTime_Flag = 1;
       }
@@ -531,18 +607,18 @@ void loop()
         if(AutoTimeTask_Run == 0)
         {
           AutoTimeTask_Run = 1;
-          xTaskCreate(AutoTimeTask,"AutoTimeTask",4096, NULL,1,&ntAutoTimeTaskHandler);
+          xTaskCreate(AutoTimeTask,"AutoTimeTask",6144, NULL,1,&ntAutoTimeTaskHandler);
         }
       }
       
       sprintf(temp_str, "%2d-%2d-%2d", Dev_SystemTime_Hour, Dev_SystemTime_Minute, Dev_SystemTime_Second);
       lv_label_set_text(label2, temp_str);
 
-      if(Dev_SystemTime_Second >= 59)
+      if(Dev_SystemTime_Second > 58)
       {
         Dev_SystemTime_Second = 0;
         Dev_SystemTime_Minute = Dev_SystemTime_Minute + 1;
-        if(Dev_SystemTime_Minute >= 59)
+        if(Dev_SystemTime_Minute > 58)
         {
           Dev_SystemTime_Minute = 0;
           Dev_SystemTime_Hour = Dev_SystemTime_Hour + 1;
@@ -666,8 +742,7 @@ void dx_gui_init()
 
     lv_obj_t * label1 = lv_label_create(scr, NULL);
     lv_label_set_long_mode(label1, LV_LABEL_LONG_BREAK); /*Break the long lines*/
-    lv_label_set_recolor(label1, true); /*Enable re-coloring by␣
-    ,!commands in the text*/
+    lv_label_set_recolor(label1, true); /*Enable re-coloring by␣ ,!commands in the text*/
     lv_label_set_align(label1, LV_LABEL_ALIGN_CENTER); /*Center aligned lines*/
     lv_label_set_text(label1, "#0000ff Re-color# #ff00ff words# #ff0000 of a# label "
     "and wrap long text automatically.");
