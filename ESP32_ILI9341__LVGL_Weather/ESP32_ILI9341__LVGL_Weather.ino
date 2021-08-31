@@ -19,10 +19,11 @@
 
 
 //@-配置用户字体
-LV_FONT_DECLARE(myFont);
-LV_FONT_DECLARE(dxLED7);
-LV_FONT_DECLARE(dxLED7_60);
-LV_FONT_DECLARE(myLED_Font);
+//LV_FONT_DECLARE(myFont);
+//LV_FONT_DECLARE(dxLED7);
+//LV_FONT_DECLARE(dxLED7_60);
+//LV_FONT_DECLARE(myLED_Font);
+LV_FONT_DECLARE(myFont_all);
 
 
 //@-LVGL的系统tick
@@ -351,6 +352,9 @@ void setup ()
     Serial.begin(115200);
     delay(500);
 
+    // Serial.print("setup() running on core ");  //@-core 1
+    // Serial.println(xPortGetCoreID());
+
     bootCount = bootCount + 1;
     Serial.println("Boot number: " + String(bootCount));
 
@@ -433,8 +437,8 @@ void WIFI_Connect()
   Serial.print("Connecting to ");
   // Serial.println(ssid);
   // WiFi.begin(ssid.c_str(), password.c_str());
-  // WiFi.begin("wuyiyi", "dingxiao");
-  WiFi.begin("DX_JS", "dingxiao");
+  WiFi.begin("wuyiyi", "dingxiao");
+  // WiFi.begin("DX_JS", "dingxiao");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -516,7 +520,7 @@ void AutoTimeTask(void *pvParameters)
     Serial.print("WIFI Task is running on: ");
     Serial.println(xPortGetCoreID());
 
-    vTaskDelay(200); 
+    vTaskDelay(50); 
 
     WIFI_Connect();
 
@@ -530,7 +534,7 @@ void SwitchPicTask(void *pvParameters)
     Serial.println(xPortGetCoreID());
     Serial.println(bootCount);
     
-    vTaskDelay(200); 
+    vTaskDelay(50); 
 
     if(image_show_flag == 1)
     {
@@ -560,9 +564,23 @@ void loop()
 
     if((image_show_tick > 5000))
     {
+      // Serial.print("loop() running on core ");   //@-core 1
+      // Serial.println(xPortGetCoreID());
+
       image_show_tick = 0;
 
-      xTaskCreate(SwitchPicTask,"SwitchPicTask",6144, NULL,1,&ntSwitchPicTaskHandler);
+      // xTaskCreate(SwitchPicTask,"SwitchPicTask",6144, NULL,1,&ntSwitchPicTaskHandler);
+      // xTaskCreatePinnedToCore(SwitchPicTask,"SwitchPicTask",6144, NULL,1,&ntSwitchPicTaskHandler,1);
+
+      // xTaskCreatePinnedToCore(
+      // Task1code, /* Function to implement the task */
+      // "Task1", /* Name of the task */
+      // 10000,  /* Stack size in words */
+      // NULL,  /* Task input parameter */
+      // 0,  /* Priority of the task */
+      // &Task1,  /* Task handle. */
+      // 0); /* Core where the task should run */
+
 
       // if(image_show_flag == 1)
       // {
@@ -583,14 +601,14 @@ void loop()
       tick1 = 0;
       // Serial.println("tick");
 
-      if(img_do == 1)
-      {
-        img_do = 0;
-        if(img_flag == 1)
-        lv_img_set_src(img1, "D:/pic2.bin");
-        else if(img_flag == 0)
-        lv_img_set_src(img1, "D:/me.bin");
-      }
+      // if(img_do == 1)
+      // {
+      //   img_do = 0;
+      //   if(img_flag == 1)
+      //   lv_img_set_src(img1, "D:/pic2.bin");
+      //   else if(img_flag == 0)
+      //   lv_img_set_src(img1, "D:/me.bin");
+      // }
 
       //@-自动对时
       if(((Dev_SystemTime_Minute == 0) || (Dev_SystemTime_Minute == 10) || (Dev_SystemTime_Minute == 20) ||
@@ -680,7 +698,6 @@ void dx_gui_init()
     lv_obj_t * scr = lv_cont_create(NULL, NULL);
     lv_disp_load_scr(scr);
 
-
     // LV_FONT_DECLARE(myFont);
     // LV_FONT_DECLARE(dxLED7);
     // LV_FONT_DECLARE(dxLED7_60);
@@ -689,12 +706,12 @@ void dx_gui_init()
     static lv_style_t model_style;
     lv_style_init(&model_style);
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-    lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont);
+    lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont_all);
 
-    static lv_style_t model_style1;
-    lv_style_init(&model_style1);
-    lv_style_set_text_color(&model_style1, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-    lv_style_set_text_font(&model_style1, LV_STATE_DEFAULT, &dxLED7_60);
+    // static lv_style_t model_style1;
+    // lv_style_init(&model_style1);
+    // lv_style_set_text_color(&model_style1, LV_STATE_DEFAULT, LV_COLOR_GREEN);
+    // lv_style_set_text_font(&model_style1, LV_STATE_DEFAULT, &dxLED7_60);
 
 
     /*Darken the button when pressed*/
@@ -726,9 +743,9 @@ void dx_gui_init()
     // lv_label_set_text(label, "Button");
 
 
-    img1 = lv_img_create(scr, NULL);
-    lv_img_set_src(img1, "D:/310.bin");
-    lv_obj_align(img1, NULL, LV_ALIGN_IN_TOP_LEFT, 0, 0);
+    // img1 = lv_img_create(scr, NULL);
+    // lv_img_set_src(img1, "D:/310.bin");
+    // lv_obj_align(img1, NULL, LV_ALIGN_IN_TOP_LEFT, 0, 0);
 
 
     btn = lv_btn_create(scr, NULL);
@@ -750,7 +767,7 @@ void dx_gui_init()
     lv_obj_align(label1, NULL, LV_ALIGN_CENTER, 0, 60);
 
     label2 = lv_label_create(scr, NULL);
-    lv_obj_add_style(label2, LV_OBJ_PART_MAIN, &model_style1);
+    lv_obj_add_style(label2, LV_OBJ_PART_MAIN, &model_style);
     lv_label_set_long_mode(label2, LV_LABEL_LONG_SROLL_CIRC); /*Circular scroll*/
     lv_obj_set_width(label2, 320);
     lv_label_set_text(label2, "It is a circularly scrolling text. ");

@@ -12,13 +12,6 @@
 #include <lvgl.h>
 
 
-//添加头文件
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
-
 typedef struct{
     uint16_t min;
     uint16_t max;
@@ -45,46 +38,14 @@ static x_header_t __g_xbf_hd = {
 };
 
 
-static uint8_t __g_font_buf[210];//如bin文件存在SPI FLASH可使用此buff
+// static uint8_t __g_font_buf[78];//如bin文件存在SPI FLASH可使用此buff
 
 
 static uint8_t *__user_font_getdata(int offset, int size){
     //如字模保存在SPI FLASH, SPIFLASH_Read(__g_font_buf,offset,size);
     //如字模已加载到SDRAM,直接返回偏移地址即可如:return (uint8_t*)(sdram_fontddr+offset);
-
-    //@-SPIFFS-------------
-    // uint32_t br;
-    // fp = fopen("D:/myFont_all.bin", "rb");
-    // fp = SPIFFS.open("myFont_all.bin", mode == LV_FS_MODE_WR ? FILE_WRITE : FILE_READ);
-    // // if(!fp){
-    // //     fprintf(stderr, "can't open file myFont_all.bin");
-    // //     exit(1);
-    // // }
-    //   if(!f || f.isDirectory()){
-    //         return LV_FS_RES_UNKNOWN;
-    //     } else{
-    //         return LV_FS_RES_OK;
-    //     }
-    // // fseek(fp, offset, SEEK_SET);
-    // fp.seek(offset);
-    // // fread(__g_font_buf, (uint32_t)size, 1, fp);
-    // fp.read((uint8_t*)__g_font_buf, size);
-    // // fclose(fp);
-    // fp.close();
-    // //---------------------------
-
-    uint32_t br;
-    FILE *fp = NULL;
-    fp = fopen("D:/myFont_all.bin", "rb");
-    if(!fp){
-        fprintf(stderr, "can't open file myFont_all.bin");
-        exit(1);
-    }
-    fseek(fp, offset, SEEK_SET);
-    fread(__g_font_buf, (uint32_t)size, 1, fp);
-    fclose(fp);
-
-    return __g_font_buf;
+    return (uint8_t*)(LV_USER_FONT_ADDR + LV_USER_FONT_OFFSET_12 + offset);
+    // return __g_font_buf;
 }
 
 
@@ -124,12 +85,12 @@ static bool __user_font_get_glyph_dsc(const lv_font_t * font, lv_font_glyph_dsc_
 
 
 //STKaiti,,-1
-//字模高度：21
+//字模高度：13
 //XBF字体,外部bin文件
 lv_font_t myFont_all = {
     .get_glyph_bitmap = __user_font_get_bitmap,
     .get_glyph_dsc = __user_font_get_glyph_dsc,
-    .line_height = 21,
+    .line_height = 13,
     .base_line = 0,
 };
 
