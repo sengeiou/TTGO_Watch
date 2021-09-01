@@ -38,13 +38,12 @@ static x_header_t __g_xbf_hd = {
 };
 
 
-static uint8_t __g_font_buf[210];//如bin文件存在SPI FLASH可使用此buff
+static uint8_t __g_font_buf[78];//如bin文件存在SPI FLASH可使用此buff
 
 
 static uint8_t *__user_font_getdata(int offset, int size){
     //如字模保存在SPI FLASH, SPIFLASH_Read(__g_font_buf,offset,size);
     //如字模已加载到SDRAM,直接返回偏移地址即可如:return (uint8_t*)(sdram_fontddr+offset);
-    
     lv_fs_file_t file;
     lv_fs_res_t  result;
     result = lv_fs_open(&file,"D:/myFont_all.bin",LV_FS_MODE_RD);
@@ -98,12 +97,12 @@ static bool __user_font_get_glyph_dsc(const lv_font_t * font, lv_font_glyph_dsc_
 
 
 //STKaiti,,-1
-//字模高度：21
+//字模高度：13
 //XBF字体,外部bin文件
 lv_font_t myFont_all = {
     .get_glyph_bitmap = __user_font_get_bitmap,
     .get_glyph_dsc = __user_font_get_glyph_dsc,
-    .line_height = 21,
+    .line_height = 13,
     .base_line = 0,
 };
 

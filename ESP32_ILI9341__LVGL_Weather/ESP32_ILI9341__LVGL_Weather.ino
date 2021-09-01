@@ -231,7 +231,7 @@ lv_fs_res_t my_open_cb(lv_fs_drv_t *drv, void *file_p, const char *fn, lv_fs_mod
 
   f = SPIFFS.open(buf, mode == LV_FS_MODE_WR ? FILE_WRITE : FILE_READ);
 
-  Serial.println(buf);
+  // Serial.println(buf);
 
   if(!f || f.isDirectory()){
     return LV_FS_RES_UNKNOWN;
