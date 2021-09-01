@@ -38,14 +38,26 @@ static x_header_t __g_xbf_hd = {
 };
 
 
-// static uint8_t __g_font_buf[78];//如bin文件存在SPI FLASH可使用此buff
+static uint8_t __g_font_buf[78];//如bin文件存在SPI FLASH可使用此buff
 
 
 static uint8_t *__user_font_getdata(int offset, int size){
     //如字模保存在SPI FLASH, SPIFLASH_Read(__g_font_buf,offset,size);
     //如字模已加载到SDRAM,直接返回偏移地址即可如:return (uint8_t*)(sdram_fontddr+offset);
-    return (uint8_t*)(LV_USER_FONT_ADDR + LV_USER_FONT_OFFSET_12 + offset);
-    // return __g_font_buf;
+    lv_fs_file_t file;
+    lv_fs_res_t  result;
+    result = lv_fs_open(&file,"D:/myFont_all.bin",LV_FS_MODE_RD);
+    if(result != LV_FS_RES_OK) 
+    {
+        return NULL;
+    }
+
+    lv_fs_seek(&file,offset);
+    uint32_t len;
+    lv_fs_read(&file,__g_font_buf,size,&len);
+    lv_fs_close(&file);
+
+    return __g_font_buf;
 }
 
 

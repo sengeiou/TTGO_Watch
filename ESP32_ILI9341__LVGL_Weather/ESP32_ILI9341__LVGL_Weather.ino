@@ -21,7 +21,7 @@
 //@-配置用户字体
 //LV_FONT_DECLARE(myFont);
 //LV_FONT_DECLARE(dxLED7);
-//LV_FONT_DECLARE(dxLED7_60);
+LV_FONT_DECLARE(dxLED7_60);
 //LV_FONT_DECLARE(myLED_Font);
 LV_FONT_DECLARE(myFont_all);
 
@@ -708,10 +708,10 @@ void dx_gui_init()
     lv_style_set_text_color(&model_style, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_text_font(&model_style, LV_STATE_DEFAULT, &myFont_all);
 
-    // static lv_style_t model_style1;
-    // lv_style_init(&model_style1);
-    // lv_style_set_text_color(&model_style1, LV_STATE_DEFAULT, LV_COLOR_GREEN);
-    // lv_style_set_text_font(&model_style1, LV_STATE_DEFAULT, &dxLED7_60);
+    static lv_style_t model_style1;
+    lv_style_init(&model_style1);
+    lv_style_set_text_color(&model_style1, LV_STATE_DEFAULT, LV_COLOR_GREEN);
+    lv_style_set_text_font(&model_style1, LV_STATE_DEFAULT, &dxLED7_60);
 
 
     /*Darken the button when pressed*/
@@ -754,7 +754,7 @@ void dx_gui_init()
 
     lv_obj_t *label_0_0 = lv_label_create( btn, NULL);
     lv_obj_add_style(label_0_0, LV_OBJ_PART_MAIN, &model_style);
-    lv_label_set_text( label_0_0, "0-中国"); 
+    lv_label_set_text( label_0_0, "0-丁霄丁心怡吴晓波安家了几个"); 
     lv_obj_align( label_0_0, NULL, LV_ALIGN_CENTER,0,0);
 
     lv_obj_t * label1 = lv_label_create(scr, NULL);
@@ -767,7 +767,7 @@ void dx_gui_init()
     lv_obj_align(label1, NULL, LV_ALIGN_CENTER, 0, 60);
 
     label2 = lv_label_create(scr, NULL);
-    lv_obj_add_style(label2, LV_OBJ_PART_MAIN, &model_style);
+    lv_obj_add_style(label2, LV_OBJ_PART_MAIN, &model_style1);
     lv_label_set_long_mode(label2, LV_LABEL_LONG_SROLL_CIRC); /*Circular scroll*/
     lv_obj_set_width(label2, 320);
     lv_label_set_text(label2, "It is a circularly scrolling text. ");
