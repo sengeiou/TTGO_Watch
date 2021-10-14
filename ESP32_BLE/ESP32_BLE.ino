@@ -241,7 +241,7 @@ void setup() {
   //@5-初始化显示
   u8g2.begin();
   u8g2.enableUTF8Print();    // enable UTF8 support for the Arduino print() function
-//  u8g2.setFont(u8g2_font_10x20_tn ); 
+  u8g2.setFont(u8g2_font_10x20_tn ); 
   u8g2.setFontDirection(0);
 
   u8g2.clearBuffer();
