@@ -25,12 +25,13 @@ sensortypes = ['Voltage','Clock','Temperature','Load','Fan','Flow','Control','Le
 cpu_temp = ''
 rpm = ''
 gpu_temp = ''
+dx_test  = 0
 
 def sendData(temp, rpm, gpu, free_disk, free_mem, procs):
     try:
         connection = serial.Serial('COM9') # Change this to match your COM port!
         # data = temp + ',' + rpm + ',' + str(free_mem) + ',' + str(free_disk) + ',' + gpu + ',' + str(procs) + '/'
-        data = str(30) + ',' + rpm + ',' + str(free_mem) + ',' + str(free_disk) + ',' + gpu + ',' + str(procs) + '/'
+        data = str(dx_test) + ',' + rpm + ',' + str(free_mem) + ',' + str(free_disk) + ',' + gpu + ',' + str(procs) + '/'
         connection.write(data.encode())
         print("Data written", data.encode())
         connection.close  
@@ -85,6 +86,11 @@ while(1):
     proc_counter = 0
     for proc in psutil.process_iter():
         proc_counter += 1
-    sendData(cpu_temp, rpm, gpu_temp, free_disk, free_mem, proc_counter)
+
+    dx_test = dx_test + 1
+    if(dx_test > 255):
+        dx_test = 0
+    sendData(dx_test, rpm, gpu_temp, free_disk, free_mem, proc_counter)
+    # sendData(cpu_temp, rpm, gpu_temp, free_disk, free_mem, proc_counter)
     time.sleep(updateTime)
     
