@@ -5,7 +5,8 @@
 // BLDC motor & driver instance
 // BLDCMotor motor = BLDCMotor(pole pair number);
 // BLDCMotor motor = BLDCMotor(7);  //bldc的极对数是按永磁铁的极对数算的
-BLDCMotor motor = BLDCMotor(6);  //bldc的极对数是按永磁铁的极对数算的
+// BLDCMotor motor = BLDCMotor(6);  //bldc的极对数是按永磁铁的极对数算的--钩子
+BLDCMotor motor = BLDCMotor(24);  //bldc的极对数是按永磁铁的极对数算的--带hall -8
 // BLDCDriver3PWM driver = BLDCDriver3PWM(pwmA, pwmB, pwmC, Enable(optional));
 BLDCDriver3PWM driver = BLDCDriver3PWM(17, 18, 19, 5);
 
@@ -30,7 +31,7 @@ void setup() {
   motor.linkDriver(&driver);
 
   // limiting motor movements
-  motor.voltage_limit = 20;   // [V]
+  motor.voltage_limit = 12;   // [V]
   motor.velocity_limit = 1000; // [rad/s] cca 50rpm
   // open loop control config
   // motor.controller = MotionControlType::angle_openloop;   //开环位置控制
