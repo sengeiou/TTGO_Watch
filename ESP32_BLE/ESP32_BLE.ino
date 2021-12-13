@@ -70,6 +70,60 @@
    every couple of seconds.
 */
 
+//@--------------------------查看蓝牙MAC地址------------------------------
+#if 0
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+ 
+bool initBluetooth()
+{
+  if (!btStart()) {
+    Serial.println("Failed to initialize controller");
+    return false;
+  }
+ 
+  if (esp_bluedroid_init() != ESP_OK) {
+    Serial.println("Failed to initialize bluedroid");
+    return false;
+  }
+ 
+  if (esp_bluedroid_enable() != ESP_OK) {
+    Serial.println("Failed to enable bluedroid");
+    return false;
+  }
+ 
+}
+ 
+void printDeviceAddress() {
+ 
+  const uint8_t* point = esp_bt_dev_get_address();
+ 
+  for (int i = 0; i < 6; i++) {
+ 
+    char str[3];
+ 
+    sprintf(str, "%02X", (int)point[i]);
+    Serial.print(str);
+ 
+    if (i < 5){
+      Serial.print(":");
+    }
+ 
+  }
+}
+ 
+void setup() {
+  Serial.begin(115200);
+ 
+  initBluetooth();
+  printDeviceAddress();
+}
+ 
+void loop() {}
+#endif
+
+
+#if 1
 #include <Wire.h>
 #include <U8g2lib.h>
 
@@ -110,8 +164,12 @@
 
 
 //@-创建显示设备
-U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ OLED_SCL_Pin, /* data=*/ OLED_SDA_Pin, /* reset=*/ U8X8_PIN_NONE);   // Adafruit Feather M0 Basic Proto + FeatherWing OLED
+// U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ OLED_SCL_Pin, /* data=*/ OLED_SDA_Pin, /* reset=*/ U8X8_PIN_NONE);   // Adafruit Feather M0 Basic Proto + FeatherWing OLED
 // U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ OLED_SCL_Pin, /* data=*/ OLED_SDA_Pin, /* reset=*/ U8X8_PIN_NONE);
+
+U8G2_SSD1306_128X80_NONAME_F_HW_I2C u8g2(U8G2_R3, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 22, /* data=*/21);   //@-20211207-小黑板
+
+
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pCharacteristic = NULL;
@@ -179,7 +237,7 @@ void setup() {
 
   Serial.begin(115200);
 
-   Serial.println(WiFi.macAddress());
+  Serial.println(WiFi.macAddress());
 
   //@-接管电源控制
   pinMode(Power_Ctl_Pin, OUTPUT);
@@ -204,7 +262,7 @@ void setup() {
 
 
   // Create the BLE Device
-  BLEDevice::init("ESP32");
+  BLEDevice::init("ESP32_Black");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -237,6 +295,7 @@ void setup() {
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
+
 
   //@5-初始化显示
   u8g2.begin();
@@ -363,3 +422,5 @@ void loop() {
     u8g2.sendBuffer();
 
 }
+
+#endif

@@ -111,6 +111,11 @@ void setup()
       return;
     }
 
+    // //----------------1.3寸测试------------------------王飞买的ST7789屏
+    pinMode(15, OUTPUT|PULLUP);   //pin15为背光控制
+    digitalWrite(15, HIGH);
+
+
     tft.init();
     tft.setRotation(0);
     tft.fillScreen(TFT_RED);
@@ -140,6 +145,25 @@ void setup()
     ReadImageFile();
 
     drawJpeg("/test_download.jpg", 0, 0);
+
+    // while(1)
+    // {
+    // // drawJpeg("/test_download.jpg", 0, 0);
+
+    // drawJpeg("/W1.jpg", 0, 0);
+    // drawJpeg("/W2.jpg", 0, 0);
+    // drawJpeg("/W3.jpg", 0, 0);
+    // drawJpeg("/W4.jpg", 0, 0);
+    // drawJpeg("/W5.jpg", 0, 0);
+    // drawJpeg("/W6.jpg", 0, 0);
+    // drawJpeg("/W7.jpg", 0, 0);
+    // drawJpeg("/W8.jpg", 0, 0);
+    // drawJpeg("/W9.jpg", 0, 0);
+    // drawJpeg("/W10.jpg", 0, 0);
+    // drawJpeg("/W11.jpg", 0, 0);
+    // drawJpeg("/W12.jpg", 0, 0);
+
+    // }
 }
 
 
