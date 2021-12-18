@@ -9,6 +9,7 @@
  * 7-具有番茄钟功能
  * 8-具有闹钟功能
  * 9-具备OTA远程软件更新功能
+ * Create_font
  **/
 
 
@@ -31,6 +32,9 @@
 
 #include <TFT_eSPI.h> 
 
+#include <Ticker.h>  //Ticker Library
+
+// #include "fontPixelLCD7.h" //导入字库文件
 
 #define USE_BLE 0
 #if USE_BLE
@@ -49,6 +53,18 @@
 #define Software_Version "20211217 V0.1"
 
 #define ESP32
+
+//@-显示区域定义
+#define Display_NewsBar_Width   400
+#define Display_NewsBar_High    16      //@-中文字体大小16
+#define DisplayArea_NewsBar3_Y  239-16
+#define DisplayArea_NewsBar2_Y  239-16-16
+#define DisplayArea_NewsBar1_Y  239-16-16-16
+
+#define Display_Time_Width      145
+#define Display_Time_High       26      //@-字体大小26
+#define DisplayArea_Time_X      0
+#define DisplayArea_Time_Y      80
 
 
 //@-IO定义
@@ -71,6 +87,10 @@
 
 //@-创建LCD驱动-使用1.54寸TFT，驱动为SetupDx_ST7789.h
 TFT_eSPI tft = TFT_eSPI(); 
+TFT_eSprite stext1 = TFT_eSprite(&tft); // Sprite object stext1
+TFT_eSprite stext2 = TFT_eSprite(&tft); // Sprite object stext2
+TFT_eSprite stext3 = TFT_eSprite(&tft); // Sprite object stext2
+int tcount = 0;
 
 //@-WIFI连接信息
 const String ssid1     = "wuyiyi";
@@ -113,6 +133,7 @@ RTC_DATA_ATTR int bootCount = 0;
 
 //@-管脚mask
 uint64_t mask;
+
 
 //---------------------------JSON---------------------------------------
 //Your Domain name with URL path or IP address with path
@@ -343,8 +364,23 @@ char  BLE_Msg[256];                      //BLE接收缓存区
 char  BLE_SendMsg[256];                  //BLE发送缓存区
 #endif
 
+//@-显示标志
+int Display_YearMonth_Flag = 1;
+int Display_Time_Flag = 1;
+int Display_News_Display_Flag = 1;
+int Display_News_Roll_Flag = 1;
+int xTaskCreate_Flag = 0;
+
+int WIFI_Get_InternetTime_Flag = 1;
+
+//@-系统脉冲
+Ticker Tick1;
+int tick = 0;
+
+TaskHandle_t GetWifiTaskHandler;
 
 
+//-----------------------------------------------------------------------------
 
 //@-加载SPIFFS文件系统中的json文件
 void Load_Config()
@@ -513,6 +549,23 @@ void notFound(AsyncWebServerRequest *request) {
   request->send(404, "text/plain", "dx Not found");
 }
 
+
+//@-0.1秒tick挂载接口
+void Second_Create()
+{
+  tick = tick + 1;
+ 
+  //@-tick秒脉冲
+  if(tick > 100)
+  {
+    tick = 0;
+    Dev_SystemTime_Second = Dev_SystemTime_Second + 1;
+  }
+
+}
+
+
+    
 //@-配置
 void setup()
 {
@@ -577,39 +630,74 @@ void setup()
   }
   #endif
 
+  //@-初始化 Ticker every 1s
+  Tick1.attach(0.01, Second_Create);
+  delay(100);
+
   //@-TFT GUI初始化
   tft.begin();
   tft.setRotation(0);  // portrait
   tft.fillScreen(TFT_BLACK);
 
+  //@-创建滚动新闻显示栏
+  stext1.setColorDepth(8);
+  stext1.createSprite(Display_NewsBar_Width, Display_NewsBar_High); //@-创建滚动新闻显示栏
+  stext1.fillSprite(TFT_DARKGREY);
+  stext1.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
+  stext1.setTextColor(TFT_GREEN); // White text, no background
+  stext1.loadFont("STKAITI18");
+
+  stext2.setColorDepth(8);
+  stext2.createSprite(Display_NewsBar_Width, Display_NewsBar_High); 
+  stext2.fillSprite(TFT_DARKGREY);
+  stext2.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
+  stext2.setTextColor(TFT_WHITE); // White text, no background
+  stext2.loadFont("STKAITI18");
+
+  stext3.setColorDepth(8);
+  stext3.createSprite(Display_NewsBar_Width, Display_NewsBar_High); 
+  stext3.fillSprite(TFT_DARKGREY);
+  stext3.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
+  stext3.setTextColor(TFT_BLUE); // White text, no background
+  stext3.loadFont("STKAITI18");
+
+  WIFI_Get_Data();
+
+  // //@-显示信息
+  // tft.loadFont("STKAITI18");
+  // // tft.setCursor(40,40);
+  // // tft.println(WiFi.localIP().toString());
+  // tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  // tft.setCursor(0,0);
+  // // tft.println(NewsData[0].news_title);
+  // String myNewString(NewsData[0].news_title);
+  // tft.drawString(myNewString,0,0,18);
+  // tft.setTextColor(TFT_RED, TFT_BLACK);
+  // tft.setCursor(0,32);
+  // tft.println(NewsData[1].news_title);
+  // tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  // tft.setCursor(0,64);
+  // tft.println(NewsData[2].news_title);
+  // // Remove font parameters from memory to recover RAM
+  // tft.unloadFont();
+
+  delay(1000); 
+}
+
+
+//@-网络获取数据
+void WIFI_Get_Data()
+{
   //@-连接WIFI
   WIFI_Connect();
 
   //@-每5min获取Sina综合新闻json数据
   WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
 
-  //@-显示信息
-  tft.loadFont("STKAITI18");
-  // tft.setCursor(40,40);
-  // tft.println(WiFi.localIP().toString());
-  tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setCursor(0,0);
-  // tft.println(NewsData[0].news_title);
-  String myNewString(NewsData[0].news_title);
-  tft.drawString(myNewString,0,0,18);
-  tft.setTextColor(TFT_RED, TFT_BLACK);
-  tft.setCursor(0,32);
-  tft.println(NewsData[1].news_title);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(0,64);
-  tft.println(NewsData[2].news_title);
-  // Remove font parameters from memory to recover RAM
-  tft.unloadFont();
-
   //@-断开WIFI连接
   WIFI_Disconnect();
-
 }
+
 
 //@-断开WIFI连接
 void WIFI_Disconnect()
@@ -654,7 +742,11 @@ void WIFI_Connect()
     Serial.println("");
     Serial.println("WiFi connected.");
     //@-网络对时
-    WIFI_Get_InternetTime();
+    if(WIFI_Get_InternetTime_Flag == 1)
+    {
+      WIFI_Get_InternetTime_Flag = 0;
+      WIFI_Get_InternetTime();
+    }
   }
 }
 
@@ -1081,11 +1173,154 @@ void Dev_BLEInit()
 }
 #endif
 
+//@-显示时间
+void Dispaly_YearMonth()
+{
+  sprintf(buff_dx,"%d年/%2d月/%2d日", Dev_SystemTime_Year, Dev_SystemTime_Month, Dev_SystemTime_Day);
+
+  // tft.loadFont("LOAD_FONT4");
+  tft.loadFont("STKAITI18");
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(0,64);
+  tft.println(buff_dx);
+  tft.unloadFont();
+}
+
+//@-显示实时时间
+void Dispaly_Time()
+{
+  // Dev_SystemTime_Second = Dev_SystemTime_Second + 1;
+  if(Dev_SystemTime_Second > 59)
+  {
+    Dev_SystemTime_Second = 0;
+    Dev_SystemTime_Minute = Dev_SystemTime_Minute + 1;
+    if(Dev_SystemTime_Minute > 59)
+    {
+      Dev_SystemTime_Minute = 0;
+      Dev_SystemTime_Hour = Dev_SystemTime_Hour + 1;
+      if(Dev_SystemTime_Hour > 23)
+      Dev_SystemTime_Hour = 0;
+    }
+  }
+
+  sprintf(buff_dx,"%02d:%02d:%02d", Dev_SystemTime_Hour, Dev_SystemTime_Minute, Dev_SystemTime_Second);
+
+  tft.loadFont("Pixel_LCD_726");
+  tft.fillRect (DisplayArea_Time_X, DisplayArea_Time_Y, Display_Time_Width, Display_Time_High, TFT_RED); // Overprint with a filled rectangle
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(DisplayArea_Time_X,DisplayArea_Time_Y);
+  tft.println(buff_dx);
+  tft.unloadFont();
+}
+
+
+//@-显示新闻
+void Dispaly_News()
+{
+    if(Display_News_Display_Flag == 1)
+    {
+      Display_News_Display_Flag = 0;
+
+      // stext2.drawString("ShotokuTech.com", 240, 0, 2); // draw at 240,0 in sprite, font 2
+      String myNewString1(NewsData[0].news_title);
+      String myNewString2(NewsData[1].news_title);
+      String myNewString3(NewsData[2].news_title);
+
+      // Serial.println(sizeof(NewsData[0].news_title));
+
+      stext1.drawString(myNewString1, 0, 0, 2); // draw at 240,0 in sprite, font 2
+      stext2.drawString(myNewString2, 0, 0, 2); // draw at 240,0 in sprite, font 2
+      stext3.drawString(myNewString3, 0, 0, 2); // draw at 240,0 in sprite, font 2
+
+      stext1.pushSprite(0, DisplayArea_NewsBar1_Y);
+      stext2.pushSprite(0, DisplayArea_NewsBar2_Y);
+      stext3.pushSprite(0, DisplayArea_NewsBar3_Y);
+
+    }
+
+    if(Display_News_Roll_Flag == 1)
+    {
+      tcount++;
+      if(tcount > 400)
+      {
+        Display_News_Roll_Flag = 0;
+        Display_News_Display_Flag = 1;
+        tcount = 0;
+      }
+      else
+      {
+        stext1.scroll(-1);     // scroll stext 1 pixel left, up/down default is 0
+        stext2.scroll(-1);     // scroll stext 1 pixel left, up/down default is 0
+        stext3.scroll(-1);     // scroll stext 1 pixel left, up/down default is 0
+
+        stext1.pushSprite(0, DisplayArea_NewsBar1_Y);
+        stext2.pushSprite(0, DisplayArea_NewsBar2_Y);
+        stext3.pushSprite(0, DisplayArea_NewsBar3_Y);
+      }
+    }
+}
+
+
+//@-获取网络数据
+void GetWifiTask(void *pvParameters) 
+{
+
+  //@-连接WIFI
+  WIFI_Connect();
+
+  //@-每5min获取Sina综合新闻json数据
+  WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
+
+  //@-断开WIFI连接
+  WIFI_Disconnect();
+
+  vTaskDelay(500);
+  xTaskCreate_Flag = 0;
+  Display_News_Display_Flag = 1;
+  Display_News_Roll_Flag = 1;
+  vTaskDelay(100);
+  vTaskDelete(NULL);
+}
+
 
 //@-主循环
 void loop()
 {
+  Display_Time_Flag = Display_Time_Flag + 1;
 
+  //@-每5min获取网络数据
+  if(((Dev_SystemTime_Minute == 5) || (Dev_SystemTime_Minute == 10) || (Dev_SystemTime_Minute == 15) ||
+     (Dev_SystemTime_Minute == 20) || (Dev_SystemTime_Minute == 25) || (Dev_SystemTime_Minute == 30) ||
+     (Dev_SystemTime_Minute == 35) || (Dev_SystemTime_Minute == 40) || (Dev_SystemTime_Minute == 45) ||
+     (Dev_SystemTime_Minute == 50) || (Dev_SystemTime_Minute == 55) || (Dev_SystemTime_Minute == 0)) &&
+     ((Dev_SystemTime_Second == 0) || (Dev_SystemTime_Second == 1)) )
+  {
+    if(xTaskCreate_Flag == 0)
+    {
+      Serial.println("---------->wifi get");
+      Serial.println(Dev_SystemTime_Second);
+      xTaskCreate_Flag = 1;
+      xTaskCreate(GetWifiTask,"GetWifiTask",7168, NULL,0,&GetWifiTaskHandler);
+    }
+  }
 
+  //@-显示年月日
+  if(Display_YearMonth_Flag == 1)
+  {
+    Display_YearMonth_Flag = 0;
+    Dispaly_YearMonth();
+  }
+
+  //@-显示实时时间
+  if(Display_Time_Flag > 50)
+  {
+      Display_Time_Flag = 0;
+      Dispaly_Time();
+  }
+
+  //@-显示新闻
+  Dispaly_News();
+
+  delay(10); 
  
 }
