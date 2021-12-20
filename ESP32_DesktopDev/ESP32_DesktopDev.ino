@@ -22,6 +22,9 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <SPIFFS.h>
+#include <FS.h>
+// JPEG decoder library
+#include <JPEGDecoder.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <ArduinoJson.h>
@@ -31,10 +34,16 @@
 #include <HTTPClient.h>
 
 #include <TFT_eSPI.h> 
+#include <TFT_eFEX.h> 
+
 
 #include <Ticker.h>  //Ticker Library
 
+
+
 // #include "fontPixelLCD7.h" //导入字库文件
+
+
 
 #define USE_BLE 0
 #if USE_BLE
@@ -90,6 +99,7 @@ TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite stext1 = TFT_eSprite(&tft); // Sprite object stext1
 TFT_eSprite stext2 = TFT_eSprite(&tft); // Sprite object stext2
 TFT_eSprite stext3 = TFT_eSprite(&tft); // Sprite object stext2
+TFT_eFEX  fex = TFT_eFEX(&tft);    // Create TFT_eFX object "efx" with pointer to "tft" object
 int tcount = 0;
 
 //@-WIFI连接信息
@@ -123,7 +133,10 @@ int Dev_SystemTime_Day = 17;
 int Dev_SystemTime_WeekOfDay = 1;
 int Dev_SystemTime_Hour = 10;
 int Dev_SystemTime_Minute = 23;
-int Dev_SystemTime_Second = 0;
+int Dev_SystemTime_Second = 50;
+
+int Dev_SystemTime_Hour_Old = 10;
+int Dev_SystemTime_Day_Old = 17;
 
 //@-ESP32唤醒
 esp_sleep_wakeup_cause_t wakeup_reason;
@@ -174,8 +187,6 @@ String serverName_huangli1 = "http://route.showapi.com/856-2?showapi_appid=67230
 
 // D:\Work\Django\blog\home\dx\sites\dx1023.com\django_blog\blog
 String serverName_covid1 = "http://www.dx1023.com/dxjson/";
-
-
 
 //@-新闻数据结构体
 typedef struct {
@@ -366,19 +377,26 @@ char  BLE_SendMsg[256];                  //BLE发送缓存区
 
 //@-显示标志
 int Display_YearMonth_Flag = 1;
-int Display_Time_Flag = 1;
+int Display_Time_Tick = 1;
 int Display_News_Display_Flag = 1;
 int Display_News_Roll_Flag = 1;
+
+int First_Flag = 1;
 int xTaskCreate_Flag = 0;
 
+//@-网络对时标志
 int WIFI_Get_InternetTime_Flag = 1;
 
 //@-系统脉冲
 Ticker Tick1;
 int tick = 0;
 
-TaskHandle_t GetWifiTaskHandler;
+TaskHandle_t GetWifiTaskHandler = NULL;
+TaskHandle_t GetWifiBootDataTaskHandler = NULL;
+TaskHandle_t DrawPicTaskHandler = NULL;
 
+int test_dis_flag = 1;
+int test_dis_tick = 0;
 
 //-----------------------------------------------------------------------------
 
@@ -564,192 +582,6 @@ void Second_Create()
 
 }
 
-
-    
-//@-配置
-void setup()
-{
-  char temp_str[256];
-
-  //@-初始化串口
-  Serial.begin(115200);
-
-  Serial.println((String)"Memory available in PSRAM : " +ESP.getFreePsram());
-
-  //@-设备启动次数
-  if(bootCount > 600)
-  bootCount = 0;
-  //Increment boot number and print it every reboot
-  bootCount = bootCount + 1;
-  Serial.println("Boot number: " + String(bootCount));
-
-  //@-文件系统启动
-  if(!SPIFFS.begin(true)){
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
-  //@-加载config文件
-  Load_Config();
-
-  //@-选择wifi
-  // if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_1)
-  // {
-  //   // ssid = ssid1;
-  //   // password = password1;
-  //   ssid = SPIFFS_JSONData_Read.Json_SSID1;
-  //   password = SPIFFS_JSONData_Read.Json_Pass1;
-  // }
-  // else if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_2)
-  // {
-  //   // ssid = ssid2;
-  //   // password = password2;
-  //   ssid = SPIFFS_JSONData_Read.Json_SSID2;
-  //   password = SPIFFS_JSONData_Read.Json_Pass2;
-  // }
-  ssid = SPIFFS_JSONData_Read.Json_SSID1;
-  password = SPIFFS_JSONData_Read.Json_Pass1;
-
-  //ESP32启动方式
-  wakeup_reason = esp_sleep_get_wakeup_cause();
-  switch(wakeup_reason)
-  {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); wifi_connect_time = 8;break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
-  }
-
-  #if USE_BLE
-  //@-查询是否进入蓝牙BLE模式
-  if(wakeup_reason == ESP_SLEEP_WAKEUP_EXT1)
-  {
-    Serial.println("BLE Mode Start----------------->");
-    Dev_BLEInit();
-  }
-  #endif
-
-  //@-初始化 Ticker every 1s
-  Tick1.attach(0.01, Second_Create);
-  delay(100);
-
-  //@-TFT GUI初始化
-  tft.begin();
-  tft.setRotation(0);  // portrait
-  tft.fillScreen(TFT_BLACK);
-
-  //@-创建滚动新闻显示栏
-  stext1.setColorDepth(8);
-  stext1.createSprite(Display_NewsBar_Width, Display_NewsBar_High); //@-创建滚动新闻显示栏
-  stext1.fillSprite(TFT_DARKGREY);
-  stext1.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
-  stext1.setTextColor(TFT_GREEN); // White text, no background
-  stext1.loadFont("STKAITI18");
-
-  stext2.setColorDepth(8);
-  stext2.createSprite(Display_NewsBar_Width, Display_NewsBar_High); 
-  stext2.fillSprite(TFT_DARKGREY);
-  stext2.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
-  stext2.setTextColor(TFT_WHITE); // White text, no background
-  stext2.loadFont("STKAITI18");
-
-  stext3.setColorDepth(8);
-  stext3.createSprite(Display_NewsBar_Width, Display_NewsBar_High); 
-  stext3.fillSprite(TFT_DARKGREY);
-  stext3.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
-  stext3.setTextColor(TFT_BLUE); // White text, no background
-  stext3.loadFont("STKAITI18");
-
-  WIFI_Get_Data();
-
-  // //@-显示信息
-  // tft.loadFont("STKAITI18");
-  // // tft.setCursor(40,40);
-  // // tft.println(WiFi.localIP().toString());
-  // tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  // tft.setCursor(0,0);
-  // // tft.println(NewsData[0].news_title);
-  // String myNewString(NewsData[0].news_title);
-  // tft.drawString(myNewString,0,0,18);
-  // tft.setTextColor(TFT_RED, TFT_BLACK);
-  // tft.setCursor(0,32);
-  // tft.println(NewsData[1].news_title);
-  // tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  // tft.setCursor(0,64);
-  // tft.println(NewsData[2].news_title);
-  // // Remove font parameters from memory to recover RAM
-  // tft.unloadFont();
-
-  delay(1000); 
-}
-
-
-//@-网络获取数据
-void WIFI_Get_Data()
-{
-  //@-连接WIFI
-  WIFI_Connect();
-
-  //@-每5min获取Sina综合新闻json数据
-  WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
-
-  //@-断开WIFI连接
-  WIFI_Disconnect();
-}
-
-
-//@-断开WIFI连接
-void WIFI_Disconnect()
-{
-  //@-断开wifi链接
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  Serial.println("WiFi Disconnected");
-}
-
-//@-连接wifi
-void WIFI_Connect()
-{
-  // Set device as a Wi-Fi Station
-  WiFi.mode(WIFI_STA);
-  // Connect to Wi-Fi
-  Serial.print("Connecting to ");
-  Serial.println(ssid1);
-  WiFi.begin(ssid1.c_str(), password1.c_str());
-  // WiFi.begin("liang12", "12345678");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-    wifi_connect_tick = wifi_connect_tick + 1;
-    if(wifi_connect_tick > wifi_connect_time)
-    {
-      wifi_connect_tick = 0;
-
-      bootCount = 0;
-
-      //@-切换wifi信号源
-      if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_1)
-      Save_Set_Data(SPIFFS_Save_Wifi_Switch, WIFI_Index_2, 0);
-      else if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_2)
-      Save_Set_Data(SPIFFS_Save_Wifi_Switch, WIFI_Index_1, 0);
-
-      break;
-    }
-  }
-  if(WiFi.status() == WL_CONNECTED)
-  {
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    //@-网络对时
-    if(WIFI_Get_InternetTime_Flag == 1)
-    {
-      WIFI_Get_InternetTime_Flag = 0;
-      WIFI_Get_InternetTime();
-    }
-  }
-}
-
 //@-获取网络对时
 void WIFI_Get_InternetTime()
 {
@@ -798,6 +630,57 @@ void WIFI_Get_InternetTime()
   Serial.println(Dev_SystemTime_Hour);
   Serial.println(Dev_SystemTime_Minute);
   Serial.println(Dev_SystemTime_Second);
+}
+
+//@-断开WIFI连接
+void WIFI_Disconnect()
+{
+  //@-断开wifi链接
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  Serial.println("WiFi Disconnected");
+}
+
+//@-连接WIFI
+void WIFI_Connect()
+{
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+  // Connect to Wi-Fi
+  Serial.print("Connecting to ");
+  Serial.println(ssid1);
+  WiFi.begin(ssid1.c_str(), password1.c_str());
+  // WiFi.begin("liang12", "12345678");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    wifi_connect_tick = wifi_connect_tick + 1;
+    if(wifi_connect_tick > wifi_connect_time)
+    {
+      wifi_connect_tick = 0;
+
+      bootCount = 0;
+
+      //@-切换wifi信号源
+      if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_1)
+      Save_Set_Data(SPIFFS_Save_Wifi_Switch, WIFI_Index_2, 0);
+      else if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_2)
+      Save_Set_Data(SPIFFS_Save_Wifi_Switch, WIFI_Index_1, 0);
+
+      break;
+    }
+  }
+  if(WiFi.status() == WL_CONNECTED)
+  {
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    //@-网络对时
+    if(WIFI_Get_InternetTime_Flag == 1)
+    {
+      WIFI_Get_InternetTime_Flag = 0;
+      WIFI_Get_InternetTime();
+    }
+  }
 }
 
 //@-获取信息网站JSON数据
@@ -865,13 +748,13 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
           {
             strcpy(temp, root["result"]["data"]["list"][0]["title"]);
             sprintf(NewsData[0].news_title, "1.%5s", temp);
-            Serial.println(NewsData[0].news_title);
+            // Serial.println(NewsData[0].news_title);
             strcpy(temp, root["result"]["data"]["list"][1]["title"]);
             sprintf(NewsData[1].news_title, "2.%5s", temp);
-            Serial.println(NewsData[1].news_title);
+            // Serial.println(NewsData[1].news_title);
             strcpy(temp, root["result"]["data"]["list"][2]["title"]);
             sprintf(NewsData[2].news_title, "3.%5s", temp);
-            Serial.println(NewsData[2].news_title);
+            // Serial.println(NewsData[2].news_title);
             strcpy(temp, root["result"]["data"]["list"][3]["title"]);
             sprintf(NewsData[3].news_title, "4.%13s                   ", temp);
             strcpy(temp, root["result"]["data"]["list"][4]["title"]);
@@ -1022,6 +905,8 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
             strcpy(temp, root["result"]["data"]["lunar"]);
             sprintf(Juhe_HuangliData.lunar, "%s", temp);
 
+            Serial.println(Juhe_HuangliData.lunarYear);
+
             //@-显示标志置位
             Display_Lunar_Flag = 1;
           }
@@ -1100,78 +985,85 @@ void WIFI_Get_JsonInfo(String serverName, int Data_Mode, String Http_source)
   }
 }
 
-
-
-#if USE_BLE
-//@-BLE设备服务回调
-class MyServerCallbacks: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-      deviceConnected = true;
-    };
-
-    void onDisconnect(BLEServer* pServer) {
-      deviceConnected = false;
-    }
-};
-
-//@-BLE设备接收回调
-class MyCallbacks: public BLECharacteristicCallbacks {
-  
-    void onWrite(BLECharacteristic *pCharacteristic) {
-      std::string rxValue = pCharacteristic->getValue();
-                            
-    //  Serial.println("DXDXDX");
-
-      if( rxValue.length() < 256)
-      {
-          memset(BLE_Msg, 0, sizeof(BLE_Msg));
-          for (int i = 0; i < rxValue.length(); i++)
-          {
-            BLE_Msg[i] = rxValue[i];
-            // BLE_Msg_Input.setCharAt(i,rxValue[i]);
-          }
-      }
-     }
-};
-
-void Dev_BLEInit()
+//@-网络获取数据任务
+void GetWifiBootDataTask(void *pvParameters)
 {
-  // Create the BLE Device
-  BLEDevice::init("DX_EPD_BLE");
+  char temp_str[256];
 
-  // Create the BLE Server
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
+  Serial.print("GetWifiBootDataTask is running on: ");
+  Serial.println(xPortGetCoreID());
 
-  // Create the BLE Service
-  BLEService *pService = pServer->createService(SERVICE_UUID);
+  vTaskDelay(2000);
 
-  // Create a BLE Characteristic
-  pCharacteristic = pService->createCharacteristic(
-                      CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_READ   |
-                      BLECharacteristic::PROPERTY_WRITE  |
-                      BLECharacteristic::PROPERTY_NOTIFY |
-                      BLECharacteristic::PROPERTY_INDICATE
-                    );
-  pCharacteristic->setCallbacks(new MyCallbacks()); 
+  //@-连接WIFI
+  WIFI_Connect();
 
-  // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
-  // Create a BLE Descriptor
-  pCharacteristic->addDescriptor(new BLE2902());
+  //@-每5min获取Sina综合新闻json数据
+  WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
 
-  // Start the service
-  pService->start();
+  sprintf(temp_str, "&date=%d-%d-%d", Dev_SystemTime_Year, Dev_SystemTime_Month, Dev_SystemTime_Day);
+  String huangliData = serverName_huangli + String(temp_str);
+  WIFI_Get_JsonInfo(huangliData, 4, "聚合黄历");
 
-  // Start advertising
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(true);
-  pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
-  BLEDevice::startAdvertising();
-  Serial.println("Waiting a client connection to notify...");
+  //@-断开WIFI连接
+  WIFI_Disconnect();
+
+  vTaskDelay(500);
+  xTaskCreate_Flag = 0;
+
+  vTaskDelay(100);
+  vTaskDelete(NULL);
 }
-#endif
+
+
+//@-获取网络数据任务
+void GetWifiTask(void *pvParameters) 
+{
+  char temp_str[256];
+
+  Serial.print("GetWifiTask is running on: ");
+  Serial.println(xPortGetCoreID());
+
+  //@-每1小时进行网络对时
+  WIFI_Get_InternetTime_Flag = 1;
+  // if(Dev_SystemTime_Hour_Old != Dev_SystemTime_Hour)
+  // {
+  //   Dev_SystemTime_Hour_Old = Dev_SystemTime_Hour;
+  //   WIFI_Get_InternetTime_Flag = 1;
+  // }
+
+  //@-连接WIFI
+  WIFI_Connect();
+
+  //@-每5min获取Sina综合新闻json数据-------------------->
+  WIFI_Get_JsonInfo(serverName_sinaNews, 1, "Sina新闻");
+
+  WIFI_Get_JsonInfo(serverName_covid1, 2, "Covid-19");
+
+  //@-一天2次获取日期农历黄历json数据-------------------->
+  // if((Dev_SystemTime_Minute == 0) && ((Dev_SystemTime_Hour == 0) || (Dev_SystemTime_Hour == 7)))
+  // {
+  //   sprintf(temp_str, "&date=%d-%d-%d", Dev_SystemTime_Year, Dev_SystemTime_Month, Dev_SystemTime_Day);
+  //   String huangliData = serverName_huangli + String(temp_str);
+  //   WIFI_Get_JsonInfo(huangliData, 4, "聚合黄历");
+  // }
+
+  // sprintf(temp_str, "&city=%s", SPIFFS_JSONData_Read.Json_location);
+  // String serverName_weather1 = serverName_weather + String(temp_str);
+  // Serial.println(serverName_weather1);
+  // WIFI_Get_JsonInfo(serverName_weather1, 3, "聚合天气");
+
+  //@-断开WIFI连接
+  WIFI_Disconnect();
+
+  vTaskDelay(500);
+  xTaskCreate_Flag = 0;
+  Display_News_Display_Flag = 1;
+  Display_News_Roll_Flag = 1;
+  vTaskDelay(100);
+  vTaskDelete(NULL);
+}
+
 
 //@-显示时间
 void Dispaly_YearMonth()
@@ -1260,33 +1152,233 @@ void Dispaly_News()
     }
 }
 
-
-//@-获取网络数据
-void GetWifiTask(void *pvParameters) 
+    
+//@-配置
+void setup()
 {
+  char temp_str[256];
 
+  //@-初始化串口
+  Serial.begin(115200);
+
+  Serial.println((String)"Memory available in PSRAM : " +ESP.getFreePsram());
+
+  Serial.print("Setup is running on: ");
+  Serial.println(xPortGetCoreID());
+
+  //@-设备启动次数
+  // if(bootCount > 600)
+  // bootCount = 0;
+  // //Increment boot number and print it every reboot
+  // bootCount = bootCount + 1;
+  // Serial.println("Boot number: " + String(bootCount));
+
+  //@-高能耗的接口初始化一定要放在最前面
   //@-连接WIFI
-  WIFI_Connect();
+  // WIFI_Connect();
+  // //@-每5min获取Sina综合新闻json数据
+  // WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
 
-  //@-每5min获取Sina综合新闻json数据
-  WIFI_Get_JsonInfo(serverName_sinaNews, 1, "新浪新闻");
+  // //@-判断WIFI连接状态
+  // if(WiFi.status()== WL_CONNECTED)
+  // {
+  //   sprintf(temp_str, "&date=%d-%d-%d", Dev_SystemTime_Year, Dev_SystemTime_Month, Dev_SystemTime_Day);
+  //   String huangliData = serverName_huangli + String(temp_str);
+  //   // Serial.println(huangliData);
+  //   WIFI_Get_JsonInfo(huangliData, 4, "聚合黄历");
+  // }
 
-  //@-断开WIFI连接
-  WIFI_Disconnect();
+  // //@-断开WIFI连接
+  // WIFI_Disconnect();
+  // delay(100); 
 
-  vTaskDelay(500);
-  xTaskCreate_Flag = 0;
-  Display_News_Display_Flag = 1;
-  Display_News_Roll_Flag = 1;
-  vTaskDelay(100);
-  vTaskDelete(NULL);
+  //@-文件系统启动
+  if(!SPIFFS.begin(true)){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
+  //@-加载config文件
+  Load_Config();
+
+  //@-选择wifi
+  // if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_1)
+  // {
+  //   // ssid = ssid1;
+  //   // password = password1;
+  //   ssid = SPIFFS_JSONData_Read.Json_SSID1;
+  //   password = SPIFFS_JSONData_Read.Json_Pass1;
+  // }
+  // else if(SPIFFS_JSONData_Read.Json_Wifi_Index == WIFI_Index_2)
+  // {
+  //   // ssid = ssid2;
+  //   // password = password2;
+  //   ssid = SPIFFS_JSONData_Read.Json_SSID2;
+  //   password = SPIFFS_JSONData_Read.Json_Pass2;
+  // }
+  ssid = SPIFFS_JSONData_Read.Json_SSID1;
+  password = SPIFFS_JSONData_Read.Json_Pass1;
+
+  //ESP32启动方式
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); wifi_connect_time = 8;break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+
+  #if USE_BLE
+  //@-查询是否进入蓝牙BLE模式
+  if(wakeup_reason == ESP_SLEEP_WAKEUP_EXT1)
+  {
+    Serial.println("BLE Mode Start----------------->");
+    Dev_BLEInit();
+  }
+  #endif
+
+  //@-初始化 Ticker every 1s
+  Tick1.attach(0.01, Second_Create);
+  delay(100);
+
+  //@-TFT GUI初始化
+  tft.begin();
+  tft.setRotation(0);  // portrait
+  tft.fillScreen(TFT_BLACK);
+
+  //@-创建滚动新闻显示栏
+  stext1.setColorDepth(8);
+  stext1.createSprite(Display_NewsBar_Width, Display_NewsBar_High); //@-创建滚动新闻显示栏
+  stext1.fillSprite(TFT_DARKGREY);
+  stext1.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
+  stext1.setTextColor(TFT_GREEN); // White text, no background
+  stext1.loadFont("STKAITI18");
+
+  stext2.setColorDepth(8);
+  stext2.createSprite(Display_NewsBar_Width, Display_NewsBar_High); 
+  stext2.fillSprite(TFT_DARKGREY);
+  stext2.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
+  stext2.setTextColor(TFT_WHITE); // White text, no background
+  stext2.loadFont("STKAITI18");
+
+  stext3.setColorDepth(8);
+  stext3.createSprite(Display_NewsBar_Width, Display_NewsBar_High); 
+  stext3.fillSprite(TFT_DARKGREY);
+  stext3.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
+  stext3.setTextColor(TFT_BLUE); // White text, no background
+  stext3.loadFont("STKAITI18");
+
+  delay(500); 
 }
 
 
-//@-主循环
+#if USE_BLE
+//@-BLE设备服务回调
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+    };
+
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+    }
+};
+
+//@-BLE设备接收回调
+class MyCallbacks: public BLECharacteristicCallbacks {
+  
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string rxValue = pCharacteristic->getValue();
+                            
+    //  Serial.println("DXDXDX");
+
+      if( rxValue.length() < 256)
+      {
+          memset(BLE_Msg, 0, sizeof(BLE_Msg));
+          for (int i = 0; i < rxValue.length(); i++)
+          {
+            BLE_Msg[i] = rxValue[i];
+            // BLE_Msg_Input.setCharAt(i,rxValue[i]);
+          }
+      }
+     }
+};
+
+void Dev_BLEInit()
+{
+  // Create the BLE Device
+  BLEDevice::init("DX_EPD_BLE");
+
+  // Create the BLE Server
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  // Create the BLE Service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // Create a BLE Characteristic
+  pCharacteristic = pService->createCharacteristic(
+                      CHARACTERISTIC_UUID,
+                      BLECharacteristic::PROPERTY_READ   |
+                      BLECharacteristic::PROPERTY_WRITE  |
+                      BLECharacteristic::PROPERTY_NOTIFY |
+                      BLECharacteristic::PROPERTY_INDICATE
+                    );
+  pCharacteristic->setCallbacks(new MyCallbacks()); 
+
+  // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
+  // Create a BLE Descriptor
+  pCharacteristic->addDescriptor(new BLE2902());
+
+  // Start the service
+  pService->start();
+
+  // Start advertising
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+  BLEDevice::startAdvertising();
+  Serial.println("Waiting a client connection to notify...");
+}
+#endif
+
+        // xTaskCreatePinnedToCore(
+        //             brTask,        /* Task function. */
+        //             "uncompress",  /* name of task. */
+        //             20000,         /* Stack size of task */
+        //             (void*)&compressed,   /* send the bytes as a parameter */
+        //             9,             /* priority of the task */
+        //             &brotliTask,   /* Task handle to keep track of created task */
+        //             0);            /* pin task to core 1 */
+
+//@-主循环-run on core1
 void loop()
 {
-  Display_Time_Flag = Display_Time_Flag + 1;
+  Display_Time_Tick = Display_Time_Tick + 1;
+  test_dis_tick =  test_dis_tick + 1;
+
+  if(test_dis_tick > 1000)
+  {
+    test_dis_tick = 0;
+
+    if(test_dis_flag == 1)
+    {
+      test_dis_flag = 2;
+      // tft.fillScreen(random(0xFFFF));
+      tft.fillRect (160, 0, 48, 48, TFT_WHITE); // Overprint with a filled rectangle
+      fex.drawJpgFile(SPIFFS, "/100.jpg", 160, 0);
+    }
+    else if(test_dis_flag == 2)
+    {
+      test_dis_flag = 1;
+      // tft.fillScreen(random(0xFFFF));
+      tft.fillRect (160, 0, 48, 48, TFT_WHITE); // Overprint with a filled rectangle
+      fex.drawJpgFile(SPIFFS, "/304.jpg", 160, 0);
+    }
+  }
 
   //@-每5min获取网络数据
   if(((Dev_SystemTime_Minute == 5) || (Dev_SystemTime_Minute == 10) || (Dev_SystemTime_Minute == 15) ||
@@ -1295,12 +1387,13 @@ void loop()
      (Dev_SystemTime_Minute == 50) || (Dev_SystemTime_Minute == 55) || (Dev_SystemTime_Minute == 0)) &&
      ((Dev_SystemTime_Second == 0) || (Dev_SystemTime_Second == 1)) )
   {
+
     if(xTaskCreate_Flag == 0)
     {
       Serial.println("---------->wifi get");
       Serial.println(Dev_SystemTime_Second);
       xTaskCreate_Flag = 1;
-      xTaskCreate(GetWifiTask,"GetWifiTask",7168, NULL,0,&GetWifiTaskHandler);
+      xTaskCreate(GetWifiTask,"GetWifiTask",7168, NULL,1,&GetWifiTaskHandler);
     }
   }
 
@@ -1312,15 +1405,17 @@ void loop()
   }
 
   //@-显示实时时间
-  if(Display_Time_Flag > 50)
+  if(Display_Time_Tick > 50)
   {
-      Display_Time_Flag = 0;
+      Display_Time_Tick = 0;
       Dispaly_Time();
   }
 
   //@-显示新闻
   Dispaly_News();
 
+
   delay(10); 
+  // yield();
  
 }
