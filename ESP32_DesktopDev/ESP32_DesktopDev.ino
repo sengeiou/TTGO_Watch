@@ -73,7 +73,7 @@
 #define Display_Time_Width      145
 #define Display_Time_High       26      //@-字体大小26
 #define DisplayArea_Time_X      0
-#define DisplayArea_Time_Y      80
+#define DisplayArea_Time_Y      20
 
 
 //@-IO定义
@@ -96,9 +96,12 @@
 
 //@-创建LCD驱动-使用1.54寸TFT，驱动为SetupDx_ST7789.h
 TFT_eSPI tft = TFT_eSPI(); 
-TFT_eSprite stext1 = TFT_eSprite(&tft); // Sprite object stext1
+// TFT_eSprite stext1 = TFT_eSprite(&tft); // Sprite object stext1
 TFT_eSprite stext2 = TFT_eSprite(&tft); // Sprite object stext2
-TFT_eSprite stext3 = TFT_eSprite(&tft); // Sprite object stext2
+TFT_eSprite stext3 = TFT_eSprite(&tft); // Sprite object stext3
+TFT_eSprite stext_main = TFT_eSprite(&tft); // Sprite object stext3
+// TFT_eSprite stext_Time = TFT_eSprite(&tft); // Sprite object 实时时间
+// TFT_eSprite stext_YearMonth = TFT_eSprite(&tft); // Sprite object 实时时间
 TFT_eFEX  fex = TFT_eFEX(&tft);    // Create TFT_eFX object "efx" with pointer to "tft" object
 int tcount = 0;
 
@@ -376,10 +379,10 @@ char  BLE_SendMsg[256];                  //BLE发送缓存区
 #endif
 
 //@-显示标志
-int Display_YearMonth_Flag = 1;
 int Display_Time_Tick = 1;
 int Display_News_Display_Flag = 1;
 int Display_News_Roll_Flag = 1;
+int Display_YearMonth_Flag = 1;
 
 int First_Flag = 1;
 int xTaskCreate_Flag = 0;
@@ -395,8 +398,13 @@ TaskHandle_t GetWifiTaskHandler = NULL;
 TaskHandle_t GetWifiBootDataTaskHandler = NULL;
 TaskHandle_t DrawPicTaskHandler = NULL;
 
-int test_dis_flag = 1;
 int test_dis_tick = 0;
+int test_dis_flag = 1;
+int test_dis_only_one_flag = 1;
+int Download_AD_Pic_Flag = 1;
+
+int Display_Part_Index = 0;
+int Display_Done_Part = 0;
 
 //-----------------------------------------------------------------------------
 
@@ -648,8 +656,8 @@ void WIFI_Connect()
   WiFi.mode(WIFI_STA);
   // Connect to Wi-Fi
   Serial.print("Connecting to ");
-  Serial.println(ssid1);
-  WiFi.begin(ssid1.c_str(), password1.c_str());
+  Serial.println(ssid2);
+  WiFi.begin(ssid2.c_str(), password2.c_str());
   // WiFi.begin("liang12", "12345678");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -681,6 +689,85 @@ void WIFI_Connect()
       WIFI_Get_InternetTime();
     }
   }
+}
+
+/*查看指定的下载文件是否存在*/
+void ReadImageFile()
+{
+  File file = SPIFFS.open("/AD_Pic.jpg", FILE_READ);
+  if (!file)
+  {
+    Serial.println("No Config-> white define");
+  } 
+  else
+  {
+    size_t size = file.size();
+    Serial.print("--------------json file size:");
+    Serial.println(size);
+    if(size == 0)
+    {
+      Serial.println("Config file empty-> white define");
+    }
+  }
+}
+
+
+/*从指定的网络地址下载文件，并存储至SPIFFS*/
+void downloadAndSaveFile(String fileName, String  url){
+  
+  HTTPClient http;
+
+  Serial.println("[HTTP] begin...\n");
+  Serial.println(fileName);
+  Serial.println(url);
+  http.begin(url);
+  
+  Serial.printf("[HTTP] GET...\n", url.c_str());
+  // start connection and send HTTP header
+  int httpCode = http.GET();
+  if(httpCode > 0) {
+      // HTTP header has been send and Server response header has been handled
+      Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+      Serial.printf("[FILE] open file for writing %d\n", fileName.c_str());
+      
+      File file = SPIFFS.open(fileName, FILE_WRITE);
+
+      // file found at server
+      if(httpCode == HTTP_CODE_OK) {
+
+          // get lenght of document (is -1 when Server sends no Content-Length header)
+          int len = http.getSize();
+
+          // create buffer for read
+          uint8_t buff[128] = { 0 };
+
+          // get tcp stream
+          WiFiClient * stream = http.getStreamPtr();
+
+          // read all data from server
+          while(http.connected() && (len > 0 || len == -1)) {
+              // get available data size
+              size_t size = stream->available();
+              if(size) {
+                  // read up to 128 byte
+                  int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+                  // write it to Serial
+                  //Serial.write(buff, c);
+                  file.write(buff, c);
+                  if(len > 0) {
+                      len -= c;
+                  }
+              }
+              delay(1);
+          }
+
+          Serial.println();
+          Serial.println("[HTTP] connection closed or file end.\n");
+          Serial.println("[FILE] closing file\n");
+          file.close();
+      }
+  }
+  http.end();
 }
 
 //@-获取信息网站JSON数据
@@ -1035,6 +1122,15 @@ void GetWifiTask(void *pvParameters)
   //@-连接WIFI
   WIFI_Connect();
 
+  //@-定时下载每日更新图片
+  if((Download_AD_Pic_Flag == 1) && (WiFi.status() == WL_CONNECTED))
+  {
+    downloadAndSaveFile("/AD_Pic.jpg","http://dx1023.com/media/images/AD_Pic.jpg");
+    vTaskDelay(200);
+    Download_AD_Pic_Flag = 0;
+    test_dis_only_one_flag = 1;
+  }
+
   //@-每5min获取Sina综合新闻json数据-------------------->
   WIFI_Get_JsonInfo(serverName_sinaNews, 1, "Sina新闻");
 
@@ -1071,11 +1167,15 @@ void Dispaly_YearMonth()
   sprintf(buff_dx,"%d年/%2d月/%2d日", Dev_SystemTime_Year, Dev_SystemTime_Month, Dev_SystemTime_Day);
 
   // tft.loadFont("LOAD_FONT4");
-  tft.loadFont("STKAITI18");
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(0,64);
-  tft.println(buff_dx);
-  tft.unloadFont();
+  // tft.loadFont("STKAITI18");
+  // tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  // tft.setCursor(0,0);
+  // tft.println(buff_dx);
+  // tft.unloadFont();
+
+  stext_main.fillSprite(TFT_DARKGREY);
+  stext_main.drawString(buff_dx, 0, 0, 2); // draw at 240,0 in sprite, font 2
+  stext_main.pushSprite(0, 0);
 }
 
 //@-显示实时时间
@@ -1097,12 +1197,16 @@ void Dispaly_Time()
 
   sprintf(buff_dx,"%02d:%02d:%02d", Dev_SystemTime_Hour, Dev_SystemTime_Minute, Dev_SystemTime_Second);
 
-  tft.loadFont("Pixel_LCD_726");
-  tft.fillRect (DisplayArea_Time_X, DisplayArea_Time_Y, Display_Time_Width, Display_Time_High, TFT_RED); // Overprint with a filled rectangle
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(DisplayArea_Time_X,DisplayArea_Time_Y);
-  tft.println(buff_dx);
-  tft.unloadFont();
+  stext_main.fillSprite(TFT_RED);
+  stext_main.drawString(buff_dx, 0, 0, 3); // draw at 240,0 in sprite, font 2
+  stext_main.pushSprite(DisplayArea_Time_X, DisplayArea_Time_Y);
+
+  // tft.loadFont("Pixel_LCD_726");
+  // tft.fillRect (DisplayArea_Time_X, DisplayArea_Time_Y, Display_Time_Width, Display_Time_High, TFT_RED); // Overprint with a filled rectangle
+  // tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  // tft.setCursor(DisplayArea_Time_X,DisplayArea_Time_Y);
+  // tft.println(buff_dx);
+  // tft.unloadFont();
 }
 
 
@@ -1114,17 +1218,17 @@ void Dispaly_News()
       Display_News_Display_Flag = 0;
 
       // stext2.drawString("ShotokuTech.com", 240, 0, 2); // draw at 240,0 in sprite, font 2
-      String myNewString1(NewsData[0].news_title);
+      // String myNewString1(NewsData[0].news_title);
       String myNewString2(NewsData[1].news_title);
       String myNewString3(NewsData[2].news_title);
 
       // Serial.println(sizeof(NewsData[0].news_title));
 
-      stext1.drawString(myNewString1, 0, 0, 2); // draw at 240,0 in sprite, font 2
+      // stext1.drawString(myNewString1, 0, 0, 2); // draw at 240,0 in sprite, font 2
       stext2.drawString(myNewString2, 0, 0, 2); // draw at 240,0 in sprite, font 2
       stext3.drawString(myNewString3, 0, 0, 2); // draw at 240,0 in sprite, font 2
 
-      stext1.pushSprite(0, DisplayArea_NewsBar1_Y);
+      // stext1.pushSprite(0, DisplayArea_NewsBar1_Y);
       stext2.pushSprite(0, DisplayArea_NewsBar2_Y);
       stext3.pushSprite(0, DisplayArea_NewsBar3_Y);
 
@@ -1141,11 +1245,11 @@ void Dispaly_News()
       }
       else
       {
-        stext1.scroll(-1);     // scroll stext 1 pixel left, up/down default is 0
+        // stext1.scroll(-1);     // scroll stext 1 pixel left, up/down default is 0
         stext2.scroll(-1);     // scroll stext 1 pixel left, up/down default is 0
         stext3.scroll(-1);     // scroll stext 1 pixel left, up/down default is 0
 
-        stext1.pushSprite(0, DisplayArea_NewsBar1_Y);
+        // stext1.pushSprite(0, DisplayArea_NewsBar1_Y);
         stext2.pushSprite(0, DisplayArea_NewsBar2_Y);
         stext3.pushSprite(0, DisplayArea_NewsBar3_Y);
       }
@@ -1248,13 +1352,28 @@ void setup()
   tft.setRotation(0);  // portrait
   tft.fillScreen(TFT_BLACK);
 
+  //@-创建实时时间显示栏
+  // stext_Time.setColorDepth(8);
+  // stext_Time.createSprite(Display_Time_Width, Display_Time_High); //@-创建滚动时间显示栏
+  // stext_Time.fillSprite(TFT_RED);
+  // stext_Time.setScrollRect(0, 0, Display_Time_Width, Display_Time_High, TFT_RED); 
+  // stext_Time.setTextColor(TFT_WHITE); // White text, no background
+  // stext_Time.loadFont("Pixel_LCD_726");
+
+  // stext_YearMonth.setColorDepth(8);
+  // stext_YearMonth.createSprite(Display_Time_Width, Display_Time_High); //@-创建滚动新闻显示栏
+  // stext_YearMonth.fillSprite(TFT_BLACK);
+  // stext_YearMonth.setScrollRect(0, 0, Display_Time_Width, Display_Time_High, TFT_BLACK); 
+  // stext_YearMonth.setTextColor(TFT_WHITE); // White text, no background
+  // stext_YearMonth.loadFont("STKAITI18");
+
   //@-创建滚动新闻显示栏
-  stext1.setColorDepth(8);
-  stext1.createSprite(Display_NewsBar_Width, Display_NewsBar_High); //@-创建滚动新闻显示栏
-  stext1.fillSprite(TFT_DARKGREY);
-  stext1.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
-  stext1.setTextColor(TFT_GREEN); // White text, no background
-  stext1.loadFont("STKAITI18");
+  // stext1.setColorDepth(8);
+  // stext1.createSprite(Display_NewsBar_Width, Display_NewsBar_High); //@-创建滚动新闻显示栏
+  // stext1.fillSprite(TFT_DARKGREY);
+  // stext1.setScrollRect(0, 0, Display_NewsBar_Width, Display_NewsBar_High, TFT_DARKGREY); 
+  // stext1.setTextColor(TFT_GREEN); // White text, no background
+  // stext1.loadFont("STKAITI18");
 
   stext2.setColorDepth(8);
   stext2.createSprite(Display_NewsBar_Width, Display_NewsBar_High); 
@@ -1354,6 +1473,40 @@ void Dev_BLEInit()
         //             &brotliTask,   /* Task handle to keep track of created task */
         //             0);            /* pin task to core 1 */
 
+
+void stext_main_switch(int Display_Part)
+{
+  if(Display_Done_Part != Display_Part)
+  {
+    switch(Display_Part)
+    {
+      //@-显示年月日 
+      case 1:
+            stext_main.setColorDepth(8);
+            stext_main.createSprite(Display_Time_Width, Display_Time_High); //@-创建滚动时间显示栏
+            stext_main.setScrollRect(0, 0, Display_Time_Width, Display_Time_High, TFT_DARKGREY); 
+            stext_main.setTextColor(TFT_WHITE); // White text, no background
+            stext_main.loadFont("STKAITI18"); 
+            // Serial.print("NEW---->");
+            // Serial.println(Display_Part);
+            Display_Done_Part = 1;
+            break;
+      //@-显示实时时间 
+      case 2:
+            stext_main.setColorDepth(8);
+            stext_main.createSprite(Display_Time_Width, Display_Time_High); //@-创建滚动新闻显示栏
+            stext_main.setScrollRect(0, 0, Display_Time_Width, Display_Time_High, TFT_RED); 
+            stext_main.setTextColor(TFT_GREEN); // White text, no background
+            stext_main.loadFont("Pixel_LCD_726");
+            // Serial.print("NEW---->");
+            // Serial.println(Display_Part);
+            Display_Done_Part = 2;
+            break;
+      default: break;
+    }
+  }
+}
+
 //@-主循环-run on core1
 void loop()
 {
@@ -1363,6 +1516,15 @@ void loop()
   if(test_dis_tick > 1000)
   {
     test_dis_tick = 0;
+
+    Display_YearMonth_Flag = 1;
+
+    if((test_dis_only_one_flag == 1)&&(Download_AD_Pic_Flag == 0))
+    {
+      test_dis_only_one_flag = 0;
+      tft.fillRect (0, 45, 239, 121, TFT_WHITE); // Overprint with a filled rectangle
+      fex.drawJpgFile(SPIFFS, "/AD_Pic.jpg", 0, 45);
+    }
 
     if(test_dis_flag == 1)
     {
@@ -1398,24 +1560,41 @@ void loop()
   }
 
   //@-显示年月日
-  if(Display_YearMonth_Flag == 1)
+  if((Display_YearMonth_Flag == 1))
   {
     Display_YearMonth_Flag = 0;
+    Display_Part_Index = 1;
+    stext_main_switch(Display_Part_Index);
     Dispaly_YearMonth();
   }
 
   //@-显示实时时间
   if(Display_Time_Tick > 50)
   {
-      Display_Time_Tick = 0;
-      Dispaly_Time();
+    Display_Time_Tick = 0;
+    Display_Part_Index = 2;
+    stext_main_switch(Display_Part_Index);
+    // Display_YearMonth_Flag = 1;
+    Dispaly_Time();
   }
+
+  // stext_Time.setColorDepth(8);
+  // stext_Time.createSprite(Display_Time_Width, Display_Time_High); //@-创建滚动时间显示栏
+  // stext_Time.fillSprite(TFT_RED);
+  // stext_Time.setScrollRect(0, 0, Display_Time_Width, Display_Time_High, TFT_RED); 
+  // stext_Time.setTextColor(TFT_WHITE); // White text, no background
+  // stext_Time.loadFont("Pixel_LCD_726");
+
+  // stext_YearMonth.setColorDepth(8);
+  // stext_YearMonth.createSprite(Display_Time_Width, Display_Time_High); //@-创建滚动新闻显示栏
+  // stext_YearMonth.fillSprite(TFT_BLACK);
+  // stext_YearMonth.setScrollRect(0, 0, Display_Time_Width, Display_Time_High, TFT_BLACK); 
+  // stext_YearMonth.setTextColor(TFT_WHITE); // White text, no background
+  // stext_YearMonth.loadFont("STKAITI18");
 
   //@-显示新闻
   Dispaly_News();
 
-
   delay(10); 
-  // yield();
- 
+
 }
